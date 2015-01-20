@@ -19,11 +19,9 @@ this_directory = os.path.dirname(os.path.abspath(__file__));
 
 
 def probability_of_expression(data, nozero=True):
-    cutoffs = np.ones(data.shape[0]);
-    if(nozero):
-        (gamma, mu_l, mu_h, st_l, st_h, Pi, L) = em.em_exp_norm_mixture2(data,cutoffs);
-    else:
-        (gamma, mu_l, mu_h, st_l, st_h, Pi, L) = em.em_exp_norm_mixture(data,cutoffs);
+    cutoffs = np.mean(data,axis=1)/4;  #Empirically found to be good mosy of the time
+    
+    (gamma, mu_l, mu_h, st_l, st_h, Pi, L) = em.em_exp_norm_mixture(data,cutoffs);
         
     return (gamma, mu_h);
 
@@ -105,7 +103,92 @@ def create_false_neg_map(data, genes, housekeeping_file=""):
         return func(xvals, param[0], param[1]);
         
     return out_func;
+   
+   
+def create_false_neg_mapv2(data, genes, housekeeping_file=""):
+    """Uses gene names in <filename> to create a mapping of false negatives. 
+    This assumes all genes in <filename> are actually active, despite measured
+    expression level.  Should use housekeeping genes.  If filename is blank,
+    use all stored housekeeping gene names
     
+    Creates a functional fit for each sample based on that samples HK genes   
+    """
+    
+    housekeeping_dir = os.path.join(this_directory,'Housekeeping Genes');
+    
+    housekeeping_files = list();
+    
+    if(housekeeping_file != ""): #If file specified, use that file
+        housekeeping_files.append(os.path.join(housekeeping_dir, housekeeping_file));
+    else:  #Otherwise, use all the files!
+        files = os.listdir(housekeeping_dir);
+        for ff in files:
+            housekeeping_files.append(os.path.join(housekeeping_dir, ff));
+    
+    data_hk = np.zeros((0, data.shape[1]));
+    genes_hk = list();
+    for hkf in housekeeping_files:
+        (data_t, genes_t) = Filters.load_from_file(data, genes, hkf);        
+        data_hk = np.vstack((data_hk, data_t));
+        genes_hk.extend(genes_t);
+
+
+    (data_hk, genes_hk) = Filters.filter_genes_threshold(data_hk, genes_hk, 0.2);
+        
+    #calculate distributions for hk gene
+    cutoffs = np.ones(data_hk.shape[0]);
+    (gamma, mu_l, mu_h, st_l, st_h, Pi, L) = em.em_exp_norm_mixture2(data_hk,cutoffs);
+    
+    #create bins based on average gene expression in population
+#    bin_start = 0.0;
+#    bin_end = np.ceil(np.max(mu_h));
+#    
+#    bin_starts = np.arange(bin_start, bin_end);
+#    bin_ends = bin_starts + 1;
+#    bin_ends[-1] = bin_ends[-1] + .1;
+#    
+#    binned_gammas = np.zeros((bin_starts.shape[0], gamma.shape[1]));
+#    
+#    for i in np.arange(binned_gammas.shape[0]):
+#        start = bin_starts[i];
+#        end = bin_ends[i];
+#        
+#        indices = np.logical_and(mu_h >= start, mu_h < end).flatten();
+#        
+#        if(indices.any()):
+#            binned_gammas[i,:] = gamma[indices,:].mean(axis=0);
+#        
+#    
+        
+    #Fit a function mapping mu to gammas
+
+    from scipy.optimize import curve_fit;
+    def func(xvals, x0, a):
+        return 1/(1 + np.exp((xvals-x0)*a));
+
+    out_fcns = list();
+    x = mu_h.flatten();
+
+    for i in range(gamma.shape[1]):
+
+        y = 1-gamma[:,i]
+
+        param, cov = curve_fit(func, x, y);
+        def out_func(xvals):
+            return func(xvals, param[0], param[1]);
+            
+        out_fcns.append(out_func);
+    
+    #Uncomment to plot result
+#    from pylab import figure, scatter, plot, ion;
+#    ion();
+#    figure();
+#    domain = np.linspace(0,10,1000);
+#    scatter(x,y);
+#    plot(domain, func(domain, param[0], param[1]));
+        
+    return out_fcns;
+
     
 def set_range(gamma, low, high):
     """Changes the range of gamma to stretch between low and high
@@ -148,10 +231,11 @@ def plot_em_norm_distribution(gamma, mu_l, mu_h, st_l, st_h, data, i):
     
     domain = np.linspace(0,10,10000);
     p_low = np.exp(-1*domain/mu_lx)/mu_lx;
-    p_low[isnan(p_low)] = 0;    
+    p_low[np.isnan(p_low)] = 0;    
     
     p_high = np.exp(-1 * (domain - mu_hx)**2 / (2*st_hx**2)) / st_hx / np.sqrt(2*np.pi);
     
+    from matplotlib.pyplot import hold, hist, plot, scatter, ylim    
     
     hold(False);
     (n, bins, patches) = hist(data[i,:], range=(0,10),bins=100, normed=True);
