@@ -42,13 +42,18 @@ def make_monotonic(gamma, data):
 
     return gamma;        
     
+
 def create_false_neg_map(data, genes, housekeeping_file=""):
     """Uses gene names in <filename> to create a mapping of false negatives. 
     This assumes all genes in <filename> are actually active, despite measured
     expression level.  Should use housekeeping genes.  If filename is blank,
     use all stored housekeeping gene names
     
-    Returns out_func: a function that maps mu_h -> prob_false_negative    
+    Creates a functional fit for each sample based on that samples HK genes
+    returns fit_func, params
+    fit_func = function to use to fit expression values to FN rate
+    params = Num_Params x Num_Samples array.  Sample-specific parameters to use
+        with fit_func
     """
     
     housekeeping_dir = os.path.join(this_directory,'Housekeeping Genes');
@@ -74,70 +79,7 @@ def create_false_neg_map(data, genes, housekeeping_file=""):
         
     #calculate distributions for hk gene
     cutoffs = np.ones(data_hk.shape[0]);
-    (gamma, mu_l, mu_h, st_l, st_h, Pi, L) = em.em_exp_norm_mixture2(data_hk,cutoffs);
-        
-    
-    #neg_vals = np.sum(data_hk==0, axis=1) / float(data_hk.shape[1]);    
-    neg_vals = np.mean(1-gamma, axis=1); 
-
-    #Fit a function mapping mu to neg_vals
-
-    x = mu_h.flatten();
-    y = neg_vals;
-    
-    def func(xvals, x0, a):
-        return 1/(1 + np.exp((xvals-x0)*a));
-    
-    from scipy.optimize import curve_fit;
-    param, cov = curve_fit(func, x, y);
-    
-    #Uncomment to plot result
-#    from pylab import figure, scatter, plot, ion;
-#    ion();
-#    figure();
-#    domain = np.linspace(0,10,1000);
-#    scatter(x,y);
-#    plot(domain, func(domain, param[0], param[1]));
-    
-    def out_func(xvals):
-        return func(xvals, param[0], param[1]);
-        
-    return out_func;
-   
-   
-def create_false_neg_mapv2(data, genes, housekeeping_file=""):
-    """Uses gene names in <filename> to create a mapping of false negatives. 
-    This assumes all genes in <filename> are actually active, despite measured
-    expression level.  Should use housekeeping genes.  If filename is blank,
-    use all stored housekeeping gene names
-    
-    Creates a functional fit for each sample based on that samples HK genes   
-    """
-    
-    housekeeping_dir = os.path.join(this_directory,'Housekeeping Genes');
-    
-    housekeeping_files = list();
-    
-    if(housekeeping_file != ""): #If file specified, use that file
-        housekeeping_files.append(os.path.join(housekeeping_dir, housekeeping_file));
-    else:  #Otherwise, use all the files!
-        files = os.listdir(housekeeping_dir);
-        for ff in files:
-            housekeeping_files.append(os.path.join(housekeeping_dir, ff));
-    
-    data_hk = np.zeros((0, data.shape[1]));
-    genes_hk = list();
-    for hkf in housekeeping_files:
-        (data_t, genes_t) = Filters.load_from_file(data, genes, hkf);        
-        data_hk = np.vstack((data_hk, data_t));
-        genes_hk.extend(genes_t);
-
-
-    (data_hk, genes_hk) = Filters.filter_genes_threshold(data_hk, genes_hk, 0.2);
-        
-    #calculate distributions for hk gene
-    cutoffs = np.ones(data_hk.shape[0]);
-    (gamma, mu_l, mu_h, st_l, st_h, Pi, L) = em.em_exp_norm_mixture2(data_hk,cutoffs);
+    (gamma, mu_l, mu_h, st_l, st_h, Pi, L) = em.em_exp_norm_mixture(data_hk,cutoffs);
     
     #create bins based on average gene expression in population
 #    bin_start = 0.0;
@@ -166,7 +108,7 @@ def create_false_neg_mapv2(data, genes, housekeeping_file=""):
     def func(xvals, x0, a):
         return 1/(1 + np.exp((xvals-x0)*a));
 
-    out_fcns = list();
+    params = np.zeros((2,gamma.shape[1]));
     x = mu_h.flatten();
 
     for i in range(gamma.shape[1]):
@@ -174,20 +116,18 @@ def create_false_neg_mapv2(data, genes, housekeeping_file=""):
         y = 1-gamma[:,i]
 
         param, cov = curve_fit(func, x, y);
-        def out_func(xvals):
-            return func(xvals, param[0], param[1]);
-            
-        out_fcns.append(out_func);
-    
-    #Uncomment to plot result
-#    from pylab import figure, scatter, plot, ion;
-#    ion();
-#    figure();
-#    domain = np.linspace(0,10,1000);
-#    scatter(x,y);
-#    plot(domain, func(domain, param[0], param[1]));
+        params[:,i] = param;
         
-    return out_fcns;
+#        #Uncomment to plot result
+#        from pylab import figure, scatter, plot, ion;
+#        ion();
+#        figure();
+#        domain = np.linspace(0,10,1000);
+#        scatter(x,y);
+#        plot(domain, func(domain, param[0], param[1]));
+#        
+        
+    return func, params;
 
     
 def set_range(gamma, low, high):
