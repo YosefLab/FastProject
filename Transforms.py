@@ -44,16 +44,21 @@ def make_monotonic(gamma, data):
     
 
 def create_false_neg_map(data, genes, housekeeping_file=""):
-    """Uses gene names in <filename> to create a mapping of false negatives. 
+    """Uses gene names in <filename> to create a mapping of false negatives.
+        
     This assumes all genes in <filename> are actually active, despite measured
     expression level.  Should use housekeeping genes.  If filename is blank,
     use all stored housekeeping gene names
     
     Creates a functional fit for each sample based on that samples HK genes
-    returns fit_func, params
-    fit_func = function to use to fit expression values to FN rate
-    params = Num_Params x Num_Samples array.  Sample-specific parameters to use
-        with fit_func
+
+    Returns
+    ----------
+    fit_func : function 
+        Used to fit expression values to FN rate
+    params : (Num_Params x Num_Samples) numpy.ndarray
+        Sample-specific parameters to use with fit_func
+
     """
     
     housekeeping_dir = os.path.join(this_directory,'Housekeeping Genes');
