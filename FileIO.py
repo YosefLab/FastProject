@@ -56,6 +56,22 @@ def read_matrix(filename='', delimiter = '\t'):
     return (data, row_labels, col_labels);
 
     
+def read_matrix_nolabels(filename = '', delimiter = '\t'):
     
+    if(filename == ''):
+        from Tkinter import Tk
+        from tkFileDialog import askopenfilename
+        Tk().withdraw();
+        filename = askopenfilename();
 
+    #read data    
+    data = np.loadtxt(filename, delimiter=delimiter);
     
+    #generate labels
+    num_rows = data.shape[0];
+    num_cols = data.shape[1];
+    
+    row_labels = [str(i) for i in xrange(num_rows)];
+    col_labels = [str(i) for i in xrange(num_cols)];
+    
+    return (data, row_labels, col_labels);

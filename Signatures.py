@@ -8,8 +8,23 @@ Created on Wed Jan 21 16:34:49 2015
 import numpy as np;
 from sklearn.neighbors import NearestNeighbors
 
-def read_signature(filename=''):
-    """Reads in a signature file.  Returns an instance of the Signature class"""
+def read_signature(filename='', match_terms=[]):
+    """Reads in a signature file.  Returns a list of Signature objects
+    
+    Parameters
+    ----------
+    filename : string
+        Name (and path if not in working directory) of signature file to read
+        If no file is entered, opens a file dialog
+    match_terms : list(String)
+        List of terms to be matched against signature names.
+        Signature is retained if any of the terms match.
+    
+    Returns
+    -------
+    signatures : list(DimReduce.Signature)
+        The filtered signature list
+    """
     
     if(filename == ''):
         from Tkinter import Tk
@@ -18,7 +33,12 @@ def read_signature(filename=''):
         filename = askopenfilename();
     
     ff = open(filename, 'r');
-    sig_dict = dict();    
+    found_signatures = dict();    ## dictionary of signatures
+    
+    if(type(match_terms) is str):
+        match_terms = [match_terms];
+    
+    match_terms = map(lambda term: term.lower(), match_terms);    
     
     try:    
         
@@ -35,11 +55,30 @@ def read_signature(filename=''):
         
         ff.seek(0);
         
-        
         for i, line in enumerate(ff):
             row_data = line.strip().split('\t');
             if(len(row_data) != 2 and len(row_data) != 3):
                 print i
+                
+            name = row_data[0];
+            if(not found_signatures.has_key(name)):  ## Add the signature if we haven't seen it yet
+                
+                matched = False if len(match_terms) > 0 else True                ## Only add signatures if they match one of the supplied terms
+                lname = name.lower();                
+                for term in match_terms:
+                    if(lname.find(term) >= 0):
+                        matched = True;
+                        break;
+                
+                if(matched):
+                    sig = Signature(dict(), signed, filename, name);
+                    found_signatures.update({name: sig});
+                else:
+                    continue;
+            
+            sig_dict = found_signatures[name].sig_dict;
+            
+            
             if signed:
                 sig_sign = row_data[1].lower();
                 if(sig_sign == 'plus'):
@@ -66,11 +105,47 @@ def read_signature(filename=''):
         raise;
     finally:
         ff.close();
+    
+    return [found_signatures[key] for key in found_signatures.keys()]  #dict to list
+
+def filter_sig_list(signatures, match_terms):
+    """
+    Filters the list of signature objects to retain only those that contain
+    one of the specified terms
+    
+    Parameters
+    ----------
+    signatures : list(Signature)
+        List of signatures to be filtered
+    match_terms : list(String)
+        List of terms to be matched against signature names.
+        Signature is retained if any of the terms match.
+    
+    Returns
+    -------
+    filtered_signatures : list(DimReduce.Signature)
+        The filtered signature list
         
     
-    sig = Signature(sig_dict, signed, filename);
+    """
     
-    return sig;
+    if(type(match_terms) is str):       #So you dont need to wrap a single string in []
+        match_terms = [match_terms];    
+    
+    match_terms = map(lambda term: term.lower(), match_terms);    
+    
+    filtered_signatures = list();
+    for sig in signatures:
+        name = sig.name.lower();
+        
+        for term in match_terms:            
+            if(name.find(term) >= 0):
+                filtered_signatures.append(sig);
+                break;
+    
+    
+    return filtered_signatures;
+
 
 def conformity(data_loc, sig, n_neighbors):
     """
@@ -117,10 +192,11 @@ def conformity(data_loc, sig, n_neighbors):
     
 class Signature:
     
-    def __init__(self, sig_dict, signed, filename):
+    def __init__(self, sig_dict, signed, filename, name):
         self.sig_dict = sig_dict;
         self.signed = signed;
         self.source = filename;
+        self.name = name;
     
     def eval_data(self, data, genes):
         """For each sample, calculate a score against the signature
