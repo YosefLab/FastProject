@@ -8,7 +8,7 @@ Created on Wed Jan 21 16:34:49 2015
 import numpy as np;
 from sklearn.neighbors import NearestNeighbors
 
-def read_signature(filename='', match_terms=[]):
+def read_signatures(filename='', match_terms=[]):
     """Reads in a signature file.  Returns a list of Signature objects
     
     Parameters
@@ -147,7 +147,7 @@ def filter_sig_list(signatures, match_terms):
     return filtered_signatures;
 
 
-def conformity(data_loc, sig, n_neighbors):
+def conformity(data_loc, sig_values, n_neighbors):
     """
     Score each sample based on how similar its signature score is to its neighborhood
     
@@ -155,7 +155,7 @@ def conformity(data_loc, sig, n_neighbors):
     ---------
     data_loc : array-like, shape (Num_Dimensions, Num_Samples)
         locations of points used to calculate neareset neighbors
-    sig : array-like, 1D, shape (Num_Samples)
+    sig_values : array-like, 1D, shape (Num_Samples)
         Signature value for each sample.  Get using Signature.eval_data
     n_neighbors : int
         Number of neighbors to use in defining the neighborhood
@@ -173,7 +173,7 @@ def conformity(data_loc, sig, n_neighbors):
     
     distances, indices = nbrs.kneighbors(data_loc.T);
     
-    neighborhood = sig[indices];
+    neighborhood = sig_values[indices];
 
 
     ##Weighted mean of neighborhood point signatures defines a prediction
@@ -185,11 +185,70 @@ def conformity(data_loc, sig, n_neighbors):
     
     
     ##Neighborhood dissimilarity score = |actual - predicted|
-    dissimilarity = np.abs(sig - neighborhood_prediction);
+    dissimilarity = np.abs(sig_values - neighborhood_prediction);
     
     return dissimilarity;
 
+def conformity_with_p(data_loc, sig_values, n_neighbors):
+    """
+    Score each sample based on how similar its signature score is to its neighborhood
+    Then compare similarity to shuffled data and derive a p-value
     
+    Parameters
+    ---------
+    data_loc : array-like, shape (Num_Dimensions, Num_Samples)
+        locations of points used to calculate neareset neighbors
+    sig_values : array-like, 1D, shape (Num_Samples)
+        Signature value for each sample.  Get using Signature.eval_data
+    n_neighbors : int
+        Number of neighbors to use in defining the neighborhood
+    
+    Returns
+    -------
+    dissimilarity : array-like, 1D, shape (Num_Samples)
+        Score for each sample as to how dissimilar it is from neighboring points
+    p_value : float
+        Probability that the scores are significant
+        
+    """
+    
+    #Incremenet n_neighbors since it counts a point as it's own neighbor
+    nbrs = NearestNeighbors(n_neighbors=n_neighbors+1, algorithm='ball_tree');
+    nbrs.fit(data_loc.T);
+    
+    distances, indices = nbrs.kneighbors(data_loc.T);
+    
+    neighborhood = sig_values[indices];
+
+
+    ##Weighted mean of neighborhood point signatures defines a prediction
+    ##Weights are 1/distance
+    weights = distances ** -1;
+
+    neighborhood_prediction = np.sum(neighborhood[:,1:] * weights[:,1:]) \
+                / np.sum(weights[:,1:]);
+    
+    
+    ##Neighborhood dissimilarity score = |actual - predicted|
+    dissimilarity = np.abs(sig_values - neighborhood_prediction);
+    
+    NUM_RAND_TRIALS = 100
+    random_dissimilarity = np.zeros(NUM_RAND_TRIALS);
+    
+    for i in range(NUM_RAND_TRIALS):
+        random_dissimilarity[i] = np.median(
+                                    np.abs(
+        np.random.permutation(sig_values) - neighborhood_prediction
+        ));
+        
+    #Compare number of times the random permutation has a better (median) sig score
+    #than the signature score of non-shuffled.  Ratio is p value.
+    count_random_wins = np.count_nonzero(random_dissimilarity < dissimilarity);
+    p_value = (1 + count_random_wins) / (1 + NUM_RAND_TRIALS);
+    
+    return dissimilarity, p_value
+
+
 class Signature:
     
     def __init__(self, sig_dict, signed, filename, name):
@@ -222,7 +281,10 @@ class Signature:
             
         pdata = data * sig_vector;
         
-        return pdata.sum(axis = 0);
+        sig_scores = pdata.sum(axis=0);
+        sig_scores = sig_scores / np.count_nonzero(sig_vector);        
+        
+        return sig_scores;
         
     def _sig_indices(self, genes):
         """Helper method
