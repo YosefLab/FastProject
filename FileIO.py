@@ -55,6 +55,16 @@ def read_matrix(filename='', delimiter = '\t'):
     
     return (data, row_labels, col_labels);
 
+def write_matrix(filename, data, row_labels, col_labels):
+    ff = open(filename, 'w');
+    
+    ff.write('\t' + '\t'.join(col_labels) + '\n'); #Extra tab so col labels line up with data
+    for i in range(data.shape[0]):
+        ff.write(row_labels[i] + '\t');
+        ff.write('\t'.join(["%.5f" % num for num in data[i,:]]));
+        ff.write('\n');
+    
+    ff.close();  
     
 def read_matrix_nolabels(filename = '', delimiter = '\t'):
     
@@ -75,3 +85,12 @@ def read_matrix_nolabels(filename = '', delimiter = '\t'):
     col_labels = [str(i) for i in xrange(num_cols)];
     
     return (data, row_labels, col_labels);
+    
+def write_signature_scores(filename, sig_scores, col_labels):
+    row_labels = sig_scores.keys();
+    data_matrix = np.zeros((len(row_labels), len(col_labels)));
+    for i, row in enumerate(row_labels):
+        data_matrix[i,:] = sig_scores[row];
+    
+    write_matrix(filename, data_matrix, row_labels, col_labels);
+
