@@ -190,50 +190,47 @@ def plot_em_norm_distribution(gamma, mu_l, mu_h, st_l, st_h, data, i):
     scatter(data[i,:], gamma[i,:], color='red');
     ylim(0, 1.1);
     
+def probability_transform(data, data_original, genes_original, housekeeping_file):
+    """ Process data to evaluate probability of expression """
+    (prob, mu_h) = probability_of_expression(data);
+    prob = make_monotonic(prob, data);
+    
+    (fit_func, params) = create_false_neg_map(data_original, genes_original, housekeeping_file);
+    
+    #fit_func is the fitting function of the form fit_func(mu_h, param[0], param[1], etc)
+    #params is a matrix with parameters for each sample.  Size is Num_Params x Num_samples
+    
+    fn_prob = np.zeros(prob.shape)
+    
+    for i in range(data.shape[1]):
+        fn_prob[:,i] = fit_func(data[:,i], params[0,i], params[1,i])
+    
+    prob2 = prob + (1-prob)*fn_prob;
+    
+    return prob2
 
-
-#Could be used in make_monotonic.  However, I'm avoiding reliance on numba
-#@jit   
-#def find_max(gamma):
-#    max_vals = np.zeros(gamma.shape[0]);
-#    max_j = np.zeros(gamma.shape[0]);    
-#    nR = gamma.shape[0];
-#    nC = gamma.shape[1];    
+#def utility_plotting_routine(i, cutoff):
+#    #cutoff = 5;
+#    #i = 1;
+#    vals = data[i,:];
+#    vals = vals[vals != 0];
 #    
-#    for i in range(nR):
-#        for j in range(nC):
-#            if(j == 0):
-#                max_vals[i] = gamma[i,j];
-#                max_j[i] = j;
-#            else:
-#                if(gamma[i,j] > max_vals[i]):
-#                    max_vals[i] = gamma[i,j];
-#                    max_j[i] = j;
-#                    
-#    return max_j;
-
-def do_the_thing(i, cutoff):
-    #cutoff = 5;
-    #i = 1;
-    vals = data[i,:];
-    vals = vals[vals != 0];
-    
-    (gamma, mu_l, mu_h, st_l, st_h, Pi, L) = em.em_exp_norm_mixture(vals,cutoff);
-    mu_l.shape = 1;
-    mu_h.shape = 1;
-    st_h.shape = 1;
-    
-    domain = np.linspace(0,10,10000);
-    p_low = exp(-1*domain/mu_l)/mu_l;
-    
-    p_high = exp(-1 * (domain - mu_h)**2 / (2*st_h**2)) / st_h / np.sqrt(2*np.pi);
-    
-    
-    f = figure();
-    (n, bins, patches) = hist(vals, range=(0,10),bins=100, normed=True);
-    plot(domain, p_low, color='green');
-    plot(domain, p_high, color='green');
-    scatter(vals, gamma, color='red');
-    ylim(0, 1.1);
-    
-    display(f)
+#    (gamma, mu_l, mu_h, st_l, st_h, Pi, L) = em.em_exp_norm_mixture(vals,cutoff);
+#    mu_l.shape = 1;
+#    mu_h.shape = 1;
+#    st_h.shape = 1;
+#    
+#    domain = np.linspace(0,10,10000);
+#    p_low = exp(-1*domain/mu_l)/mu_l;
+#    
+#    p_high = exp(-1 * (domain - mu_h)**2 / (2*st_h**2)) / st_h / np.sqrt(2*np.pi);
+#    
+#    
+#    f = figure();
+#    (n, bins, patches) = hist(vals, range=(0,10),bins=100, normed=True);
+#    plot(domain, p_low, color='green');
+#    plot(domain, p_high, color='green');
+#    scatter(vals, gamma, color='red');
+#    ylim(0, 1.1);
+#    
+#    display(f)
