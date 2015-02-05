@@ -127,7 +127,7 @@ def filter_housekeeping(data, genes, housekeeping_file=""):
     housekeeping_files = list();
     
     if(housekeeping_file != ""): #If file specified, use that file
-        housekeeping_files.append(os.path.join(housekeeping_dir, housekeeping_file));
+        housekeeping_files.append(housekeeping_file);
     else:  #Otherwise, use all the files!
         files = os.listdir(housekeeping_dir);
         for ff in files:

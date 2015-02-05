@@ -66,8 +66,8 @@ def create_false_neg_map(data, genes, housekeeping_file=""):
     housekeeping_files = list();
     
     if(housekeeping_file != ""): #If file specified, use that file
-        housekeeping_files.append(os.path.join(housekeeping_dir, housekeeping_file));
-    else:  #Otherwise, use all the files!
+        housekeeping_files.append(housekeeping_file);
+    else:  #Otherwise, use all the files in housekeeping directory
         files = os.listdir(housekeeping_dir);
         for ff in files:
             housekeeping_files.append(os.path.join(housekeeping_dir, ff));
