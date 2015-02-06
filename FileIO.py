@@ -5,6 +5,7 @@ Created on Sat Jan 03 21:29:39 2015
 @author: daved_000
 """
 import numpy as np;
+import matplotlib.pyplot as plt;
 
 def read_matrix(filename='', delimiter = '\t'):
     """Reads data in matrix format from <filename>  Returns data_matrix, 
@@ -94,3 +95,25 @@ def write_signature_scores(filename, sig_scores, col_labels):
     
     write_matrix(filename, data_matrix, row_labels, col_labels);
 
+def write_scatter_plot(filename, x_coords, y_coords, colors=[], xlabel='', ylabel='', title=''):
+    #Add .png extension if filename lacks it
+    if(not filename.endswith(".png")):
+        filename = filename + ".png";
+        
+    ff = plt.figure();
+    if(len(colors) == len(x_coords)):
+        plt.scatter(x_coords, y_coords, c=colors);
+        plt.colorbar();
+    else:
+        plt.scatter(x_coords, y_coords);
+    
+    plt.xlabel(xlabel);
+    plt.ylabel(ylabel);
+    plt.title(title);
+    
+    plt.savefig(filename, bbox_inches='tight');
+
+    plt.close(ff);
+
+    
+    
