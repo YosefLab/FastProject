@@ -126,6 +126,36 @@ while(True):
         print("Error : invalid input.  Enter Y or N");
         continue;
 
+#%% PCA transform?
+while(True):
+    
+    choice = raw_input("Transform data into top 30 Pinciple Components? [y/n]: ");
+    if(choice.lower()[0] == 'y'):
+        #Transform based on probabilities
+        data = Projections.perform_PCA(data, 30);
+        
+        #Prompt to save data
+        while(True):
+            print();
+            choice = raw_input("Save result to file? [y/n]: ");
+            if(choice.lower()[0] == 'y'):
+                #Save data
+                out_file = raw_input("Enter name of file to create : ");
+                FileIO.write_matrix(out_file, data, genes, cells)
+                break;
+            elif(choice.lower()[0] == 'n'):
+                break;
+            else:
+                print("Error : invalid input.  Enter Y or N");
+                continue;
+        break;
+    elif(choice.lower()[0] == 'n'):
+        break;
+    else:
+        print("Error : invalid input.  Enter Y or N");
+        continue;
+
+
 #%% Signature file
 sigs = [];
 USE_SIGNATURES = False;
