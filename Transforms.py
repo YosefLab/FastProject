@@ -4,7 +4,7 @@ Created on Wed Jan 07 15:12:02 2015
 
 @author: David
 """
-
+from __future__ import print_function;
 
 
 from DimReduce.Stats import em;
@@ -192,9 +192,14 @@ def plot_em_norm_distribution(gamma, mu_l, mu_h, st_l, st_h, data, i):
     
 def probability_transform(data, data_original, genes_original, housekeeping_file):
     """ Process data to evaluate probability of expression """
+    
+    print()
+    print('Fitting expression data to exp/norm mixture model');
     (prob, mu_h) = probability_of_expression(data);
     prob = make_monotonic(prob, data);
     
+    print();
+    print('Correcting for false-negatives using housekeeping gene levels');
     (fit_func, params) = create_false_neg_map(data_original, genes_original, housekeeping_file);
     
     #fit_func is the fitting function of the form fit_func(mu_h, param[0], param[1], etc)
@@ -203,7 +208,7 @@ def probability_transform(data, data_original, genes_original, housekeeping_file
     fn_prob = np.zeros(prob.shape)
     
     for i in range(data.shape[1]):
-        fn_prob[:,i] = fit_func(data[:,i], params[0,i], params[1,i])
+        fn_prob[:,i] = fit_func(mu_h, params[0,i], params[1,i])
     
     prob2 = prob + (1-prob)*fn_prob;
     
