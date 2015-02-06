@@ -4,6 +4,7 @@ Created on Wed Jan 21 16:34:49 2015
 
 @author: David
 """
+from __future__ import division;
 
 import numpy as np;
 from sklearn.neighbors import NearestNeighbors
@@ -236,14 +237,21 @@ def conformity_with_p(data_loc, sig_values, n_neighbors):
     random_dissimilarity = np.zeros(NUM_RAND_TRIALS);
     
     for i in range(NUM_RAND_TRIALS):
+        random_sig_values = np.random.permutation(sig_values);
+
+        neighborhood = random_sig_values[indices];
+
+        neighborhood_prediction = np.sum(neighborhood[:,1:] * weights[:,1:]) \
+                / np.sum(weights[:,1:]);
+                
         random_dissimilarity[i] = np.median(
                                     np.abs(
-        np.random.permutation(sig_values) - neighborhood_prediction
+        random_sig_values - neighborhood_prediction
         ));
         
     #Compare number of times the random permutation has a better (median) sig score
     #than the signature score of non-shuffled.  Ratio is p value.
-    count_random_wins = np.count_nonzero(random_dissimilarity < dissimilarity);
+    count_random_wins = np.count_nonzero(random_dissimilarity < np.median(dissimilarity));
     p_value = (1 + count_random_wins) / (1 + NUM_RAND_TRIALS);
     
     return dissimilarity, p_value

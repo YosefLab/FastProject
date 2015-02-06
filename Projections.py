@@ -24,7 +24,7 @@ def write_projection_file(filename, sample_labels, projections):
         File to write
     sample_labels : list(String) len=Num_Samples
         Labels for each sample
-    projections : dict(string, (Num_Samples x 2) numpy.ndarray)
+    projections : dict(string, (2 x Num_Samples) numpy.ndarray)
         dictionary mapping the projection type (e.g. "tSNE") to an array containing
         the two-dimensional coordinates for each sample in the projection.
           
@@ -34,11 +34,11 @@ def write_projection_file(filename, sample_labels, projections):
     
     for proj in projections.keys():
         coordinates = projections[proj];
-        for i in range(coordinates.shape[0]):
+        for i in range(coordinates.shape[1]):
             ff.write(proj + '\t');
             ff.write(sample_labels[i] + '\t');
-            ff.write('{:.5f}'.format(coordinates[i,0]) + '\t');
-            ff.write('{:.5f}'.format(coordinates[i,1]) + '\t');
+            ff.write('{:.5f}'.format(coordinates[0,i]) + '\t');
+            ff.write('{:.5f}'.format(coordinates[1,i]) + '\t');
             ff.write('\n');
     
     ff.close();
@@ -55,7 +55,7 @@ def generate_projections(data):
 
     Returns
     -------
-    projections : dict(string, (Num_Samples x 2) numpy.ndarray)
+    projections : dict(string, (2 x Num_Samples) numpy.ndarray)
         dictionary mapping the projection type (e.g. "tSNE") to an array containing
         the two-dimensional coordinates for each sample in the projection.
           
@@ -129,6 +129,8 @@ def generate_projections(data):
         ave_r2 = (coordinates*coordinates).mean(axis=0).sum();
         
         coordinates = coordinates / np.sqrt(ave_r2);
+        
+        coordinates = coordinates.T;        
         
         projections[p] = coordinates;
     
