@@ -6,11 +6,16 @@ Created on Sun Dec 14 12:29:19 2014
 """
 
 from numpy import *
+from DimReduce.Utils import ProgressBar
 
 #zmat is Genes x Samples
 #cutoff is Genes x 1 - represents the initial cutoff between normal and exponential distributions
 
-def em_exp_norm_mixture(zmat, cutoff):
+def em_exp_norm_mixture(zmat, cutoff, progressbar = True):
+    max_iter = 150;
+
+    if(progressbar): pbar = ProgressBar(max_iter);
+    
     #promote to 2d if single gene given
     if(zmat.ndim == 1):
         zmat = zmat.reshape(1, zmat.shape[0]);
@@ -32,7 +37,7 @@ def em_exp_norm_mixture(zmat, cutoff):
     p_low = zeros(zmat.shape);
     p_high = zeros(zmat.shape);    
     
-    for niter in arange(0,150)+1:
+    for niter in arange(0,max_iter)+1:
         gamma_prev = gamma;
         #E
         mu_l2 = tile(mu_l, (1,zmat.shape[1]));
@@ -66,11 +71,15 @@ def em_exp_norm_mixture(zmat, cutoff):
         #Stop
         to_stop = (gamma_prev > 0.5) == (gamma > 0.5);
         d=sum(to_stop) / float(size(to_stop));
-        if niter == 1: print mu_l, mu_h, st_l, st_h    
-        print 'Iteration: ', niter, ' L: ', sum(L);
+        
+        if(progressbar): pbar.update();
+        
+        #if niter == 1: print mu_l, mu_h, st_l, st_h    
+        #print 'Iteration: ', niter, ' L: ', sum(L);
         #if d>0.95:
             #break;
-
+    if(progressbar): pbar.complete();
+    
     return (gamma, mu_l, mu_h, st_l, st_h, Pi, L);
 
 

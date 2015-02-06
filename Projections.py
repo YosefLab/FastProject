@@ -12,6 +12,8 @@ from sklearn.manifold import LocallyLinearEmbedding
 from sklearn.manifold import MDS
 from sklearn.manifold import SpectralEmbedding
 
+from DimReduce.Utils import ProgressBar;
+
 import numpy as np;
 
 def write_projection_file(filename, sample_labels, projections):
@@ -50,7 +52,7 @@ def generate_projections(data):
     
     Parameters
     ----------
-    data : (Num_Features x Num Samples) numpy.ndarray 
+    data : (Num_Features x Num_Samples) numpy.ndarray 
         Matrix containing data to project into 2 dimensions
 
     Returns
@@ -61,6 +63,7 @@ def generate_projections(data):
           
     """
     
+    pbar = ProgressBar(7);
     
     projections = dict();
     
@@ -71,6 +74,7 @@ def generate_projections(data):
     result = result[:,[0,1]]
   
     projections['PCA'] = result;
+    pbar.update();
       
     # ICA
     
@@ -78,6 +82,7 @@ def generate_projections(data):
     result = ica.fit_transform(data.T);
     
     projections['ICA'] = result;
+    pbar.update();
     
     # tSNE, but with built-in from sklearn
     
@@ -85,6 +90,7 @@ def generate_projections(data):
     result = model.fit_transform(data.T);
     
     projections['tSNE'] = result;
+    pbar.update();
     
     # ISOMap
     
@@ -92,6 +98,7 @@ def generate_projections(data):
     result = model.fit_transform(data.T);
     
     projections['ISOMap'] = result;
+    pbar.update();
     
     # LLE
     
@@ -99,6 +106,7 @@ def generate_projections(data):
     result = model.fit_transform(data.T);
     
     projections['LLE'] = result;
+    pbar.update();
     
     # MDS
     
@@ -106,6 +114,7 @@ def generate_projections(data):
     result = model.fit_transform(data.T);
     
     projections['MDS'] = result;
+    pbar.update();
         
     # Spectral Embedding
     
@@ -113,6 +122,7 @@ def generate_projections(data):
     result = model.fit_transform(data.T);
     
     projections['Spectral Embedding'] = result;
+    pbar.update();
     
     # Add new projections here!
 

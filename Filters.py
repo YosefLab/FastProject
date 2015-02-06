@@ -4,7 +4,7 @@ Created on Mon Dec 15
 
 @author: David DeTomaso
 """
-
+from __future__ import print_function;
 
 #Compute the distance matrix between samples
 #Input:  Data = matrix of NumGenes x NumSamples
@@ -13,6 +13,7 @@ Created on Mon Dec 15
 import numpy as np
 import os;
 from DimReduce.Stats import hdt
+from DimReduce.Utils import ProgressBar
 
 this_directory = os.path.dirname(os.path.abspath(__file__));
 
@@ -35,18 +36,25 @@ def filter_genes_hdt(data, genes, p_val):
     #perform Hartigans dip test on the rest of the rows
     
     if(p_val > .5):
-        print "Error, p_val must be less than 0.5"
+        print("Error, p_val must be less than 0.5")
         return;
     
+    print();
+    print('Filtering using HDT with p<' +str(p_val));        
+    
     #first with cutoff p=.5 and 1 iteration
-    print "First pass";
+    print();
+    print('First Pass');
     p_cut = 0.5;
     hdt_p = np.zeros(data.shape[0]);
+    pp = ProgressBar(data.shape[0]);
     for i in np.arange(data.shape[0]):
       (dip, p, xlow, xup) = hdt.DipTestSig(data[i,:],1);
       hdt_p[i] = p;
-      if(np.mod(i,data.shape[0]/20)==0):
-          print round(float(i)/data.shape[0]*100.0), '%'
+      pp.update();
+    
+    pp.complete();
+
     
     keep_indices = np.nonzero(hdt_p <= p_cut)[0];
     (data, genes) = filter_genes_indices(data,genes,keep_indices);
@@ -54,14 +62,17 @@ def filter_genes_hdt(data, genes, p_val):
     
     
     #second with cutoff p=p_val and 10 iterations
-    print "Second pass";
+    print();
+    print('Second Pass');
+    pp = ProgressBar(data.shape[0]);
     p_cut = p_val;
     hdt_p = np.zeros(data.shape[0]);
     for i in np.arange(data.shape[0]):
       (dip, p, xlow, xup) = hdt.DipTestSig(data[i,:],10);
       hdt_p[i] = p;
-      if(np.mod(i,data.shape[0]/20)==0):
-          print round(float(i)/data.shape[0]*100.0), '%'
+      pp.update();
+
+    pp.complete();    
     
     keep_indices = np.nonzero(hdt_p <= p_cut)[0];
     (data, genes) = filter_genes_indices(data,genes,keep_indices);

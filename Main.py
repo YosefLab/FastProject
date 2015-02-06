@@ -15,6 +15,7 @@ from DimReduce import FileIO;
 from DimReduce import Transforms;
 from DimReduce import Signatures;
 from DimReduce import Projections;
+from DimReduce.Utils import ProgressBar;
 import os;
 import numpy as np;
 
@@ -171,12 +172,14 @@ if(USE_SIGNATURES):
 if(USE_SIGNATURES):
     print();
     print("Evaluating signature scores on samples...");
-    print();
     
     sig_scores = dict();
     
+    pbar = ProgressBar(len(sigs));
     for sig in sigs:
         sig_scores[sig.name] = sig.eval_data(data, genes);
+        pbar.update();
+    pbar.complete();
         
     #Prompt to save data
     while(True):
@@ -216,43 +219,64 @@ while(True):
         print("Error : invalid input.  Enter Y or N");
         continue;
 
-#%% Evaluating signatures against projections
-N_NEIGHBORS = 5;
-sig_proj_matrix   = np.zeros((len(sigs),len(projections)));
-sig_proj_matrix_p = np.zeros((len(sigs),len(projections)));
-
-sp_row_labels = sig_scores.keys();
-sp_col_labels = projections.keys();
-
-for i, sig in enumerate(sp_row_labels):
-    for j, proj in enumerate(sp_col_labels):
-        print(sig, ' : ', proj);
-        dissimilarity, p = Signatures.conformity_with_p(projections[proj],sig_scores[sig],N_NEIGHBORS);
-        sig_proj_matrix[i,j] = np.median(dissimilarity);
-        sig_proj_matrix_p[i,j] = p;
-
-
-#Output matrix of p-values for conformity scores
-FileIO.write_matrix("p_matrix.txt",sig_proj_matrix_p, sp_row_labels, sp_col_labels);
-
-
-#%% Output top N plots
-N_PLOTS = 30;
-flat_indices = np.argsort(sig_proj_matrix_p, axis=None);
-row_indices, col_indices = np.unravel_index(flat_indices, sig_proj_matrix_p.shape);
-
-for i in range(N_PLOTS):
-    r = row_indices[i];
-    c = col_indices[i];
-    
-    sig_name = sp_row_labels[r];
-    proj_name = sp_col_labels[c];
-    
+#%% Output Projection Plots
+print();
+print('Outputting Projection Plots to File');
+pp = ProgressBar(len(projections));
+for proj_name in projections:
     FileIO.write_scatter_plot(
-        filename = sig_name+'_'+proj_name,
-        x_coords = projections[proj_name][0,:], 
+        filename = proj_name,
+        x_coords = projections[proj_name][0,:],
         y_coords = projections[proj_name][1,:],
-        colors   = sig_scores[sig_name],
-        title    = proj_name + '\n' + sig_name + '\np = ' + '{:.3f}'.format(sig_proj_matrix_p[r,c]));
+        xlabel = 'Dim 1',
+        ylabel = 'Dim 2',
+        title = proj_name);
+    pp.update();
+pp.complete();
 
-
+#%% Evaluating signatures against projections
+if(USE_SIGNATURES):
+    N_NEIGHBORS = 5;
+    sig_proj_matrix   = np.zeros((len(sigs),len(projections)));
+    sig_proj_matrix_p = np.zeros((len(sigs),len(projections)));
+    
+    sp_row_labels = sig_scores.keys();
+    sp_col_labels = projections.keys();
+    
+    for i, sig in enumerate(sp_row_labels):
+        for j, proj in enumerate(sp_col_labels):
+            print(sig, ' : ', proj);
+            dissimilarity, p = Signatures.conformity_with_p(projections[proj],sig_scores[sig],N_NEIGHBORS);
+            sig_proj_matrix[i,j] = np.median(dissimilarity);
+            sig_proj_matrix_p[i,j] = p;
+    
+    
+    #Output matrix of p-values for conformity scores
+    FileIO.write_matrix("p_matrix.txt",sig_proj_matrix_p, sp_row_labels, sp_col_labels);
+    
+    
+    #%% Output top N plots
+    N_PLOTS = 30;
+    flat_indices = np.argsort(sig_proj_matrix_p, axis=None);
+    row_indices, col_indices = np.unravel_index(flat_indices, sig_proj_matrix_p.shape);
+    
+    print();
+    print('Outputting Projection-Signature Plots to File');
+    pp = ProgressBar(N_PLOTS);
+    for i in range(N_PLOTS):
+        r = row_indices[i];
+        c = col_indices[i];
+        
+        sig_name = sp_row_labels[r];
+        proj_name = sp_col_labels[c];
+        
+        FileIO.write_scatter_plot(
+            filename = sig_name+'_'+proj_name,
+            x_coords = projections[proj_name][0,:], 
+            y_coords = projections[proj_name][1,:],
+            colors   = sig_scores[sig_name],
+            title    = proj_name + '\n' + sig_name + '\np = ' + '{:.3f}'.format(sig_proj_matrix_p[r,c]));
+        
+        pp.update();
+        
+    pp.complete();
