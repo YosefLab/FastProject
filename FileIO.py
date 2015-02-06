@@ -100,6 +100,7 @@ def write_scatter_plot(filename, x_coords, y_coords, colors=[], xlabel='', ylabe
     if(not filename.endswith(".png")):
         filename = filename + ".png";
         
+    plt.ioff();
     ff = plt.figure();
     if(len(colors) == len(x_coords)):
         plt.scatter(x_coords, y_coords, c=colors);
@@ -115,5 +116,3 @@ def write_scatter_plot(filename, x_coords, y_coords, colors=[], xlabel='', ylabe
 
     plt.close(ff);
 
-    
-    
