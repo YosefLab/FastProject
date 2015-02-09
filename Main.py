@@ -22,6 +22,7 @@ import time;
 import sys;
 from optparse import OptionParser
 
+PCA_TRANSFORM = False;
 
 parser = OptionParser('usage: %prog [options] data_file');
 parser.add_option("-k", "--housekeeping", metavar="FILE", 
@@ -176,7 +177,6 @@ while(True):
         continue;
 
 #%% PCA transform?
-PCA_TRANSFORM = False;
 while(True):
     
     if(options.interactive and (not options.pca)):

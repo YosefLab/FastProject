@@ -251,7 +251,7 @@ def conformity_with_p(data_loc, sig_values, n_neighbors):
         
     #Compare number of times the random permutation has a better (median) sig score
     #than the signature score of non-shuffled.  Ratio is p value.
-    count_random_wins = np.count_nonzero(random_dissimilarity < np.median(dissimilarity));
+    count_random_wins = np.count_nonzero(random_dissimilarity <= np.median(dissimilarity));
     p_value = (1 + count_random_wins) / (1 + NUM_RAND_TRIALS);
     
     return dissimilarity, p_value
