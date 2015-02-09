@@ -208,11 +208,11 @@ def probability_transform(data, data_original, genes_original, housekeeping_file
     fn_prob = np.zeros(prob.shape)
     
     for i in range(data.shape[1]):
-        fn_prob[:,i] = fit_func(mu_h, params[0,i], params[1,i])
+        fn_prob[:,i] = fit_func(mu_h, params[0,i], params[1,i]).ravel();
     
     prob2 = prob + (1-prob)*fn_prob;
     
-    return prob2
+    return prob2, fn_prob
 
 #def utility_plotting_routine(i, cutoff):
 #    #cutoff = 5;

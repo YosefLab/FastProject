@@ -148,7 +148,7 @@ def generate_projections(data):
 
     return projections; 
 
-def perform_PCA(data, N=0):
+def perform_PCA(data, row_labels, N=0):
     """
     Projects data into 2 dimensions using a variety of linear and non-linear methods
     
@@ -156,6 +156,8 @@ def perform_PCA(data, N=0):
     ----------
     data : (Num_Features x Num_Samples) numpy.ndarray 
         Matrix containing data to project into 2 dimensions
+    row_labels : list(String) len=Num_Features
+        Former row labels
     N : int
         Number of Principle Components to retain
 
@@ -163,6 +165,8 @@ def perform_PCA(data, N=0):
     -------
     pca_data : (Num_Components x Num_Samples) numpy.ndarray
         Data transformed using PCA.  Num_Components = Num_Samples
+    row_labels : list(String) len=N
+        New row labels since former labels no longer make sense
           
     """
     # PCA
@@ -175,5 +179,7 @@ def perform_PCA(data, N=0):
     if(N != 0):
         pca_data = pca_data[:,range(N)];
     
-    return pca_data.T
+    row_labels = ["PC"+str(i+1) for i in range(N)];    
+    
+    return pca_data.T, row_labels;
     
