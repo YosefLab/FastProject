@@ -18,8 +18,30 @@ from DimReduce import Projections;
 from DimReduce.Utils import ProgressBar;
 import os;
 import numpy as np;
+import time;
+import sys;
+from optparse import OptionParser
 
-housekeeping_filename = '';
+
+parser = OptionParser('usage: %prog [options] data_file');
+parser.add_option("-k", "--housekeeping", metavar="FILE", 
+                  help="Read list of housekeeping genes from FILE.  Uses default list if not specified");
+parser.add_option("-s", "--signatures", metavar="FILE",
+                  help="Loads signatures from FILE.  Otherwise, signature analysis is skipped in unless in interactive mode.");
+parser.add_option("-f","--filters",default="0",help="""Specifies filters to be used on genes\n\n1. Remove Housekeeping
+2. Threshold (Active in at least 20% of samples)
+3. Bimodal (Using Hartigans Dip Test p<0.05
+
+e.g. -f 1, or -f 123""");
+parser.add_option("-p","--probability", action="store_true", default=False, help="Projects using probability of expression rather than log expression level");
+parser.add_option("-c","--pca", action="store_true", default=False, help="Reduces to a smaller number of principal components before projection");
+parser.add_option("-o", "--output", action="store_true", default=False, help="Outputs data after filtering and any transforms");
+parser.add_option("-i", "--interactive", action="store_true", default=False, help="Prompts options via command line instead");
+
+(options, args) = parser.parse_args();
+
+housekeeping_filename = options.housekeeping if(options.housekeeping) else '';
+
 def get_housekeeping_file():
     fn = housekeeping_filename;
     if(len(fn) == 0):
@@ -36,7 +58,15 @@ def get_housekeeping_file():
 
 #%% Read expression data from file
 while(True):
-    filename = raw_input("Enter name of data file: ");
+    if(options.interactive):
+        filename = raw_input("Enter name of data file: ");
+    else:
+        if(len(args) > 0):
+            filename = args[0];
+        else:
+            print();
+            print("Argument Error:  data_file not specified.\nExiting...");
+            sys.exit();
     
     if(os.path.isfile(filename)):
         (data, genes, cells) = FileIO.read_matrix(filename);
@@ -52,27 +82,54 @@ original_data = data;
 original_genes = genes;
 original_cells = cells;
 
+#Create directory for all outputs
+tt = time.localtime();
+dot_index = filename.rfind('.');
+if(dot_index > -1):
+    dir_name = filename[0:dot_index];
+else:
+    dir_name = filename;
+
+dir_name = dir_name + '_' + str(tt.tm_year) + '{:0>2d}'.format(tt.tm_mon) + '{:0>2d}'.format(tt.tm_mday);
+dir_name = dir_name + '_' + '{:0>2d}'.format(tt.tm_hour) + '{:0>2d}'.format(tt.tm_min) + '{:0>2d}'.format(tt.tm_sec);
+
+os.makedirs(dir_name);
+
 #%% Filtering genes
 while(True):  #Loop exited with 'break', see below
     
     original = data.shape;    
-    
-    print();    
-    print("Filtering Options Available");
-    print();
-    print("\t0.  Continue")
-    print("\t1.  Remove housekeeping genes");
-    print("\t2.  Remove inactive genes");
-    print("\t3.  Filter genes for biomadility using HDT");
-    print("\t4.  Save result of filtering to file");
-    
-    choice = raw_input("Make a selection: ");
-    
-    try:
-        choice = int(choice);
-    except ValueError:
-        print("Error : Bad value.  Enter a number")
-        continue;
+    if(options.interactive):
+        print();    
+        print("Filtering Options Available");
+        print();
+        print("\t0.  Continue")
+        print("\t1.  Remove housekeeping genes");
+        print("\t2.  Remove inactive genes");
+        print("\t3.  Filter genes for biomadility using HDT");
+        print("\t4.  Save result of filtering to file");
+        print();
+        
+        choice = raw_input("Make a selection: ");
+        
+        try:
+            choice = int(choice);
+        except ValueError:
+            print("Error : Bad value.  Enter a number")
+            continue;
+    else:
+        if(len(options.filters) == 0):
+            choice = 0;
+        else:
+            choice = options.filters[0];
+            options.filters = options.filters[1:];
+            try:
+                choice = int(choice);
+                if(choice > 3):
+                    raise ValueError;
+            except ValueError:
+                print("Error:  Bad option for -f, --filters.  Exiting");
+                sys.exit();
     
     if(choice==0):
         break;
@@ -85,7 +142,7 @@ while(True):  #Loop exited with 'break', see below
         (data, genes) = Filters.filter_genes_hdt(data, genes, 0.05);
     elif(choice==4): #Save to file
         out_file = raw_input("Enter name of file to create : ");
-        FileIO.write_matrix(out_file, data, genes, cells);
+        FileIO.write_matrix(dir_name + os.sep + out_file, data, genes, cells);
         print("Data saved to " + out_file);
     else:
         print("Error : Invalid Choice\n");
@@ -96,58 +153,40 @@ while(True):  #Loop exited with 'break', see below
         print("Removed ", original[0]-data.shape[0], " Genes");
         print(data.shape[0], " Genes retained");
     
-#%% Probability transform?
+#%% Probability transform
+housekeeping_filename = get_housekeeping_file();
+prob, fn_prob = Transforms.probability_transform(data, original_data, original_genes, housekeeping_filename);    
+        
 while(True):
     
-    choice = raw_input("Transform data to probability values? [y/n]: ");
-    if(choice.lower()[0] == 'y'):
-        #Transform based on probabilities
-        housekeeping_filename = get_housekeeping_file();
-        data = Transforms.probability_transform(data, original_data, original_genes, housekeeping_filename);
+    if(options.interactive and (not options.probability)):
+        choice = raw_input("Transform data to probability values? [y/n]: ");
+    else:
+        choice = 'y' if options.probability else 'n';
         
-        #Prompt to save data
-        while(True):
-            print();
-            choice = raw_input("Save result to file? [y/n]: ");
-            if(choice.lower()[0] == 'y'):
-                #Save data
-                out_file = raw_input("Enter name of file to create : ");
-                FileIO.write_matrix(out_file, data, genes, cells)
-                break;
-            elif(choice.lower()[0] == 'n'):
-                break;
-            else:
-                print("Error : invalid input.  Enter Y or N");
-                continue;
+    if(choice.lower()[0] == 'y'):
+        data = prob;
         break;
+        
     elif(choice.lower()[0] == 'n'):
         break;
+
     else:
         print("Error : invalid input.  Enter Y or N");
         continue;
 
 #%% PCA transform?
+PCA_TRANSFORM = False;
 while(True):
     
-    choice = raw_input("Transform data into top 30 Pinciple Components? [y/n]: ");
+    if(options.interactive and (not options.pca)):
+        choice = raw_input("Reduce data into top 30 pincipal components before projection? [y/n]: ");
+    else:
+        choice = 'y' if options.pca else 'n';
+    
     if(choice.lower()[0] == 'y'):
-        #Transform based on probabilities
-        data = Projections.perform_PCA(data, 30);
-        
-        #Prompt to save data
-        while(True):
-            print();
-            choice = raw_input("Save result to file? [y/n]: ");
-            if(choice.lower()[0] == 'y'):
-                #Save data
-                out_file = raw_input("Enter name of file to create : ");
-                FileIO.write_matrix(out_file, data, genes, cells)
-                break;
-            elif(choice.lower()[0] == 'n'):
-                break;
-            else:
-                print("Error : invalid input.  Enter Y or N");
-                continue;
+        #Transform into top N principal components
+        PCA_TRANSFORM = True;
         break;
     elif(choice.lower()[0] == 'n'):
         break;
@@ -155,14 +194,76 @@ while(True):
         print("Error : invalid input.  Enter Y or N");
         continue;
 
+#%% Prompt: Save transformed data to file
+while(True):
+    
+    if(options.interactive and (not options.output)):
+        print();
+        choice = raw_input("Save transformed data to file? [y/n]: ");
+    else:
+        choice = 'y' if options.output else 'n';
+    
+    if(choice.lower()[0] == 'y'):
+        #Save data
+        lastdot = filename.rfind('.');
+        if(lastdot > -1):
+            out_file = filename[0:lastdot] + '_xfrm' + filename[lastdot:];
+        else:
+            out_file = filename + '_xfrm';
+            
+        FileIO.write_matrix(dir_name + os.sep + out_file, data, genes, cells)
+        break;
+    elif(choice.lower()[0] == 'n'):
+        break;
+    else:
+        print("Error : invalid input.  Enter Y or N");
+        continue;
+
+#%% Dimensional Reduction procedures
+print();
+print("Projecting data into 2 dimensions");
+print();
+
+if(PCA_TRANSFORM):
+    pc_data, pc_rows = Projections.perform_PCA(data, genes, 30);
+    projections = Projections.generate_projections(pc_data);
+else:
+    projections = Projections.generate_projections(data);
+
+#Save data
+out_file = 'projections.txt'
+Projections.write_projection_file(dir_name + os.sep + out_file, cells, projections);
+        
+
+#%% Output Projection Plots
+print();
+print('Outputting Projection Plots to File');
+pp = ProgressBar(len(projections));
+for proj_name in projections:
+    FileIO.write_scatter_plot(
+        filename = dir_name + os.sep + proj_name,
+        x_coords = projections[proj_name][0,:],
+        y_coords = projections[proj_name][1,:],
+        xlabel = 'Dim 1',
+        ylabel = 'Dim 2',
+        title = proj_name);
+    pp.update();
+pp.complete();
 
 #%% Signature file
 sigs = [];
 USE_SIGNATURES = False;
 while(True):
-    print();
-    print("Enter name of signature file or press enter to omit signature analysis.")
-    choice = raw_input("File name : ");
+    
+    if(options.interactive and (not options.signatures)):
+        print();
+        print("Enter name of signature file or press enter to omit signature analysis.")
+        choice = raw_input("File name : ");
+    else:
+        if(options.signatures):
+            choice = options.signatures;
+        else:
+            choice = '';
     
     if(len(choice) == 0):
         break;
@@ -176,7 +277,7 @@ while(True):
         continue;
          
 
-if(USE_SIGNATURES):
+if(USE_SIGNATURES and options.interactive):
     while(True):
         ##List signatures
         print("\n" + str(len(sigs)) + " Signatures Loaded: " + "\n");
@@ -207,62 +308,15 @@ if(USE_SIGNATURES):
     
     pbar = ProgressBar(len(sigs));
     for sig in sigs:
-        sig_scores[sig.name] = sig.eval_data(data, genes);
+        sig_scores[sig.name] = sig.eval_data(data, genes, fn_prob);
         pbar.update();
     pbar.complete();
         
     #Prompt to save data
-    while(True):
-        print();
-        choice = raw_input("Save signature scores to file? [y/n]: ");
-        if(choice.lower()[0] == 'y'):
-            #Save data
-            out_file = raw_input("Enter name of file to create : ");
-            FileIO.write_signature_scores(out_file, sig_scores, cells);
-            break;
-        elif(choice.lower()[0] == 'n'):
-            break;
-        else:
-            print("Error : invalid input.  Enter Y or N");
-            continue;
+    out_file = 'sig_scores.txt';
+    FileIO.write_signature_scores(dir_name + os.sep + out_file, sig_scores, cells);
+      
         
-
-#%% Dimensional Reduction procedures
-print();
-print("Projecting data into 2 dimensions");
-print();
-
-projections = Projections.generate_projections(data);
-
-#Prompt to save data
-while(True):
-    print();
-    choice = raw_input("Save projections to file? [y/n]: ");
-    if(choice.lower()[0] == 'y'):
-        #Save data
-        out_file = raw_input("Enter name of file to create : ");
-        Projections.write_projection_file(out_file, cells, projections);
-        break;
-    elif(choice.lower()[0] == 'n'):
-        break;
-    else:
-        print("Error : invalid input.  Enter Y or N");
-        continue;
-
-#%% Output Projection Plots
-print();
-print('Outputting Projection Plots to File');
-pp = ProgressBar(len(projections));
-for proj_name in projections:
-    FileIO.write_scatter_plot(
-        filename = proj_name,
-        x_coords = projections[proj_name][0,:],
-        y_coords = projections[proj_name][1,:],
-        xlabel = 'Dim 1',
-        ylabel = 'Dim 2',
-        title = proj_name);
-    pp.update();
-pp.complete();
 
 #%% Evaluating signatures against projections
 if(USE_SIGNATURES):
@@ -273,16 +327,21 @@ if(USE_SIGNATURES):
     sp_row_labels = sig_scores.keys();
     sp_col_labels = projections.keys();
     
+    print();
+    print("Evaluating Signatures against Projections");
+    pp = ProgressBar(len(sp_row_labels) * len(sp_col_labels));
     for i, sig in enumerate(sp_row_labels):
         for j, proj in enumerate(sp_col_labels):
-            print(sig, ' : ', proj);
             dissimilarity, p = Signatures.conformity_with_p(projections[proj],sig_scores[sig],N_NEIGHBORS);
             sig_proj_matrix[i,j] = np.median(dissimilarity);
             sig_proj_matrix_p[i,j] = p;
+            pp.update();
+    
+    pp.complete();
     
     
     #Output matrix of p-values for conformity scores
-    FileIO.write_matrix("p_matrix.txt",sig_proj_matrix_p, sp_row_labels, sp_col_labels);
+    FileIO.write_matrix(dir_name + os.sep + "p_matrix.txt",sig_proj_matrix_p, sp_row_labels, sp_col_labels);
     
     
     #%% Output top N plots
@@ -301,7 +360,7 @@ if(USE_SIGNATURES):
         proj_name = sp_col_labels[c];
         
         FileIO.write_scatter_plot(
-            filename = sig_name+'_'+proj_name,
+            filename = dir_name + os.sep + sig_name+'_'+proj_name,
             x_coords = projections[proj_name][0,:], 
             y_coords = projections[proj_name][1,:],
             colors   = sig_scores[sig_name],
