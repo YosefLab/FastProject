@@ -5,7 +5,7 @@ import numpy as num
 from numba import jit
 
 @jit
-def DipTestSig(xpdf,nboot):
+def HDT_Sig(xpdf,nboot):
     """Dip test with significance
     """
 

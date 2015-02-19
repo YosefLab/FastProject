@@ -12,8 +12,8 @@ from __future__ import print_function;
 
 import numpy as np
 import os;
-from DimReduce.Stats import hdt
-from DimReduce.Utils import ProgressBar
+from Utils import HDT_Sig
+from Utils import ProgressBar
 
 this_directory = os.path.dirname(os.path.abspath(__file__));
 
@@ -29,7 +29,7 @@ def filter_genes_threshold(data, genes, threshold):
     
     return filter_genes_indices(data,genes,keep_indices);
     
-    
+
 def filter_genes_hdt(data, genes, p_val):
     """Filters out genes that pass the Hartigans Dip Test for bimodality
     with at least p < p_val"""
@@ -49,7 +49,7 @@ def filter_genes_hdt(data, genes, p_val):
     hdt_p = np.zeros(data.shape[0]);
     pp = ProgressBar(data.shape[0]);
     for i in np.arange(data.shape[0]):
-      (dip, p, xlow, xup) = hdt.DipTestSig(data[i,:],1);
+      (dip, p, xlow, xup) = HDT_Sig(data[i,:],1);
       hdt_p[i] = p;
       pp.update();
     
@@ -68,7 +68,7 @@ def filter_genes_hdt(data, genes, p_val):
     p_cut = p_val;
     hdt_p = np.zeros(data.shape[0]);
     for i in np.arange(data.shape[0]):
-      (dip, p, xlow, xup) = hdt.DipTestSig(data[i,:],10);
+      (dip, p, xlow, xup) = HDT_Sig(data[i,:],10);
       hdt_p[i] = p;
       pp.update();
 
@@ -83,7 +83,7 @@ def filter_genes_hdt(data, genes, p_val):
 #        print "Third pass";
 #        hdt_p = np.zeros(data.shape[0]);
 #        for i in np.arange(data.shape[0]):
-#          (dip, p, xlow, xup) = hdt.DipTestSig(data[i,:],40);
+#          (dip, p, xlow, xup) = HDT_Sig(data[i,:],40);
 #          hdt_p[i] = p;
 #          if(np.mod(i,data.shape[0]/20)==0):
 #              print round(float(i)/data.shape[0]*100.0), '%'

@@ -6,7 +6,7 @@ Created on Sun Dec 14 12:29:19 2014
 """
 
 from numpy import *
-from DimReduce.Utils import ProgressBar
+from FastProject.Utils import ProgressBar
 
 #zmat is Genes x Samples
 #cutoff is Genes x 1 - represents the initial cutoff between normal and exponential distributions

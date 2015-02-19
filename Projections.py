@@ -12,7 +12,7 @@ from sklearn.manifold import LocallyLinearEmbedding
 from sklearn.manifold import MDS
 from sklearn.manifold import SpectralEmbedding
 
-from DimReduce.Utils import ProgressBar;
+from FastProject.Utils import ProgressBar;
 
 import numpy as np;
 

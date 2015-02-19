@@ -7,8 +7,8 @@ Created on Wed Jan 07 15:12:02 2015
 from __future__ import print_function;
 
 
-from DimReduce.Stats import em;
-from DimReduce import Filters;
+from FastProject.Utils import em_exp_norm_mixture;
+from FastProject import Filters;
 import numpy as np;
 import os;
 
@@ -21,7 +21,7 @@ this_directory = os.path.dirname(os.path.abspath(__file__));
 def probability_of_expression(data, nozero=True):
     cutoffs = np.mean(data,axis=1)/4;  #Empirically found to be good mosy of the time
     
-    (gamma, mu_l, mu_h, st_l, st_h, Pi, L) = em.em_exp_norm_mixture(data,cutoffs);
+    (gamma, mu_l, mu_h, st_l, st_h, Pi, L) = em_exp_norm_mixture(data,cutoffs);
         
     return (gamma, mu_h);
 
@@ -84,7 +84,7 @@ def create_false_neg_map(data, genes, housekeeping_file=""):
         
     #calculate distributions for hk gene
     cutoffs = np.ones(data_hk.shape[0]);
-    (gamma, mu_l, mu_h, st_l, st_h, Pi, L) = em.em_exp_norm_mixture(data_hk,cutoffs);
+    (gamma, mu_l, mu_h, st_l, st_h, Pi, L) = em_exp_norm_mixture(data_hk,cutoffs);
     
     #create bins based on average gene expression in population
 #    bin_start = 0.0;

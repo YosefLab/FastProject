@@ -10,12 +10,12 @@ from __future__ import division, print_function;
 if(not raw_input):
     raw_input = input;
 
-from DimReduce import Filters;
-from DimReduce import FileIO;
-from DimReduce import Transforms;
-from DimReduce import Signatures;
-from DimReduce import Projections;
-from DimReduce.Utils import ProgressBar;
+from FastProject import Filters;
+from FastProject import FileIO;
+from FastProject import Transforms;
+from FastProject import Signatures;
+from FastProject import Projections;
+from FastProject.Utils import ProgressBar;
 import os;
 import numpy as np;
 import time;

@@ -23,7 +23,7 @@ def read_signatures(filename='', match_terms=[]):
     
     Returns
     -------
-    signatures : list(DimReduce.Signature)
+    signatures : list(FastProject.Signature)
         The filtered signature list
     """
     
@@ -124,7 +124,7 @@ def filter_sig_list(signatures, match_terms):
     
     Returns
     -------
-    filtered_signatures : list(DimReduce.Signature)
+    filtered_signatures : list(FastProject.Signature)
         The filtered signature list
         
     

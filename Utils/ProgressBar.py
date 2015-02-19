@@ -35,7 +35,8 @@ class ProgressBar:
         return out_string;
         
     def update(self):
-        self.i = self.i + 1;
+        if(self.i < self.max_i):
+            self.i = self.i + 1;
 
         #Only update stdout if number of hashes has changed        
         if(int(self.i / self.max_i * ProgressBar.width) > int((self.i - 1) / self.max_i * ProgressBar.width)):
@@ -53,5 +54,5 @@ class ProgressBar:
     def complete(self):
         #Only does anything if we haven't completed yet
         if(self.i != self.max_i):
-            self.i = self.max_i;
+            self.i = self.max_i-1;
             self.update();
