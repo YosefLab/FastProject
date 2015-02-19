@@ -10,12 +10,12 @@ from __future__ import division, print_function;
 if(not raw_input):
     raw_input = input;
 
-from FastProject import Filters;
-from FastProject import FileIO;
-from FastProject import Transforms;
-from FastProject import Signatures;
-from FastProject import Projections;
-from FastProject.Utils import ProgressBar;
+from . import Filters;
+from . import FileIO;
+from . import Transforms;
+from . import Signatures;
+from . import Projections;
+from .Utils import ProgressBar;
 import os;
 import numpy as np;
 import time;
@@ -41,15 +41,21 @@ parser.add_option("-i", "--interactive", action="store_true", default=False, hel
 
 (options, args) = parser.parse_args();
 
-housekeeping_filename = options.housekeeping if(options.housekeeping) else '';
-
+if(options.housekeeping):
+    housekeeping_filename = options.housekeeping;
+else:
+    if(options.interactive):
+        housekeeping_filename = "NOT_SPECIFIED";
+    else:
+        housekeeping_filename = '';  #If not in interactive mode and no -h specified, just use the default list
+        
 def get_housekeeping_file():
     fn = housekeeping_filename;
-    if(len(fn) == 0):
+    if(fn == "NOT_SPECIFIED"):
         while(True):
-            fn = raw_input("Enter name of housekeeping file: ");
+            fn = raw_input("Enter name of housekeeping file, or press ENTER to use default list: ");
             
-            if(os.path.isfile(fn)):
+            if(fn == '' or os.path.isfile(fn)):
                 break;
             else:
                 print("Error : File not found");
@@ -135,11 +141,14 @@ while(True):  #Loop exited with 'break', see below
     if(choice==0):
         break;
     elif(choice==1): #Housekeeping
+        print("Removing housekeeping genes...");
         housekeeping_filename = get_housekeeping_file();
         (data,genes) = Filters.filter_housekeeping(data, genes, housekeeping_filename);
     elif(choice==2): #Threshold of activation
+        print("Removing genes inactive in > 80% samples...");
         (data, genes) = Filters.filter_genes_threshold(data, genes, 0.2);
     elif(choice==3): #HDT test
+        print("Removing genes with unimodal distribution across samples using Hartigans DT...");
         (data, genes) = Filters.filter_genes_hdt(data, genes, 0.05);
     elif(choice==4): #Save to file
         out_file = raw_input("Enter name of file to create : ");
@@ -222,7 +231,6 @@ while(True):
 #%% Dimensional Reduction procedures
 print();
 print("Projecting data into 2 dimensions");
-print();
 
 if(PCA_TRANSFORM):
     pc_data, pc_rows = Projections.perform_PCA(data, genes, 30);

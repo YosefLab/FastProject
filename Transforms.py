@@ -7,8 +7,8 @@ Created on Wed Jan 07 15:12:02 2015
 from __future__ import print_function;
 
 
-from FastProject.Utils import em_exp_norm_mixture;
-from FastProject import Filters;
+from .Utils import em_exp_norm_mixture;
+from . import Filters;
 import numpy as np;
 import os;
 

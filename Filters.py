@@ -12,8 +12,8 @@ from __future__ import print_function;
 
 import numpy as np
 import os;
-from Utils import HDT_Sig
-from Utils import ProgressBar
+from .Utils import HDT_Sig
+from .Utils import ProgressBar
 
 this_directory = os.path.dirname(os.path.abspath(__file__));
 
