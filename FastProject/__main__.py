@@ -24,6 +24,14 @@ from optparse import OptionParser
 
 PCA_TRANSFORM = False;
 
+HAS_NUMBA = False;
+try:
+    import numba
+    HAS_NUMBA = True;
+except ImportError:
+    HAS_NUMBA = False;
+    
+
 parser = OptionParser('usage: %prog [options] data_file');
 parser.add_option("-k", "--housekeeping", metavar="FILE", 
                   help="Read list of housekeeping genes from FILE.  Uses default list if not specified");
@@ -148,8 +156,11 @@ while(True):  #Loop exited with 'break', see below
         print("Removing genes inactive in > 80% samples...");
         (data, genes) = Filters.filter_genes_threshold(data, genes, 0.2);
     elif(choice==3): #HDT test
-        print("Removing genes with unimodal distribution across samples using Hartigans DT...");
-        (data, genes) = Filters.filter_genes_hdt(data, genes, 0.05);
+        if(HAS_NUMBA):
+            print("Removing genes with unimodal distribution across samples using Hartigans DT...");
+            (data, genes) = Filters.filter_genes_hdt(data, genes, 0.05);
+        else:
+            print("Unavailable: This filtering method requires the python package 'numba'");
     elif(choice==4): #Save to file
         out_file = raw_input("Enter name of file to create : ");
         FileIO.write_matrix(dir_name + os.sep + out_file, data, genes, cells);

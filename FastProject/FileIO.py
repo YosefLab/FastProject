@@ -17,6 +17,7 @@ def read_matrix(filename='', delimiter = '\t'):
         Tk().withdraw();
         filename = askopenfilename();
     
+    print("Loading data from " + filename + " ...");
     #load matrix data
     #First read in list of cell names
     
@@ -62,7 +63,7 @@ def write_matrix(filename, data, row_labels, col_labels):
     ff.write('\t' + '\t'.join(col_labels) + '\n'); #Extra tab so col labels line up with data
     for i in range(data.shape[0]):
         ff.write(row_labels[i] + '\t');
-        ff.write('\t'.join(["%.5f" % num for num in data[i,:]]));
+        ff.write('\t'.join(["{:.5f}".format(num).rstrip('0').rstrip('.') for num in data[i,:]]));
         ff.write('\n');
     
     ff.close();  

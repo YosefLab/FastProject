@@ -190,7 +190,7 @@ def plot_em_norm_distribution(gamma, mu_l, mu_h, st_l, st_h, data, i):
     scatter(data[i,:], gamma[i,:], color='red');
     ylim(0, 1.1);
     
-def probability_transform(data, data_original, genes_original, housekeeping_file):
+def probability_transform(data, original_data, original_genes, housekeeping_filename):
     """ Process data to evaluate probability of expression """
     
     print()
@@ -200,7 +200,7 @@ def probability_transform(data, data_original, genes_original, housekeeping_file
     
     print();
     print('Correcting for false-negatives using housekeeping gene levels');
-    (fit_func, params) = create_false_neg_map(data_original, genes_original, housekeeping_file);
+    (fit_func, params) = create_false_neg_map(original_data, original_genes, housekeeping_filename);
     
     #fit_func is the fitting function of the form fit_func(mu_h, param[0], param[1], etc)
     #params is a matrix with parameters for each sample.  Size is Num_Params x Num_samples

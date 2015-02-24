@@ -6,10 +6,10 @@ from setuptools import setup, find_packages
 
 setup(
 	name = "FastProject",
-	version = "0.7",
+	version = "0.7.1",
 	packages = find_packages(),
 	
-	install_requires = ['numpy>=1.9','numba>=0.17.0','matplotlib>=1.4.3','scikit-learn>=0.15.2'],
+	install_requires = ['numpy>=1.9','matplotlib>=1.4.0','scikit-learn>=0.15.2'],
 	
 	include_package_data = True,
 	
