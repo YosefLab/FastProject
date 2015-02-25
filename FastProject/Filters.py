@@ -12,7 +12,7 @@ from __future__ import print_function;
 
 import numpy as np
 import os;
-from .Utils import HDT_Sig
+from . import Utils
 from .Utils import ProgressBar
 
 this_directory = os.path.dirname(os.path.abspath(__file__));
@@ -49,7 +49,7 @@ def filter_genes_hdt(data, genes, p_val):
     hdt_p = np.zeros(data.shape[0]);
     pp = ProgressBar(data.shape[0]);
     for i in np.arange(data.shape[0]):
-      (dip, p, xlow, xup) = HDT_Sig(data[i,:],1);
+      (dip, p, xlow, xup) = Utils.HDT_Sig(data[i,:],1);
       hdt_p[i] = p;
       pp.update();
     
@@ -68,7 +68,7 @@ def filter_genes_hdt(data, genes, p_val):
     p_cut = p_val;
     hdt_p = np.zeros(data.shape[0]);
     for i in np.arange(data.shape[0]):
-      (dip, p, xlow, xup) = HDT_Sig(data[i,:],10);
+      (dip, p, xlow, xup) = Utils.HDT_Sig(data[i,:],10);
       hdt_p[i] = p;
       pp.update();
 
