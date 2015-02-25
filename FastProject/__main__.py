@@ -7,7 +7,8 @@ Created on Fri Jan 30 15:16:22 2015
 
 #For compatibility with Python 3.x
 from __future__ import division, print_function;
-if(not raw_input):
+import sys;    
+if(sys.version_info.major > 2):
     raw_input = input;
 
 from . import Filters;
@@ -19,7 +20,7 @@ from .Utils import ProgressBar;
 import os;
 import numpy as np;
 import time;
-import sys;
+
 from optparse import OptionParser
 
 PCA_TRANSFORM = False;
@@ -388,3 +389,4 @@ if(USE_SIGNATURES):
         pp.update();
         
     pp.complete();
+
