@@ -116,13 +116,27 @@ def create_false_neg_map(data, genes, housekeeping_file=""):
     params = np.zeros((2,gamma.shape[1]));
     x = mu_h.flatten();
 
+    count_fails = 0;
     for i in range(gamma.shape[1]):
 
         y = 1-gamma[:,i]
 
-        param, cov = curve_fit(func, x, y);
+        try:
+            param, cov = curve_fit(func, x, y);
+        except RuntimeError:  #This occurs if the optimizer can't fit the function
+            param = np.array([-5,5]);  
+            #If this occurs, these parameters will just return zero for every
+            #possible mu value.  In a sense, it will disable the false-negative
+            #correction for that sample.
+            count_fails = count_fails + 1;
+            
         params[:,i] = param;
-        
+    
+    if(count_fails > 0):
+        print();
+        print("Warning:  Could not fit False-Negative correction function for " + str(count_fails) + " samples");
+        print("          False-Negative correction disabled for these samples");
+        print();
 #        #Uncomment to plot result
 #        from pylab import figure, scatter, plot, ion;
 #        ion();
