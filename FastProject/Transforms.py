@@ -109,42 +109,41 @@ def create_false_neg_map(data, genes, housekeeping_file=""):
         
     #Fit a function mapping mu to gammas
 
-    from scipy.optimize import curve_fit;
-    def func(xvals, x0, a):
-        return 1/(1 + np.exp((xvals-x0)*a));
+    def func(xvals, x0, a, L, H):
+        return L + (H-L)/(1 + np.exp((xvals-x0)*a));
 
-    params = np.zeros((2,gamma.shape[1]));
+    def efun(x,y, args):
+        out = func(x, args[0], args[1], args[2], args[3]);
+        return np.sum((out-y)**2);
+
+    params = np.zeros((4,gamma.shape[1]));
     x = mu_h.flatten();
+    
+    initial_guess = [3.5, 1.26, 0, 1];
+    bounds = [(0, np.inf),(0, 2),(0,1), (0,1)];
 
-    count_fails = 0;
     for i in range(gamma.shape[1]):
 
         y = 1-gamma[:,i]
 
-        try:
-            param, cov = curve_fit(func, x, y);
-        except RuntimeError:  #This occurs if the optimizer can't fit the function
-            param = np.array([-5,5]);  
-            #If this occurs, these parameters will just return zero for every
-            #possible mu value.  In a sense, it will disable the false-negative
-            #correction for that sample.
-            count_fails = count_fails + 1;
-            
+        res = minimize(lambda args: efun(x,y,args), initial_guess, bounds=bounds);
+        param = res.x;         
         params[:,i] = param;
     
-    if(count_fails > 0):
-        print();
-        print("Warning:  Could not fit False-Negative correction function for " + str(count_fails) + " samples");
-        print("          False-Negative correction disabled for these samples");
-        print();
-#        #Uncomment to plot result
+    
+
+#        #Uncomment to plot result - useful for debugging
 #        from pylab import figure, scatter, plot, ion;
 #        ion();
 #        figure();
 #        domain = np.linspace(0,10,1000);
-#        scatter(x,y);
-#        plot(domain, func(domain, param[0], param[1]));
-#        
+#        scatter(x,1-gamma[:,i]);
+#        plot(domain, func(domain, params[0,i], params[1,i], params[2,i], params[3,i]));
+#        ylabel("P(gene not expressed in " + cells[i] + ")");
+#        xlabel("Gene average in samples expressing gene")
+#        print(params[:,i])
+#        i = i+1;
+
         
     return func, params;
 
@@ -222,7 +221,7 @@ def probability_transform(data, original_data, original_genes, housekeeping_file
     fn_prob = np.zeros(prob.shape)
     
     for i in range(data.shape[1]):
-        fn_prob[:,i] = fit_func(mu_h, params[0,i], params[1,i]).ravel();
+        fn_prob[:,i] = fit_func(mu_h, *params[:,i]).ravel();
     
     prob2 = prob + (1-prob)*fn_prob;
     
