@@ -83,30 +83,9 @@ def create_false_neg_map(data, genes, housekeeping_file=""):
     (data_hk, genes_hk) = Filters.filter_genes_threshold(data_hk, genes_hk, 0.2);
         
     #calculate distributions for hk gene
-    cutoffs = np.ones(data_hk.shape[0]);
+    cutoffs = np.mean(data_hk,axis=1)/4;
     (gamma, mu_l, mu_h, st_l, st_h, Pi, L) = em_exp_norm_mixture(data_hk,cutoffs);
-    
-    #create bins based on average gene expression in population
-#    bin_start = 0.0;
-#    bin_end = np.ceil(np.max(mu_h));
-#    
-#    bin_starts = np.arange(bin_start, bin_end);
-#    bin_ends = bin_starts + 1;
-#    bin_ends[-1] = bin_ends[-1] + .1;
-#    
-#    binned_gammas = np.zeros((bin_starts.shape[0], gamma.shape[1]));
-#    
-#    for i in np.arange(binned_gammas.shape[0]):
-#        start = bin_starts[i];
-#        end = bin_ends[i];
-#        
-#        indices = np.logical_and(mu_h >= start, mu_h < end).flatten();
-#        
-#        if(indices.any()):
-#            binned_gammas[i,:] = gamma[indices,:].mean(axis=0);
-#        
-#    
-        
+           
     #Fit a function mapping mu to gammas
 
     def func(xvals, x0, a, L, H):
@@ -119,14 +98,32 @@ def create_false_neg_map(data, genes, housekeeping_file=""):
     params = np.zeros((4,gamma.shape[1]));
     x = mu_h.flatten();
     
+    sort_i = np.argsort(x);
+    x_sorted = x[sort_i];
+    
     initial_guess = [3.5, 1.26, 0, 1];
     bounds = [(0, np.inf),(0, 2),(0,1), (0,1)];
 
+    if(len(x_sorted) > 30):
+        q_indices = len(x_sorted)/31 * np.arange(31);
+        q_indices = q_indices[1:];
+    else:
+        q_indices = np.arange(30);
+    q_indices = q_indices.astype(np.int64);
+    x_quant = x_sorted[q_indices];
+    
+    x_unique, q_i = np.unique(x_quant, return_index=True);
+    q_indices = q_indices[q_i];
+
+    from scipy.optimize import minimize;
+
     for i in range(gamma.shape[1]):
-
         y = 1-gamma[:,i]
+        y_sorted = y[sort_i];
 
-        res = minimize(lambda args: efun(x,y,args), initial_guess, bounds=bounds);
+        y_unique = y_sorted[q_indices];
+
+        res = minimize(lambda args: efun(x_unique,y_unique,args), initial_guess, bounds=bounds);
         param = res.x;         
         params[:,i] = param;
     
@@ -137,7 +134,7 @@ def create_false_neg_map(data, genes, housekeeping_file=""):
 #        ion();
 #        figure();
 #        domain = np.linspace(0,10,1000);
-#        scatter(x,1-gamma[:,i]);
+#        scatter(x_unique,1-gamma[sort_i,i][q_indices]);
 #        plot(domain, func(domain, params[0,i], params[1,i], params[2,i], params[3,i]));
 #        ylabel("P(gene not expressed in " + cells[i] + ")");
 #        xlabel("Gene average in samples expressing gene")
