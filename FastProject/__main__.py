@@ -16,6 +16,7 @@ from . import FileIO;
 from . import Transforms;
 from . import Signatures;
 from . import Projections;
+from .DataTypes import ExpressionData, ProbabilityData, PCData;
 from .Utils import ProgressBar;
 import os;
 import numpy as np;
@@ -85,16 +86,16 @@ while(True):
             sys.exit();
     
     if(os.path.isfile(filename)):
-        (data, genes, cells) = FileIO.read_matrix(filename);
+        (edata, genes, cells) = FileIO.read_matrix(filename);
         break;
     else:
         print("Error : File not found");
         continue
 
-print("Imported ", data.shape[0], " genes across ", data.shape[1], " samples");
+print("Imported ", edata.shape[0], " genes across ", edata.shape[1], " samples");
 
 #Hold on to originals so we don't lose data after filtering in case it's needed later
-original_data = data;
+original_data = edata;
 original_genes = genes;
 original_cells = cells;
 
@@ -114,7 +115,7 @@ os.makedirs(dir_name);
 #%% Filtering genes
 while(True):  #Loop exited with 'break', see below
     
-    original = data.shape;    
+    original = edata.shape;    
     if(options.interactive):
         print();    
         print("Filtering Options Available");
@@ -152,19 +153,19 @@ while(True):  #Loop exited with 'break', see below
     elif(choice==1): #Housekeeping
         print("Removing housekeeping genes...");
         housekeeping_filename = get_housekeeping_file();
-        (data,genes) = Filters.filter_housekeeping(data, genes, housekeeping_filename);
+        (edata,genes) = Filters.filter_housekeeping(edata, genes, housekeeping_filename);
     elif(choice==2): #Threshold of activation
         print("Removing genes inactive in > 80% samples...");
-        (data, genes) = Filters.filter_genes_threshold(data, genes, 0.2);
+        (edata, genes) = Filters.filter_genes_threshold(edata, genes, 0.2);
     elif(choice==3): #HDT test
         if(HAS_NUMBA):
             print("Removing genes with unimodal distribution across samples using Hartigans DT...");
-            (data, genes) = Filters.filter_genes_hdt(data, genes, 0.05);
+            (edata, genes) = Filters.filter_genes_hdt(edata, genes, 0.05);
         else:
             print("Unavailable: This filtering method requires the python package 'numba'");
     elif(choice==4): #Save to file
         out_file = raw_input("Enter name of file to create : ");
-        FileIO.write_matrix(dir_name + os.sep + out_file, data, genes, cells);
+        FileIO.write_matrix(dir_name + os.sep + out_file, edata, genes, cells);
         print("Data saved to " + out_file);
     else:
         print("Error : Invalid Choice\n");
@@ -172,12 +173,17 @@ while(True):  #Loop exited with 'break', see below
 
     if(choice > 0 and choice < 4):
         print();
-        print("Removed ", original[0]-data.shape[0], " Genes");
-        print(data.shape[0], " Genes retained");
+        print("Removed ", original[0]-edata.shape[0], " Genes");
+        print(edata.shape[0], " Genes retained");
     
+edata = ExpressionData(edata, genes, cells);
+data = edata;  #'data' is used for projections/signatures.  Can be overwritted with the probability data object
+
 #%% Probability transform
 housekeeping_filename = get_housekeeping_file();
-prob, fn_prob = Transforms.probability_transform(data, original_data, original_genes, housekeeping_filename);    
+prob, fn_prob = Transforms.probability_transform(edata, original_data, original_genes, housekeeping_filename);    
+
+prob = ProbabilityData(prob, edata);
         
 while(True):
     
@@ -246,9 +252,10 @@ print("Projecting data into 2 dimensions");
 
 if(PCA_TRANSFORM):
     pc_data, pc_rows = Projections.perform_PCA(data, genes, 30);
-    projections = Projections.generate_projections(pc_data);
-else:
-    projections = Projections.generate_projections(data);
+    pc_data = PCData(pc_data, data);
+    data = pc_data;
+
+projections = Projections.generate_projections(data);
 
 #Save data
 out_file = 'projections.txt'
@@ -273,6 +280,7 @@ pp.complete();
 #%% Signature file
 sigs = [];
 USE_SIGNATURES = False;
+#Use signature? 
 while(True):
     
     if(options.interactive and (not options.signatures)):
@@ -296,7 +304,7 @@ while(True):
         print("Error : File not found");
         continue;
          
-
+#Filter Signatures to use
 if(USE_SIGNATURES and options.interactive):
     while(True):
         ##List signatures
@@ -320,6 +328,7 @@ if(USE_SIGNATURES and options.interactive):
             keywords = [word.strip() for word in keywords.split(',')];
             sigs = Signatures.filter_sig_list(sigs, keywords);
 
+#Evaluate Signatures
 if(USE_SIGNATURES):
     print();
     print("Evaluating signature scores on samples...");
@@ -328,7 +337,7 @@ if(USE_SIGNATURES):
     
     pbar = ProgressBar(len(sigs));
     for sig in sigs:
-        sig_scores[sig.name] = sig.eval_data(data, genes, fn_prob);
+        sig_scores[sig.name] = data.eval_signature(sig, fn_prob);
         pbar.update();
     pbar.complete();
         

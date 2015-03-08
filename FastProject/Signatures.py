@@ -285,7 +285,7 @@ class Signature:
         
         """
         
-        sig_vector = self._sig_indices(genes);
+        sig_vector = self.sig_indices(genes);
         
         if(data.ndim == 1):
             data.shape = (data.shape[0], 1);
@@ -301,7 +301,7 @@ class Signature:
         
         return sig_scores;
         
-    def _sig_indices(self, genes):
+    def sig_indices(self, genes):
         """Helper method
         
         Returns an array with length = len(genes)
