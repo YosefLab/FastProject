@@ -16,8 +16,6 @@ this_directory = os.path.dirname(os.path.abspath(__file__));
 
 #from numba import jit;
 
-
-
 def probability_of_expression(data, nozero=True):
     cutoffs = np.mean(data,axis=1)/4;  #Empirically found to be good mosy of the time
     
@@ -144,38 +142,48 @@ def create_false_neg_map(data, genes, housekeeping_file=""):
         
     return func, params;
 
+def quality_check(params):
+    """Integrates the logistic false-negative curves.  Flags samples whose 
+    integral is more than 1.6 MAD lower than the population.  
     
-def set_range(gamma, low, high):
-    """Changes the range of gamma to stretch between low and high
-    Used after finding the false-negative rate to raise the floor on the
-    prediction of whether a gene is active
+    Parameters
+    ----------
+    params : (4 x Num_Samples) numpy.ndarray 
+        Matrix containing parameters for the false-negative fit function
 
-    gamma:  probability of expression in Genes x Samples
-    low:    lower value of adjusted gamma, Genes x 1 or 1x1
-    high:   upper value of adjusted gamma, Genes x 1 or 1x1
-    
+    Returns
+    -------
+    sample_passes : (Num_Samples) boolean numpy.ndarray
+        Vector containing True for samples that pass this quality check
+          
     """
     
-    if(gamma.shape[0] > 1):
-        if(type(low) is not np.ndarray):
-            low = np.ones(gamma.shape[0])*low;
-        if(type(high) is not np.ndarray):
-            high = np.ones(gamma.shape[0])*high;
+    #Logistic parameters
+    x0 = params[0,:];
+    a = params[1,:];
+    L = params[2,:];
+    H = params[3,:];
     
-    high = high.flatten();
-    low = low.flatten();    
+    #Bounds of integration
+    low = 0;
+    high = 9;
     
-    #transpose array so we can use matrix / vector operations
-    gamma_out = gamma.copy().T;    
+    a[a == 0] = 1e-6;  #Fix so that integral isn't mis-calculated as inf or nan
     
-    old_min = np.min(gamma_out, axis=0);
-    old_max = np.max(gamma_out, axis=0);
+    #Evaluate integral
+    int_low = H*low   - (H-L)/a * np.log(np.exp(a*(low -x0)) + 1)
+    int_high = H*high - (H-L)/a * np.log(np.exp(a*(high-x0)) + 1)
     
-    gamma_out = gamma_out - old_min;
-    gamma_out = gamma_out/old_max * (high-low);
-    gamma_out = gamma_out + low;
+    int_val = int_high - int_low;
+    int_val_mean = np.mean(int_val);    
     
-    return gamma_out.T;
+    abs_dev = np.abs(int_val - int_val_mean);
+    
+    MAD = np.mean(abs_dev);
+    
+    sample_passes = int_val < (int_val_mean + 1.6*MAD);
+    
+    return sample_passes;
     
 
 def plot_em_norm_distribution(gamma, mu_l, mu_h, st_l, st_h, data, i):
