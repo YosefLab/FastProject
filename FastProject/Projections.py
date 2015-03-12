@@ -13,6 +13,7 @@ from sklearn.manifold import MDS
 from sklearn.manifold import SpectralEmbedding
 
 from .Utils import ProgressBar;
+from . import DataTypes
 
 import numpy as np;
 
@@ -67,6 +68,8 @@ def generate_projections(data):
     
     projections = dict();
     
+    dist_matrix = data.distance_matrix();    
+    
     # PCA
     
     pca = PCA();
@@ -85,9 +88,8 @@ def generate_projections(data):
     pbar.update();
     
     # tSNE, but with built-in from sklearn
-    
-    model = TSNE(n_components=2, perplexity=1, metric="euclidean", learning_rate = 100, early_exaggeration=1);
-    result = model.fit_transform(data.T);
+    model = TSNE(n_components=2, perplexity=1, metric="precomputed", learning_rate = 100, early_exaggeration=1);
+    result = model.fit_transform(dist_matrix);
     
     projections['tSNE'] = result;
     pbar.update();
@@ -110,16 +112,19 @@ def generate_projections(data):
     
     # MDS
     
-    model = MDS(n_components=2)
-    result = model.fit_transform(data.T);
+    model = MDS(n_components=2, dissimilarity="precomputed")
+    result = model.fit_transform(dist_matrix);
     
     projections['MDS'] = result;
     pbar.update();
         
     # Spectral Embedding
-    
-    model = SpectralEmbedding(n_components=2)
-    result = model.fit_transform(data.T);
+    if(type(data) is DataTypes.ProbabilityData):
+        model = SpectralEmbedding(n_components=2, affinity="precomputed")
+        result = model.fit_transform(1-dist_matrix);
+    else:
+        model = SpectralEmbedding(n_components=2)
+        result = model.fit_transform(data.T);
     
     projections['Spectral Embedding'] = result;
     pbar.update();
@@ -127,7 +132,7 @@ def generate_projections(data):
     # Add new projections here!
 
 
-    #Normalize projection 
+    #Normalize projections 
     #Mean-center X
     #Mean-center Y
     #Scale so that E(R^2) = 1
