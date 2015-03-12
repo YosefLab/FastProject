@@ -289,16 +289,17 @@ class Signature:
         
         if(data.ndim == 1):
             data.shape = (data.shape[0], 1);
-            
-        pdata = data * sig_vector;
         
-        weights = np.ones(pdata.shape);
+        weights = np.ones(data.shape);
         if(len(fn_prob) != 0):
             weights[data==0] = 1-fn_prob[data==0];
         
-        sig_scores = pdata.sum(axis=0);
-        sig_scores = sig_scores / np.sum(weights, axis=0);        
+        pdata = data * sig_vector * weights;
         
+        sig_scores = pdata.sum(axis=0) / np.sum(weights, axis=0);        
+
+        sig_scores = sig_scores / np.sum(abs(sig_vector));
+     
         return sig_scores;
         
     def sig_indices(self, genes):
@@ -308,7 +309,7 @@ class Signature:
         Entries in the array are 0 if the gene is not in the signature
         Otherwise, value is determined by the signature type"""
         
-        out = np.zeros((len(genes), 1));
+        out = np.zeros((len(genes), 1), dtype=np.float64);
         
         for i, gene in enumerate(genes):
             if(self.sig_dict.has_key(gene)):
@@ -317,6 +318,24 @@ class Signature:
                     out[i] = 1;
                 if(val == -1):
                     out[i] = -1;
-            
+
+        #If signed, weight the indices such that the sum of positive signatures
+        #counts as much as the sum of negative signatures
+        #Weights result in mean(data[pos_sig])/2 - mean(data[neg_sig])
+        #                   =  mean(data*sig)
+        #Results in mean(out) = 0
+        #           mean(|out|) = 1 
+        if(self.signed):
+            num_pos = np.count_nonzero(out ==  1);
+            num_neg = np.count_nonzero(out == -1);
+            if(num_pos > 0 and num_neg > 0):
+                num_total = num_pos + num_neg;
+                
+                pos_weight = num_total/num_pos/2;
+                neg_weight = num_total/num_neg/2;
+    
+                out[out==1]  = pos_weight;
+                out[out==-1] = neg_weight*-1;
+         
         return out;
     

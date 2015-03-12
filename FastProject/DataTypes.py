@@ -70,15 +70,15 @@ class ExpressionData(np.ndarray):
         """
         
         sig_vector = signature.sig_indices(self.row_labels);
-            
-        pdata = self * sig_vector;
         
-        weights = np.ones(pdata.shape);
+        weights = np.ones(self.shape);
         if(len(fn_prob) != 0):
             weights[self==0] = 1-fn_prob[self==0];
         
-        sig_scores = pdata.sum(axis=0);
-        sig_scores = sig_scores / np.sum(weights, axis=0);        
+        pdata = self * sig_vector * weights;
+        
+        sig_scores = pdata.sum(axis=0) / np.sum(weights, axis=0);
+        sig_scores = sig_scores / np.sum(abs(sig_vector));        
         
         return sig_scores;
         
@@ -134,19 +134,18 @@ class ProbabilityData(np.ndarray):
             result of evaluating this signature on each sample in data
         
         """
-        
         sig_vector = signature.sig_indices(self.row_labels);
-            
-        pdata = self * sig_vector;
         
-        weights = np.ones(pdata.shape);
+        weights = np.ones(self.shape);
         if(len(fn_prob) != 0):
             weights[self==0] = 1-fn_prob[self==0];
         
-        sig_scores = pdata.sum(axis=0);
-        sig_scores = sig_scores / np.sum(weights, axis=0);        
+        pdata = self * sig_vector * weights;
         
-        return sig_scores; 
+        sig_scores = pdata.sum(axis=0) / np.sum(weights, axis=0);
+        sig_scores = sig_scores / np.sum(abs(sig_vector));
+        
+        return sig_scores;
         
 class PCData(np.ndarray):
     
