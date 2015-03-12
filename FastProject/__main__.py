@@ -251,7 +251,7 @@ print();
 print("Projecting data into 2 dimensions");
 
 if(PCA_TRANSFORM):
-    pc_data, pc_rows = Projections.perform_PCA(data, genes, 30);
+    pc_data, pc_rows = Projections.perform_PCA(data, 30);
     pc_data = PCData(pc_data, data);
     data = pc_data;
 

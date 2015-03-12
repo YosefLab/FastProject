@@ -148,9 +148,9 @@ def generate_projections(data):
 
     return projections; 
 
-def perform_PCA(data, row_labels, N=0):
+def perform_PCA(data, N=0):
     """
-    Projects data into 2 dimensions using a variety of linear and non-linear methods
+    Performs PCA on the data
     
     Parameters
     ----------
@@ -170,7 +170,8 @@ def perform_PCA(data, row_labels, N=0):
           
     """
     # PCA
-    
+    # Note, by default, PCA will subtract out the mean, but will not divide by
+    # the variance.  Use the parameter 'whiten = True' for this.
     pca = PCA();
     pca_data = pca.fit_transform(data.T);
     
