@@ -20,7 +20,9 @@ def probability_of_expression(data, nozero=True):
     cutoffs = np.mean(data,axis=1)/4;  #Empirically found to be good mosy of the time
     
     (gamma, mu_l, mu_h, st_l, st_h, Pi, L) = em_exp_norm_mixture(data,cutoffs);
-        
+    
+    gamma = make_monotonic(gamma, data);    
+    
     return (gamma, mu_h);
 
 def make_monotonic(gamma, data):
@@ -206,31 +208,42 @@ def plot_em_norm_distribution(gamma, mu_l, mu_h, st_l, st_h, data, i):
     plot(domain, p_low, color='green');
     plot(domain, p_high, color='green');
     scatter(data[i,:], gamma[i,:], color='red');
-    ylim(0, 1.1);
+    ylim(0, 1.1);    
+
     
-def probability_transform(data, original_data, original_genes, housekeeping_filename):
-    """ Process data to evaluate probability of expression """
-    
-    print()
-    print('Fitting expression data to exp/norm mixture model');
-    (prob, mu_h) = probability_of_expression(data);
-    prob = make_monotonic(prob, data);
-    
-    print();
-    print('Correcting for false-negatives using housekeeping gene levels');
-    (fit_func, params) = create_false_neg_map(original_data, original_genes, housekeeping_filename);
-    
-    #fit_func is the fitting function of the form fit_func(mu_h, param[0], param[1], etc)
-    #params is a matrix with parameters for each sample.  Size is Num_Params x Num_samples
-    
+def correct_for_fn(prob, mu_h, fit_func, params):
+    """
+    Uses the estimated false_negative, fn(mu) curves to correct probability values.
+        
+    Parameters
+    ----------
+    prob : (Num_Genes x Num_Samples) numpy.ndarray
+        Matrix containing estimate for probability of expression of each gene in each sample
+    mu_h : (Num_Genes x 1) numpy.ndarray
+        Average expression value of each gene across all samples in which gene is expressed
+    fit_func : function (mu_h, params)
+        Function, parameterized by params, that maps each mu_h to a false negative estimate 
+    params : (4 x Num_Samples) numpy.ndarray 
+        Matrix containing parameters for the false-negative fit function (fit_func)
+
+    Returns
+    -------
+    out_prob : (Num_Genes x Num_Samples) numpy.ndarray     
+        Adjusted probability values
+    fn_prob : (Num_Genes x Num_Samples) numpy.ndarray
+        Estimated False-negative probability for each gene in each sample
+        
+    """
+
     fn_prob = np.zeros(prob.shape)
     
-    for i in range(data.shape[1]):
+    for i in range(prob.shape[1]):
         fn_prob[:,i] = fit_func(mu_h, *params[:,i]).ravel();
     
-    prob2 = prob + (1-prob)*fn_prob;
+    out_prob = prob + (1-prob)*fn_prob;
     
-    return prob2, fn_prob
+    return out_prob, fn_prob
+
 
 #def utility_plotting_routine(i, cutoff):
 #    #cutoff = 5;

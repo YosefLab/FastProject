@@ -47,7 +47,9 @@ e.g. -f 1, or -f 123""");
 parser.add_option("-p","--probability", action="store_true", default=False, help="Projects using probability of expression rather than log expression level");
 parser.add_option("-c","--pca", action="store_true", default=False, help="Reduces to a smaller number of principal components before projection");
 parser.add_option("-o", "--output", action="store_true", default=False, help="Outputs data after filtering and any transforms");
+parser.add_option("-q", "--qc", action="store_true", default=False, help="Performs a quality check on samples, filtering samples that do not pass");
 parser.add_option("-i", "--interactive", action="store_true", default=False, help="Prompts options via command line instead");
+
 
 (options, args) = parser.parse_args();
 
@@ -181,7 +183,20 @@ data = edata;  #'data' is used for projections/signatures.  Can be overwritted w
 
 #%% Probability transform
 housekeeping_filename = get_housekeeping_file();
-prob, fn_prob = Transforms.probability_transform(edata, original_data, original_genes, housekeeping_filename);    
+
+print()
+print('Fitting expression data to exp/norm mixture model');
+(prob, mu_h) = Transforms.probability_of_expression(data);
+
+
+print();
+print('Correcting for false-negatives using housekeeping gene levels');
+(fit_func, params) = Transforms.create_false_neg_map(original_data, original_genes, housekeeping_filename);
+(prob, fn_prob) = Transforms.correct_for_fn(prob, mu_h, fit_func, params);
+
+if(options.qc):
+    sample_passes = Transforms.quality_check(params);
+    raise Exception("Incomplete, need to filter out indices");
 
 prob = ProbabilityData(prob, edata);
         
