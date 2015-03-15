@@ -160,15 +160,7 @@ def filter_genes_indices(data, genes, indices):
     genes = [genes[i] for i in indices];
     
     return (data, genes);
-    
-def remove_genes(data, genes, gene_indices):
-    """Utility method.  Given a data matrix (genes x samples) and a list of
-    gene names, remove entries at locations <indices>"""
-    all_indices = np.arange(data.shape[0]);    
-    keep_indices = np.setxor1d(all_indices,gene_indices); 
-    return filter_genes_indices(data,genes,keep_indices);
-    
-    
+        
 def save_filter(genes, filename):
     #save names of genes to a file
     ff = open(filename,'w');

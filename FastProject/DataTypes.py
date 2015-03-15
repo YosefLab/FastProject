@@ -8,6 +8,23 @@ Created on Thu Mar 05 20:13:40 2015
 import numpy as np;
 from scipy.spatial import distance;
 
+#Shared methods
+def subset_genes(self, indices):
+    if(type(indices) is np.ndarray):
+        if(indices.dtype == np.bool):
+            indices = np.nonzero(indices);
+    
+    self = self[indices,:];
+    self.row_labels = [self.row_labels[i] for i in indices];
+
+def subset_samples(self, indices):
+    if(type(indices) is np.ndarray):
+        if(indices.dtype == np.bool):
+            indices = np.nonzero(indices);
+    
+    self = self[:, indices];
+    self.col_labels = [self.col_labels[i] for i in indices];
+
 class ExpressionData(np.ndarray):
     
     def __new__(subtype, data, row_labels=[], col_labels=[]):
@@ -82,6 +99,9 @@ class ExpressionData(np.ndarray):
         
         return sig_scores;
         
+    subset_genes = subset_genes;
+    subset_samples = subset_samples;
+        
 class ProbabilityData(np.ndarray):
     
     def __new__(subtype, data, expression_data):
@@ -147,6 +167,9 @@ class ProbabilityData(np.ndarray):
         
         return sig_scores;
         
+    subset_genes = subset_genes;
+    subset_samples = subset_samples;
+        
 class PCData(np.ndarray):
     
     def __new__(subtype, data, parent_data):
@@ -194,3 +217,5 @@ class PCData(np.ndarray):
         
         #On Principle Components, just evaluate signature on parent data
         return self.parent_data.eval_signature(signature, fn_prob);
+        
+    subset_samples = subset_samples;
