@@ -18,7 +18,7 @@ from .Utils import ProgressBar
 this_directory = os.path.dirname(os.path.abspath(__file__));
 
 
-def filter_genes_threshold(data, genes, threshold):
+def filter_genes_threshold(data, threshold):
     """Filters out genes that are at least active in <threshold> 
     of samples.  Threshold ranges from 0 to 1"""
     
@@ -27,10 +27,10 @@ def filter_genes_threshold(data, genes, threshold):
     
     keep_indices = np.where((data > 0).sum(axis=1) > cutoff)[0];
     
-    return filter_genes_indices(data,genes,keep_indices);
+    return data.subset_genes(keep_indices);
     
 
-def filter_genes_hdt(data, genes, p_val):
+def filter_genes_hdt(data, p_val):
     """Filters out genes that pass the Hartigans Dip Test for bimodality
     with at least p < p_val"""
     #perform Hartigans dip test on the rest of the rows
@@ -57,7 +57,7 @@ def filter_genes_hdt(data, genes, p_val):
 
     
     keep_indices = np.nonzero(hdt_p <= p_cut)[0];
-    (data, genes) = filter_genes_indices(data,genes,keep_indices);
+    data = data.subset_genes(keep_indices);
       
     
     
@@ -75,25 +75,11 @@ def filter_genes_hdt(data, genes, p_val):
     pp.complete();    
     
     keep_indices = np.nonzero(hdt_p <= p_cut)[0];
-    (data, genes) = filter_genes_indices(data,genes,keep_indices);
+    data = data.subset_genes(keep_indices);
     
-    #third with cutoff p=p_val and 40 iterations
-#    if(p_val < .2):
-#        p_cut = p_val;
-#        print "Third pass";
-#        hdt_p = np.zeros(data.shape[0]);
-#        for i in np.arange(data.shape[0]):
-#          (dip, p, xlow, xup) = HDT_Sig(data[i,:],40);
-#          hdt_p[i] = p;
-#          if(np.mod(i,data.shape[0]/20)==0):
-#              print round(float(i)/data.shape[0]*100.0), '%'
-#        
-#        keep_indices = np.nonzero(hdt_p <= p_cut)[0];
-#        (data, genes) = filter_genes_indices(data,genes,keep_indices);
+    return data
     
-    return (data, genes);
-    
-def remove_from_file(data,genes,filename):
+def remove_from_file(data, filename):
     """trim out rows that match genes found in file <filename>
     First row is ignored
     if multiple entries per line, seperated by comma, take the first"""
@@ -114,7 +100,7 @@ def remove_from_file(data,genes,filename):
     hk_indices = list();
     for hk_gene in hk_genes:
       try:
-        ii = genes.index(hk_gene);
+        ii = data.row_labels.index(hk_gene);
         hk_indices.append(ii);
       except ValueError:
         missing+=1;
@@ -126,9 +112,9 @@ def remove_from_file(data,genes,filename):
     else:
         keep_indices = all_indices;
     
-    return filter_genes_indices(data,genes,keep_indices);
+    return data.subset_genes(keep_indices);
 
-def filter_housekeeping(data, genes, housekeeping_file=""):
+def filter_housekeeping(data, housekeeping_file=""):
     """
     Filters out Housekeeping genes.  Uses specified file if provided.
     Otherwise, uses every file in the Housekeeping folder with the module.
@@ -145,31 +131,21 @@ def filter_housekeeping(data, genes, housekeeping_file=""):
             housekeeping_files.append(os.path.join(housekeeping_dir, ff));
     
     for hkf in housekeeping_files:
-        (data, genes) = remove_from_file(data, genes, hkf);
+        data = remove_from_file(data, hkf);
     
     
-    return (data, genes);
+    return data;
         
-
-
-def filter_genes_indices(data, genes, indices):
-    """Utility method.  Given a data matrix (genes x samples) and a list of
-    gene names, filter the two only retaining entries at locations <indices>"""
-    
-    data = data[indices,:];
-    genes = [genes[i] for i in indices];
-    
-    return (data, genes);
         
-def save_filter(genes, filename):
+def save_filter(data, filename):
     #save names of genes to a file
     ff = open(filename,'w');
-    for gene in genes:
+    for gene in data.row_labels:
       ff.write(gene + '\n');
     
     ff.close();
     
-def load_from_file(data, genes, filename):
+def load_from_file(data, filename):
     loaded_genes = list();
     
     ff = open(filename,'r')
@@ -180,11 +156,11 @@ def load_from_file(data, genes, filename):
     
     keep_indices = list();
     for lgene in loaded_genes:
-      for i, gene in enumerate(genes):
+      for i, gene in enumerate(data.row_labels):
         if(gene == lgene):
           keep_indices.append(i);
           continue;
     
-    (data, genes) = filter_genes_indices(data,genes,keep_indices);
+    data = data.subset_genes(keep_indices);
     
-    return (data, genes)
+    return data;

@@ -9,6 +9,7 @@ from __future__ import print_function;
 
 from .Utils import em_exp_norm_mixture;
 from . import Filters;
+from .DataTypes import ExpressionData, ProbabilityData, PCData;
 import numpy as np;
 import os;
 
@@ -43,7 +44,7 @@ def make_monotonic(gamma, data):
     return gamma;        
     
 
-def create_false_neg_map(data, genes, housekeeping_file=""):
+def create_false_neg_map(data, housekeeping_file=""):
     """Uses gene names in <filename> to create a mapping of false negatives.
         
     This assumes all genes in <filename> are actually active, despite measured
@@ -75,12 +76,13 @@ def create_false_neg_map(data, genes, housekeeping_file=""):
     data_hk = np.zeros((0, data.shape[1]));
     genes_hk = list();
     for hkf in housekeeping_files:
-        (data_t, genes_t) = Filters.load_from_file(data, genes, hkf);        
+        data_t = Filters.load_from_file(data, hkf);        
         data_hk = np.vstack((data_hk, data_t));
-        genes_hk.extend(genes_t);
+        genes_hk.extend(data_t.row_labels);
 
+    data_hk = ExpressionData(data_hk, genes_hk, data.col_labels);
 
-    (data_hk, genes_hk) = Filters.filter_genes_threshold(data_hk, genes_hk, 0.2);
+    data_hk = Filters.filter_genes_threshold(data_hk, 0.2);
         
     #calculate distributions for hk gene
     cutoffs = np.mean(data_hk,axis=1)/4;

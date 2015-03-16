@@ -265,7 +265,7 @@ class Signature:
         self.source = filename;
         self.name = name;
     
-    def eval_data(self, data, genes, fn_prob=[]):
+    def eval_data(self, data, fn_prob=[]):
         """For each sample, calculate a score against the signature
         
         Parameters
@@ -285,7 +285,7 @@ class Signature:
         
         """
         
-        sig_vector = self.sig_indices(genes);
+        sig_vector = self.sig_indices(data.row_labels);
         
         if(data.ndim == 1):
             data.shape = (data.shape[0], 1);

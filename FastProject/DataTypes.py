@@ -8,53 +8,30 @@ Created on Thu Mar 05 20:13:40 2015
 import numpy as np;
 from scipy.spatial import distance;
 
-#Shared methods
-def subset_genes(self, indices):
-    if(type(indices) is np.ndarray):
-        if(indices.dtype == np.bool):
-            indices = np.nonzero(indices);
-    
-    self = self[indices,:];
-    self.row_labels = [self.row_labels[i] for i in indices];
-
-def subset_samples(self, indices):
-    if(type(indices) is np.ndarray):
-        if(indices.dtype == np.bool):
-            indices = np.nonzero(indices);
-    
-    self = self[:, indices];
-    self.col_labels = [self.col_labels[i] for i in indices];
-
 class ExpressionData(np.ndarray):
     
-    def __new__(subtype, data, row_labels=[], col_labels=[]):
-        print("new");
-        print(subtype);
-        print(data);
-        print(row_labels);
-        print(col_labels);        
+    def __new__(subtype, data, row_labels=[], col_labels=[]):       
         
         obj = np.asarray(data).view(subtype);
         
         if(len(row_labels) == 0):
             obj.row_labels = [str(i) for i in range(data.shape[0])];
-        elif(len(row_labels != data.shape[0])):
+        elif(len(row_labels) != data.shape[0]):
             raise ValueError("Number of row labels does not equal number of rows in data");
         else:
             obj.row_labels = row_labels;
         
         if(len(col_labels) == 0):
             obj.col_labels = [str(i) for i in range(data.shape[1])];
-        elif(len(col_labels != data.shape[1])):
+        elif(len(col_labels) != data.shape[1]):
             raise ValueError("Number of column labels does not equal number of columns in data");
         else:
             obj.col_labels = col_labels;
         
         return obj;
         
-    def __init__(self, data):
-        print("init")
-        print(self);
+    def __init__(self, data, row_labels=[], col_labels=[]):
+        pass;
                 
     def __array_finalize__(self, obj):
         if obj is None:
@@ -99,8 +76,23 @@ class ExpressionData(np.ndarray):
         
         return sig_scores;
         
-    subset_genes = subset_genes;
-    subset_samples = subset_samples;
+    def subset_genes(self, indices):
+        if(type(indices) is np.ndarray):
+            if(indices.dtype == np.bool):
+                indices = np.nonzero(indices);
+        
+        out = self[indices,:];
+        out.row_labels = [self.row_labels[i] for i in indices];
+        return(out);
+    
+    def subset_samples(self, indices):
+        if(type(indices) is np.ndarray):
+            if(indices.dtype == np.bool):
+                indices = np.nonzero(indices);
+        
+        out = self[:, indices];
+        out.col_labels = [self.col_labels[i] for i in indices];
+        return(out);
         
 class ProbabilityData(np.ndarray):
     
@@ -128,8 +120,7 @@ class ProbabilityData(np.ndarray):
         
         neg_self = 1-self;
         
-        prob_dist = np.dot(neg_self.T, self) + np.dot(self.T, neg_self);
-        prob_dist = prob_dist / self.shape[0];        
+        prob_dist = np.dot(neg_self.T, self) + np.dot(self.T, neg_self);       
         
         #Set all diagonal entries equal to zero
         i = np.arange(prob_dist.shape[0]);
@@ -167,8 +158,25 @@ class ProbabilityData(np.ndarray):
         
         return sig_scores;
         
-    subset_genes = subset_genes;
-    subset_samples = subset_samples;
+    def subset_genes(self, indices):
+        if(type(indices) is np.ndarray):
+            if(indices.dtype == np.bool):
+                indices = np.nonzero(indices);
+        
+        out = self[indices,:];
+        out.row_labels = [self.row_labels[i] for i in indices];
+        out.expression_data = out.expression_data.subset_genes(indices);
+        return(out);
+    
+    def subset_samples(self, indices):
+        if(type(indices) is np.ndarray):
+            if(indices.dtype == np.bool):
+                indices = np.nonzero(indices);
+        
+        out = self[:, indices];
+        out.col_labels = [self.col_labels[i] for i in indices];
+        out.expression_data = out.expression_data.subset_samples(indices);
+        return(out);
         
 class PCData(np.ndarray):
     
@@ -218,4 +226,13 @@ class PCData(np.ndarray):
         #On Principle Components, just evaluate signature on parent data
         return self.parent_data.eval_signature(signature, fn_prob);
         
-    subset_samples = subset_samples;
+    
+    def subset_samples(self, indices):
+        if(type(indices) is np.ndarray):
+            if(indices.dtype == np.bool):
+                indices = np.nonzero(indices);
+        
+        out = self[:, indices];
+        out.col_labels = [self.col_labels[i] for i in indices];
+        out.expression_data = out.parent_data.subset_samples(indices);
+        return(out);

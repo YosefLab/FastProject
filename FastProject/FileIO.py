@@ -67,6 +67,9 @@ def write_matrix(filename, data, row_labels, col_labels):
         ff.write('\n');
     
     ff.close();  
+
+def write_data(filename, data):
+    write_matrix(filename, data, data.row_labels, data.col_labels); 
     
 def read_matrix_nolabels(filename = '', delimiter = '\t'):
     

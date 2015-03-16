@@ -11,13 +11,13 @@ import sys;
 if(sys.version_info.major > 2):
     raw_input = input;
 
-from . import Filters;
-from . import FileIO;
-from . import Transforms;
-from . import Signatures;
-from . import Projections;
-from .DataTypes import ExpressionData, ProbabilityData, PCData;
-from .Utils import ProgressBar;
+from FastProject import Filters;
+from FastProject import FileIO;
+from FastProject import Transforms;
+from FastProject import Signatures;
+from FastProject import Projections;
+from FastProject.DataTypes import ExpressionData, ProbabilityData, PCData;
+from FastProject.Utils import ProgressBar;
 import os;
 import numpy as np;
 import time;
@@ -96,10 +96,11 @@ while(True):
 
 print("Imported ", edata.shape[0], " genes across ", edata.shape[1], " samples");
 
+#Wrap data in ExpressionData object
+edata = ExpressionData(edata, genes, cells);
+
 #Hold on to originals so we don't lose data after filtering in case it's needed later
 original_data = edata;
-original_genes = genes;
-original_cells = cells;
 
 #Create directory for all outputs
 tt = time.localtime();
@@ -155,19 +156,19 @@ while(True):  #Loop exited with 'break', see below
     elif(choice==1): #Housekeeping
         print("Removing housekeeping genes...");
         housekeeping_filename = get_housekeeping_file();
-        (edata,genes) = Filters.filter_housekeeping(edata, genes, housekeeping_filename);
+        edata = Filters.filter_housekeeping(edata, housekeeping_filename);
     elif(choice==2): #Threshold of activation
         print("Removing genes inactive in > 80% samples...");
-        (edata, genes) = Filters.filter_genes_threshold(edata, genes, 0.2);
+        edata = Filters.filter_genes_threshold(edata, 0.2);
     elif(choice==3): #HDT test
         if(HAS_NUMBA):
             print("Removing genes with unimodal distribution across samples using Hartigans DT...");
-            (edata, genes) = Filters.filter_genes_hdt(edata, genes, 0.05);
+            edata = Filters.filter_genes_hdt(edata, 0.05);
         else:
             print("Unavailable: This filtering method requires the python package 'numba'");
     elif(choice==4): #Save to file
         out_file = raw_input("Enter name of file to create : ");
-        FileIO.write_matrix(dir_name + os.sep + out_file, edata, genes, cells);
+        FileIO.write_data(dir_name + os.sep + out_file, edata);
         print("Data saved to " + out_file);
     else:
         print("Error : Invalid Choice\n");
@@ -178,7 +179,6 @@ while(True):  #Loop exited with 'break', see below
         print("Removed ", original[0]-edata.shape[0], " Genes");
         print(edata.shape[0], " Genes retained");
     
-edata = ExpressionData(edata, genes, cells);
 data = edata;  #'data' is used for projections/signatures.  Can be overwritted with the probability data object
 
 #%% Probability transform
@@ -191,14 +191,15 @@ print('Fitting expression data to exp/norm mixture model');
 
 print();
 print('Correcting for false-negatives using housekeeping gene levels');
-(fit_func, params) = Transforms.create_false_neg_map(original_data, original_genes, housekeeping_filename);
+(fit_func, params) = Transforms.create_false_neg_map(original_data, housekeeping_filename);
 (prob, fn_prob) = Transforms.correct_for_fn(prob, mu_h, fit_func, params);
+
+prob = ProbabilityData(prob, edata);
 
 if(options.qc):
     sample_passes = Transforms.quality_check(params);
-    raise Exception("Incomplete, need to filter out indices");
-
-prob = ProbabilityData(prob, edata);
+    prob = prob.subset_samples(sample_passes);
+    
         
 while(True):
     
@@ -253,7 +254,7 @@ while(True):
         else:
             out_file = filename + '_xfrm';
             
-        FileIO.write_matrix(dir_name + os.sep + out_file, data, genes, cells)
+        FileIO.write_data(dir_name + os.sep + out_file, data)
         break;
     elif(choice.lower()[0] == 'n'):
         break;
