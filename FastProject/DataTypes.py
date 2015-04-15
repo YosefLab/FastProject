@@ -72,7 +72,7 @@ class ExpressionData(np.ndarray):
         pdata = self * sig_vector * weights;
         
         sig_scores = pdata.sum(axis=0) / np.sum(weights, axis=0);
-        sig_scores = sig_scores / np.sum(abs(sig_vector));        
+        sig_scores = sig_scores / np.sum(np.abs(sig_vector));        
         
         return sig_scores;
         
@@ -154,7 +154,7 @@ class ProbabilityData(np.ndarray):
         pdata = self * sig_vector * weights;
         
         sig_scores = pdata.sum(axis=0) / np.sum(weights, axis=0);
-        sig_scores = sig_scores / np.sum(abs(sig_vector));
+        sig_scores = sig_scores / np.sum(np.abs(sig_vector));
         
         return sig_scores;
         
