@@ -402,6 +402,8 @@ if(USE_SIGNATURES):
         c = col_indices[i];
         
         sig_name = sp_row_labels[r];
+        sig_name = sig_name.replace("\\","_"); #Make valid file name
+        sig_name = sig_name.replace("/", "_");
         proj_name = sp_col_labels[c];
         
         FileIO.write_scatter_plot(
