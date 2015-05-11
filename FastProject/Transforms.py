@@ -107,7 +107,7 @@ def create_false_neg_map(data, housekeeping_file=""):
     bounds = [(0, np.inf),(0, 2),(0,1), (0,1)];
 
     if(len(x_sorted) > 30):
-        q_indices = len(x_sorted)/31 * np.arange(31);
+        q_indices = len(x_sorted)//31 * np.arange(31);
         q_indices = q_indices[1:];
     else:
         q_indices = np.arange(30);
