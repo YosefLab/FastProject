@@ -355,7 +355,10 @@ if(USE_SIGNATURES):
     
     pbar = ProgressBar(len(sigs));
     for sig in sigs:
-        sig_scores[sig.name] = data.eval_signature(sig, fn_prob);
+        try:
+            sig_scores[sig.name] = data.eval_signature(sig, fn_prob);
+        except ValueError:  #Only thrown when the signature has no genes in the data
+            pass #Just discard the signature then
         pbar.update();
     pbar.complete();
         

@@ -64,7 +64,11 @@ class ExpressionData(np.ndarray):
         """
         
         sig_vector = signature.sig_indices(self.row_labels);
-        
+
+        signature_norm = np.sum(np.abs(sig_vector));
+        if(signature_norm == 0): #If no genes match signature
+            raise ValueError("No genes match signature");
+
         weights = np.ones(self.shape);
         if(len(fn_prob) != 0):
             weights[self==0] = 1-fn_prob[self==0];
@@ -72,7 +76,7 @@ class ExpressionData(np.ndarray):
         pdata = self * sig_vector * weights;
         
         sig_scores = pdata.sum(axis=0) / np.sum(weights, axis=0);
-        sig_scores = sig_scores / np.sum(np.abs(sig_vector));        
+        sig_scores = sig_scores / signature_norm;
         
         return sig_scores;
         
@@ -146,7 +150,11 @@ class ProbabilityData(np.ndarray):
         
         """
         sig_vector = signature.sig_indices(self.row_labels);
-        
+
+        signature_norm = np.sum(np.abs(sig_vector));
+        if(signature_norm == 0): #No genes match signature
+            raise ValueError("No genes match signature");
+
         weights = np.ones(self.shape);
         if(len(fn_prob) != 0):
             weights[self==0] = 1-fn_prob[self==0];
@@ -154,7 +162,7 @@ class ProbabilityData(np.ndarray):
         pdata = self * sig_vector * weights;
         
         sig_scores = pdata.sum(axis=0) / np.sum(weights, axis=0);
-        sig_scores = sig_scores / np.sum(np.abs(sig_vector));
+        sig_scores = sig_scores / signature_norm;
         
         return sig_scores;
         
