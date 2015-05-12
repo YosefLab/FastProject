@@ -225,6 +225,8 @@ def conformity_with_p(data_loc, sig_values, n_neighbors):
     
     neighborhood = sig_values[indices];
 
+    MIN_DISTANCE = 1e-6;
+    distances[distances < MIN_DISTANCE] = MIN_DISTANCE;
 
     ##Weighted mean of neighborhood point signatures defines a prediction
     ##Weights are 1/distance

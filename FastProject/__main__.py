@@ -289,7 +289,7 @@ sigs = [];
 USE_SIGNATURES = False;
 #Use signature? 
 while(True):
-    
+
     if(options.interactive and (not options.signatures)):
         print();
         print("Enter name of signature file or press enter to omit signature analysis.")
@@ -360,8 +360,8 @@ if(USE_SIGNATURES):
 #%% Evaluating signatures against projections
 if(USE_SIGNATURES):
     N_NEIGHBORS = 5;
-    sig_proj_matrix   = np.zeros((len(sigs),len(projections)));
-    sig_proj_matrix_p = np.zeros((len(sigs),len(projections)));
+    sig_proj_matrix   = np.zeros((len(sig_scores),len(projections)));
+    sig_proj_matrix_p = np.zeros((len(sig_scores),len(projections)));
     
     sp_row_labels = sig_scores.keys();
     sp_col_labels = projections.keys();
@@ -411,3 +411,4 @@ if(USE_SIGNATURES):
         
     pp.complete();
 
+print("FastProject Analysis Complete")
