@@ -7,7 +7,8 @@ Created on Wed Jan 21 16:34:49 2015
 from __future__ import division;
 
 import numpy as np;
-from sklearn.neighbors import NearestNeighbors
+from sklearn.neighbors import NearestNeighbors;
+from sklearn.metrics.pairwise import pairwise_distances;
 
 def read_signatures(filename='', match_terms=[]):
     """Reads in a signature file.  Returns a list of Signature objects
@@ -214,26 +215,16 @@ def conformity_with_p(data_loc, sig_values, n_neighbors):
     """
     
     #Incremenet n_neighbors since it counts a point as it's own neighbor
-    nbrs = NearestNeighbors(n_neighbors=n_neighbors+1, algorithm='ball_tree');
-    nbrs.fit(data_loc.T);
-    
-    distances, indices = nbrs.kneighbors(data_loc.T);
+    NEIGHBORHOOD_SIZE = .1
+    distance_matrix = pairwise_distances(data_loc.T, metric='euclidean');
 
-    #Don't count self as a neighbor
-    distances = distances[:,1:];
-    indices = indices[:,1:];
-    
-    neighborhood = sig_values[indices];
+    weights = np.exp(-1 * distance_matrix**2 / NEIGHBORHOOD_SIZE);
+    np.fill_diagonal(weights,0); #Don't count self
 
-    MIN_DISTANCE = 1e-6;
-    distances[distances < MIN_DISTANCE] = MIN_DISTANCE;
-
-    ##Weighted mean of neighborhood point signatures defines a prediction
-    ##Weights are 1/distance
-    weights = distances ** -1;
+    neighborhood = sig_values.reshape((1,len(sig_values)));
 
     neighborhood_prediction = np.sum(neighborhood * weights, axis=1) \
-                / np.sum(weights);
+                / np.sum(weights,axis=1);
     
     
     ##Neighborhood dissimilarity score = |actual - predicted|
@@ -244,12 +235,11 @@ def conformity_with_p(data_loc, sig_values, n_neighbors):
     
     for i in range(NUM_RAND_TRIALS):
         random_sig_values = np.random.permutation(sig_values);
+        random_neighborhood = random_sig_values.reshape((1,len(random_sig_values)));
 
-        neighborhood = random_sig_values[indices];
+        neighborhood_prediction = np.sum(random_neighborhood * weights, axis=1) \
+                / np.sum(weights, axis=1);
 
-        neighborhood_prediction = np.sum(neighborhood * weights, axis=1) \
-                / np.sum(weights);
-                
         random_dissimilarity[i] = np.median(
                                     np.abs(
         random_sig_values - neighborhood_prediction
