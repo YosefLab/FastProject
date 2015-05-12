@@ -218,6 +218,10 @@ def conformity_with_p(data_loc, sig_values, n_neighbors):
     nbrs.fit(data_loc.T);
     
     distances, indices = nbrs.kneighbors(data_loc.T);
+
+    #Don't count self as a neighbor
+    distances = distances[:,1:];
+    indices = indices[:,1:];
     
     neighborhood = sig_values[indices];
 
@@ -226,8 +230,8 @@ def conformity_with_p(data_loc, sig_values, n_neighbors):
     ##Weights are 1/distance
     weights = distances ** -1;
 
-    neighborhood_prediction = np.sum(neighborhood[:,1:] * weights[:,1:]) \
-                / np.sum(weights[:,1:]);
+    neighborhood_prediction = np.sum(neighborhood * weights, axis=1) \
+                / np.sum(weights);
     
     
     ##Neighborhood dissimilarity score = |actual - predicted|
@@ -241,8 +245,8 @@ def conformity_with_p(data_loc, sig_values, n_neighbors):
 
         neighborhood = random_sig_values[indices];
 
-        neighborhood_prediction = np.sum(neighborhood[:,1:] * weights[:,1:]) \
-                / np.sum(weights[:,1:]);
+        neighborhood_prediction = np.sum(neighborhood * weights, axis=1) \
+                / np.sum(weights);
                 
         random_dissimilarity[i] = np.median(
                                     np.abs(
