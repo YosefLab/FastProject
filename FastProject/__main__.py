@@ -174,7 +174,7 @@ while(True):  #Loop exited with 'break', see below
         print("Error : Invalid Choice\n");
         continue;
 
-    if(choice > 0 and choice < 4):
+    if(0 < choice < 4):
         print();
         print("Removed ", original[0]-edata.shape[0], " Genes");
         print(edata.shape[0], " Genes retained");
