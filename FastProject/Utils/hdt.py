@@ -1,10 +1,51 @@
 #! /usr/bin/env python
-from __future__ import print_function;
+from __future__ import print_function, division;
 
 import numpy as num
-from numba import jit
+from FastProject.Utils import ProgressBar;
 
-@jit
+def HDT_Sig_batch(xpdf_matrix, nboot, progressbar=True):
+    """
+    Saves time if calculating dip test on many sample-s of same size.
+    Only generates the background distribution for significance once.
+
+    :param xpdf_matrix: 2-dimensional numpy ndarray
+    :param nboot: number of times to generate a random test statistic for p-value calculation
+    :return: dips: dip statistic for each row in xpdf_matrix
+                ps: p-value for each row in xpdf_matrix
+                xlows: xlow for each row in xpdf_matrix
+                xups: xup for each row in xpdf_matrix
+    """
+
+    dips = num.zeros(xpdf_matrix.shape[0]);
+    xlows = num.zeros(xpdf_matrix.shape[0]);
+    xups = num.zeros(xpdf_matrix.shape[0]);
+
+    if(progressbar): pbar = ProgressBar(xpdf_matrix.shape[0] + nboot);
+
+    for i in xrange(xpdf_matrix.shape[0]):
+        (dip, xlow, xup, ifault, gcm, lcm, mn, mj) = DipTest(xpdf_matrix[i,:]);
+        dips[i] = dip;
+        xlows[i] = xlow;
+        xups[i] = xup;
+        if(progressbar): pbar.update();
+
+
+    bootDip=num.zeros(nboot);
+    for i in num.arange(nboot):
+        unifpdf=num.sort(num.random.rand(xpdf_matrix.shape[1]))
+        bootDip[i] = DipTest(unifpdf)[0];
+        if(progressbar): pbar.update();
+
+    dips = num.expand_dims(dips, axis=1);        #Make dips Nx1
+    bootDip = num.expand_dims(bootDip, axis=0);  #Make bootDip 1xnboot
+
+    ps = num.sum(dips < bootDip, axis=1) / float(nboot);
+
+    if(progressbar): pbar.complete();
+
+    return(dips, ps, xlows, xups)
+
 def HDT_Sig(xpdf,nboot):
     """Dip test with significance
     """
@@ -20,7 +61,6 @@ def HDT_Sig(xpdf,nboot):
     
     return (dip,p,xlow,xup)
 
-@jit(nopython=False)
 def DipTest(xpdf):
     """Hartigan's dip test. 
 
@@ -327,5 +367,5 @@ if __name__=="__main__":
            """
     xpdf=num.random.randn(100)
     xpdf+=num.random.randn(100)+5
-    print(DipTestSig(xpdf,1000))
+    print(HDT_Sig(xpdf,1000))
     #print DipTest(xpdf)

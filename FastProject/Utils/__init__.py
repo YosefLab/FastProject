@@ -10,6 +10,6 @@ try:
     HAS_NUMBA = True;
 except ImportError:
     HAS_NUMBA = False;
-	
+
 if(HAS_NUMBA):
-	from .hdt import HDT_Sig;
+    from .hdt import HDT_Sig_batch;

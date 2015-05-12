@@ -34,47 +34,10 @@ def filter_genes_hdt(data, p_val):
     """Filters out genes that pass the Hartigans Dip Test for bimodality
     with at least p < p_val"""
     #perform Hartigans dip test on the rest of the rows
-    
-    if(p_val > .5):
-        print("Error, p_val must be less than 0.5")
-        return;
-    
-    print();
-    print('Filtering using HDT with p<' +str(p_val));        
-    
-    #first with cutoff p=.5 and 1 iteration
-    print();
-    print('First Pass');
-    p_cut = 0.5;
-    hdt_p = np.zeros(data.shape[0]);
-    pp = ProgressBar(data.shape[0]);
-    for i in np.arange(data.shape[0]):
-      (dip, p, xlow, xup) = Utils.HDT_Sig(data[i,:],1);
-      hdt_p[i] = p;
-      pp.update();
-    
-    pp.complete();
 
-    
-    keep_indices = np.nonzero(hdt_p <= p_cut)[0];
-    data = data.subset_genes(keep_indices);
-      
-    
-    
-    #second with cutoff p=p_val and 10 iterations
-    print();
-    print('Second Pass');
-    pp = ProgressBar(data.shape[0]);
-    p_cut = p_val;
-    hdt_p = np.zeros(data.shape[0]);
-    for i in np.arange(data.shape[0]):
-      (dip, p, xlow, xup) = Utils.HDT_Sig(data[i,:],10);
-      hdt_p[i] = p;
-      pp.update();
+    (dips, ps, xlows, xups) = Utils.HDT_Sig_batch(data, 1000);
 
-    pp.complete();    
-    
-    keep_indices = np.nonzero(hdt_p <= p_cut)[0];
+    keep_indices = np.nonzero(ps <= p_val)[0];
     data = data.subset_genes(keep_indices);
     
     return data
