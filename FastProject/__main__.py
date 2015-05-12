@@ -194,12 +194,14 @@ print('Correcting for false-negatives using housekeeping gene levels');
 (fit_func, params) = Transforms.create_false_neg_map(original_data, housekeeping_filename);
 (prob, fn_prob) = Transforms.correct_for_fn(prob, mu_h, fit_func, params);
 
-prob = ProbabilityData(prob, edata);
+prob = ProbabilityData(prob, data);
 
 if(options.qc):
     sample_passes = Transforms.quality_check(params);
     prob = prob.subset_samples(sample_passes);
-    
+    data = data.subset_samples(sample_passes);
+
+Transforms.z_normalize(data);
         
 while(True):
     

@@ -272,3 +272,24 @@ def correct_for_fn(prob, mu_h, fit_func, params):
 #    ylim(0, 1.1);
 #    
 #    display(f)
+
+def z_normalize(data):
+    """
+    Z-normalizes the rows of the matrix in data.
+    No return as operation is done in place.
+    Mean is subtracted out result is scaled so standard deviation = 1
+    :param data: numpy.ndarray, 2 dimensions
+    :return: None
+    """
+    if(data is ProbabilityData or data is PCData):
+        raise TypeError("Should not be z-normalizing Probability or PCData, exiting");
+
+    mu = data.mean(axis=1, keepdims=True);
+    sigma = data.std(axis=1, keepdims=True);
+
+    #Shouldn't be necessary for expression data that's been filtered, but good practice
+    sigma[sigma == 0] = 1;
+
+    #Note, operations are in place, no return needed
+    data -= mu;
+    data /= sigma;

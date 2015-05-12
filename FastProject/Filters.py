@@ -8,7 +8,7 @@ from __future__ import print_function;
 
 #Compute the distance matrix between samples
 #Input:  Data = matrix of NumGenes x NumSamples
-#Output:  Similarity matrixs of size NumSamples x NumSamples
+#Output:  Similarity matrices of size NumSamples x NumSamples
 
 import numpy as np
 import os;
