@@ -15,7 +15,6 @@ import os;
 
 this_directory = os.path.dirname(os.path.abspath(__file__));
 
-#from numba import jit;
 
 def probability_of_expression(data, nozero=True):
     cutoffs = np.mean(data,axis=1)/4;  #Empirically found to be good mosy of the time

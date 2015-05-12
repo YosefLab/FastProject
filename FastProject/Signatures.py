@@ -39,7 +39,7 @@ def read_signatures(filename='', match_terms=[]):
     if(type(match_terms) is str):
         match_terms = [match_terms];
     
-    match_terms = map(lambda term: term.lower(), match_terms);    
+    match_terms = [term.lower() for term in match_terms];
     
     try:    
         

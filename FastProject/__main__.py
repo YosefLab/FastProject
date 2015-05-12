@@ -26,14 +26,6 @@ from optparse import OptionParser
 
 PCA_TRANSFORM = False;
 
-HAS_NUMBA = False;
-try:
-    import numba
-    HAS_NUMBA = True;
-except ImportError:
-    HAS_NUMBA = False;
-    
-
 parser = OptionParser('usage: %prog [options] data_file');
 parser.add_option("-k", "--housekeeping", metavar="FILE", 
                   help="Read list of housekeeping genes from FILE.  Uses default list if not specified");
@@ -161,11 +153,8 @@ while(True):  #Loop exited with 'break', see below
         print("Removing genes inactive in > 80% samples...");
         edata = Filters.filter_genes_threshold(edata, 0.2);
     elif(choice==3): #HDT test
-        if(HAS_NUMBA):
-            print("Removing genes with unimodal distribution across samples using Hartigans DT...");
-            edata = Filters.filter_genes_hdt(edata, 0.05);
-        else:
-            print("Unavailable: This filtering method requires the python package 'numba'");
+        print("Removing genes with unimodal distribution across samples using Hartigans DT...");
+        edata = Filters.filter_genes_hdt(edata, 0.05);
     elif(choice==4): #Save to file
         out_file = raw_input("Enter name of file to create : ");
         FileIO.write_data(dir_name + os.sep + out_file, edata);
@@ -179,7 +168,7 @@ while(True):  #Loop exited with 'break', see below
         print("Removed ", original[0]-edata.shape[0], " Genes");
         print(edata.shape[0], " Genes retained");
     
-data = edata;  #'data' is used for projections/signatures.  Can be overwritted with the probability data object
+data = edata;  #'data' is used for projections/signatures.  Can be overwritten with the probability data object
 
 #%% Probability transform
 housekeeping_filename = get_housekeeping_file();
