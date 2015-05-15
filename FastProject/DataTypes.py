@@ -242,5 +242,14 @@ class PCData(np.ndarray):
         
         out = self[:, indices];
         out.col_labels = [self.col_labels[i] for i in indices];
-        out.expression_data = out.parent_data.subset_samples(indices);
+        out.parent_data = out.parent_data.subset_samples(indices);
+        return(out);
+
+    def subset_components(self, indices):
+        if(type(indices) is np.ndarray):
+            if(indices.dtype == np.bool):
+                indices = np.nonzero(indices);
+
+        out = self[indices,:];
+        out.row_labels = [self.row_labels[i] for i in indices];
         return(out);

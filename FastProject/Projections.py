@@ -11,6 +11,7 @@ from sklearn.manifold import Isomap
 from sklearn.manifold import LocallyLinearEmbedding
 from sklearn.manifold import MDS
 from sklearn.manifold import SpectralEmbedding
+import scipy.stats;
 
 from .Utils import ProgressBar;
 from . import DataTypes
@@ -187,5 +188,42 @@ def perform_PCA(data, N=0):
     
     row_labels = ["PC"+str(i+1) for i in range(N)];    
     
-    return pca_data.T, row_labels;
-    
+    return pca_data.T;
+
+def filter_PCA(data, scores):
+    """
+    Removes PC's that correlate with scores across samples
+
+    :param data: Data that has been PCA transformed.  ndarray (Num Components x Num Samples)
+    :param scores: Values (1 per sample)
+    :return: The data with some PC's (rows) removed
+    """
+
+    #Spearman correlation for each Component with each Sample
+
+    ##Fast version
+    # data_indices = np.argsort(data).argsort(); #Two argsorts give rank
+    # score_indices = np.argsort(scores).argsort();
+    #
+    # n = data_indices.shape[1];
+    #
+    # rho = 1 - 6*np.sum((data_indices - score_indices)**2, axis=1)/(n*(n**2-1));
+    #
+    # #Use t-like statistic for significance
+    # t = rho * np.sqrt((n-2) / (1-rho**2));
+    # p_plus = scipy.stats.t.cdf(t*-1, n-2)*2;
+    # p_minus = scipy.stats.t.cdf(t, n-2)*2;
+    # p = p_plus;
+    # p[t < 0] = p_minus[t < 0];
+    # print("Done");
+
+    #Not as fast, but fast enough for a few thousand genes
+    rho = np.zeros(data.shape[0]);
+    p = np.zeros(data.shape[0]);
+    for i in xrange(data.shape[0]):
+       rho[i], p[i] = scipy.stats.spearmanr(data[i,:], scores)
+
+    good_pcs = np.nonzero(p > 1e-5);
+
+    data = data.subset_components(good_pcs);
+    return data

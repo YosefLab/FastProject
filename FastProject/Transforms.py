@@ -158,7 +158,9 @@ def quality_check(params):
     -------
     sample_passes : (Num_Samples) boolean numpy.ndarray
         Vector containing True for samples that pass this quality check
-          
+    sample_score : (Num_Samples) float numpy.ndarray
+          Vector containing a score representing the quality of each sample.
+          Smaller is better.
     """
     
     #Logistic parameters
@@ -185,8 +187,10 @@ def quality_check(params):
     MAD = np.mean(abs_dev);
     
     sample_passes = int_val < (int_val_mean + 1.6*MAD);
+
+    sample_score = int_val;
     
-    return sample_passes;
+    return sample_passes, sample_score;
     
 
 def plot_em_norm_distribution(gamma, mu_l, mu_h, st_l, st_h, data, i):

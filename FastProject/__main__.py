@@ -24,8 +24,6 @@ import time;
 
 from optparse import OptionParser
 
-PCA_TRANSFORM = False;
-
 parser = OptionParser('usage: %prog [options] data_file');
 parser.add_option("-k", "--housekeeping", metavar="FILE", 
                   help="Read list of housekeeping genes from FILE.  Uses default list if not specified");
@@ -75,10 +73,8 @@ while(True):
         if(len(args) > 0):
             filename = args[0];
         else:
-            print();
-            print("Argument Error:  data_file not specified.\nExiting...");
-            sys.exit();
-    
+            raise ValueError("Argument Error:  data_file not specified.\nExiting...");
+
     if(os.path.isfile(filename)):
         (edata, genes, cells) = FileIO.read_matrix(filename);
         break;
@@ -185,8 +181,9 @@ print('Correcting for false-negatives using housekeeping gene levels');
 
 prob = ProbabilityData(prob, data);
 
+sample_passes, sample_scores = Transforms.quality_check(params);
+
 if(options.qc):
-    sample_passes = Transforms.quality_check(params);
     prob = prob.subset_samples(sample_passes);
     data = data.subset_samples(sample_passes);
 
@@ -220,7 +217,10 @@ while(True):
     
     if(choice.lower()[0] == 'y'):
         #Transform into top N principal components
-        PCA_TRANSFORM = True;
+        pc_data = Projections.perform_PCA(data, 30);
+        pc_data = PCData(pc_data, data);
+        pc_data = Projections.filter_PCA(pc_data, sample_scores);
+        data = pc_data;
         break;
     elif(choice.lower()[0] == 'n'):
         break;
@@ -256,11 +256,6 @@ while(True):
 #%% Dimensional Reduction procedures
 print();
 print("Projecting data into 2 dimensions");
-
-if(PCA_TRANSFORM):
-    pc_data, pc_rows = Projections.perform_PCA(data, 30);
-    pc_data = PCData(pc_data, data);
-    data = pc_data;
 
 projections = Projections.generate_projections(data);
 
