@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>FastProject Viewer</title>
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type="text/javascript" src="jquery-2.1.4.min.js"></script>
+    <script type="text/javascript" src="sample.js"></script>
+    <script type="text/javascript">
+         // Load the Visualization API and the piechart package.
+      google.load('visualization', '1', {'packages':['corechart']});
+
+      // Set a callback to run when the Google Visualization API is loaded.
+      //google.setOnLoadCallback(drawChart);
+
+
+         window.onload = function()
+         {
+             createTableFromData(FP_SigProjMatrix, FP_ProjectionKeys, FP_SignatureKeys);
+         };
+      // Callback that creates and populates a data table,
+      // instantiates the pie chart, passes in the data and
+      // draws it.
+      function drawChart(i, j) {
+
+          // Create the data table.
+          proj_sig_array = mergeProjSig(FP_Projections[FP_ProjectionKeys[j]], FP_SigScores[FP_SignatureKeys[i]]);
+          var data = new google.visualization.arrayToDataTable(proj_sig_array);
+
+          titleStr = FP_ProjectionKeys[j] + ": " + FP_SignatureKeys[i];
+
+          // Set chart options
+          var options = {
+              'title': titleStr,
+              'width': 800,
+              'height': 600,
+              'legend': {position: 'none'},
+              'dataOpacity': 0.5
+          };
+
+          // Instantiate and draw our chart, passing in some options.
+          var chart = new google.visualization.ScatterChart(document.getElementById('chart_div'));
+          chart.draw(data, options);
+      }
+
+         function tableClickFunction(event)
+         {
+            var cell = $(event.target);
+             var col = cell.parent().children().index($(this)) - 1;
+             var row = cell.parent().parent().children().index($(this).parent())-1;
+
+             drawChart(row, col);
+         }
+
+        function floatToColor(value, cmin, cmax)
+        {
+            norm_val = (value - cmin) / (cmax-cmin);
+
+            //Old color values
+            /*blue = 4*(0.75-norm_val);
+            red = 4*(norm_val -.25);
+            green = 4*Math.abs(norm_val - 0.5)-1;*/
+
+            blue = 1-1*norm_val;
+            red = norm_val;
+            green = 1-Math.abs(norm_val - 0.5)*2;
+
+            if(blue < 0) blue = 0;
+            if(blue > 1) blue = 1;
+            if(green < 0) green = 0;
+            if(green > 1) green = 1;
+            if(red < 0) red = 0;
+            if(red > 1) red = 1;
+
+            blue = Math.round(blue*255);
+            red = Math.round(red*255);
+            green = Math.round(green*255);
+
+            //No good zero padding in JS?
+            rpad = (red < 16) ? "0" : "";
+            gpad = (green < 16) ? "0" : "";
+            bpad = (blue < 16) ? "0" : "";
+
+            return "#" + rpad + red.toString(16) + gpad + green.toString(16) + bpad + blue.toString(16);
+        }
+
+        function mergeProjSig(projection, signature)
+        {
+            output = Array();
+            output.push(["X","Y",{"type": "string", "role": "style"}]);
+
+            cmin = Math.min.apply(Math, signature);
+            cmax = Math.max.apply(Math, signature);
+
+            for (i = 0; i < projection.length; i++)
+            {
+                row = projection[i].slice(0);  //copies the row
+                row.push("point { fill-color: " + floatToColor(signature[i], cmin, cmax));
+                output.push(row);
+            }
+
+            return output;
+        }
+
+        function createTableFromData(data_matrix, col_labels, row_labels)
+        {
+            rowMin = function(row){return Math.min.apply(Math, row);};
+            rowMax = function(row){return Math.max.apply(Math, row);};
+            matrixMin = function(matrix){
+                return rowMin(matrix.map(rowMin));
+            };
+            matrixMax = function(matrix){
+                return rowMax(matrix.map(rowMax));
+            };
+
+            cmin = matrixMin(data_matrix);
+            cmax = matrixMax(data_matrix);
+
+            tbl = document.createElement("table");
+            tbody = document.createElement("tbody");
+
+            //Create column headers
+            tr = document.createElement("tr");
+            tr.appendChild(document.createElement("th")); //Empty upper left cell
+            for(var j=0; j < col_labels.length; j++){
+                th = document.createElement("th");
+                th.appendChild(document.createTextNode(col_labels[j]));
+                tr.appendChild(th);
+            }
+            tbody.appendChild(tr);
+
+
+            for(var i=0; i < data_matrix.length; i++)
+            {
+                var tr = document.createElement("tr");
+
+                //Create row label
+                var label_td = document.createElement("td");
+                label_td.appendChild(document.createTextNode(row_labels[i]));
+                tr.appendChild(label_td);
+
+                for(var j = 0; j < data_matrix[i].length; j++)
+                {
+                    var td = document.createElement("td");
+                    td.appendChild(document.createTextNode(data_matrix[i][j].toString()));
+                    tr.appendChild(td);
+                    td = $(td);
+                    td.click(tableClickFunction);
+                    td.css("background-color", floatToColor(data_matrix[i][j], cmin, cmax));
+                }
+                tbody.appendChild(tr);
+            }
+            tbl.appendChild(tbody);
+
+            tbldiv = document.getElementById("table_div");
+            tbldiv.appendChild(tbl);
+        }
+    </script>
+    <style>
+        table th {
+           transform: rotate(-60deg);
+            transform-origin: left top 0;
+        }
+
+        table td:not(:first-child){
+            width: 70px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+<h1>FastProject Viewer</h1>
+<div id="table_div"></div>
+<div id="chart_div"></div>
+</body>
+</html>

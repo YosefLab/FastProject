@@ -406,4 +406,8 @@ if(USE_SIGNATURES):
         
     pp.complete();
 
+from FastProject import HtmlViewer;
+
+HtmlViewer.generate_js_data_file("sample.js", projections, sig_scores, sig_proj_matrix, sig_proj_matrix_p, sp_col_labels, sp_row_labels);
+
 print("FastProject Analysis Complete")
