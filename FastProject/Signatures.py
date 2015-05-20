@@ -149,48 +149,6 @@ def filter_sig_list(signatures, match_terms):
     return filtered_signatures;
 
 
-def conformity(data_loc, sig_values, n_neighbors):
-    """
-    Score each sample based on how similar its signature score is to its neighborhood
-    
-    Parameters
-    ---------
-    data_loc : array-like, shape (Num_Dimensions, Num_Samples)
-        locations of points used to calculate neareset neighbors
-    sig_values : array-like, 1D, shape (Num_Samples)
-        Signature value for each sample.  Get using Signature.eval_data
-    n_neighbors : int
-        Number of neighbors to use in defining the neighborhood
-    
-    Returns
-    -------
-    dissimilarity : array-like, 1D, shape (Num_Samples)
-        Score for each sample as to how dissimilar it is from neighboring points
-        
-    """
-    
-    #Incremenet n_neighbors since it counts a point as it's own neighbor
-    nbrs = NearestNeighbors(n_neighbors=n_neighbors+1, algorithm='ball_tree');
-    nbrs.fit(data_loc.T);
-    
-    distances, indices = nbrs.kneighbors(data_loc.T);
-    
-    neighborhood = sig_values[indices];
-
-
-    ##Weighted mean of neighborhood point signatures defines a prediction
-    ##Weights are 1/distance
-    weights = distances ** -1;
-
-    neighborhood_prediction = np.sum(neighborhood[:,1:] * weights[:,1:]) \
-                / np.sum(weights[:,1:]);
-    
-    
-    ##Neighborhood dissimilarity score = |actual - predicted|
-    dissimilarity = np.abs(sig_values - neighborhood_prediction);
-    
-    return dissimilarity;
-
 def conformity_with_p(data_loc, sig_values, n_neighbors):
     """
     Score each sample based on how similar its signature score is to its neighborhood
@@ -249,6 +207,10 @@ def conformity_with_p(data_loc, sig_values, n_neighbors):
     #than the signature score of non-shuffled.  Ratio is p value.
     count_random_wins = np.count_nonzero(random_dissimilarity <= np.median(dissimilarity));
     p_value = (1 + count_random_wins) / (1 + NUM_RAND_TRIALS);
+
+    #Scale dissimilarity by the std
+    #  this allows dissimilarity values to better be compared between signatures of varying magnitudes
+    dissimilarity /= np.std(sig_values);
     
     return dissimilarity, p_value
 

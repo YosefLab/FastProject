@@ -69,10 +69,12 @@ class ExpressionData(np.ndarray):
         if(signature_norm == 0): #If no genes match signature
             raise ValueError("No genes match signature");
 
-        weights = np.ones(self.shape);
-        if(len(fn_prob) != 0):
-            weights[self==0] = 1-fn_prob[self==0];
-        
+        fn_prob = np.array(fn_prob);
+        if(len(fn_prob)==0):
+            weights = np.ones(self.shape);
+        else:
+            weights = 1-fn_prob;
+
         pdata = self * sig_vector * weights;
         
         sig_scores = pdata.sum(axis=0);
@@ -141,7 +143,8 @@ class ProbabilityData(np.ndarray):
             expression data to evaluate the signature against
         fn_prob : array-like, shape (Num_Genes, Num_Samples)
             false-negative probability used to weight signature score
-            (Optional)
+            (Optional). This is ignored for probability data as the probability
+            values already capture the false-negative probability.
         
         Returns
         -------
@@ -156,9 +159,7 @@ class ProbabilityData(np.ndarray):
             raise ValueError("No genes match signature");
 
         weights = np.ones(self.shape);
-        if(len(fn_prob) != 0):
-            weights[self==0] = 1-fn_prob[self==0];
-        
+
         pdata = self * sig_vector * weights;
         
         sig_scores = pdata.sum(axis=0) / np.sum(weights, axis=0);
