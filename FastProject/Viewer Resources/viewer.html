@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>FastProject Viewer</title>
     <script type="text/javascript" src="https://www.google.com/jsapi"></script>
-    <script type="text/javascript" src="jquery-2.1.4.min.js"></script>
+    <script type="text/javascript" src="../../jquery-2.1.4.min.js"></script>
     <script type="text/javascript" src="sample.js"></script>
     <script type="text/javascript">
          // Load the Visualization API and the piechart package.
@@ -17,6 +17,17 @@
          window.onload = function()
          {
              createTableFromData(FP_SigProjMatrix, FP_ProjectionKeys, FP_SignatureKeys);
+
+
+             $("#sig_filt_input").on('change textInput input', function(){
+                 var val = this.value.toLowerCase();
+                 $('#table_div').find('tr').removeClass('hidden')
+                         .filter(function(i, element){
+                             if(i == 0){return false;}
+                             sig_text = $(element).children('td').first().html().toLowerCase();
+                             return sig_text.indexOf(val) == -1;
+                         }).addClass('hidden');
+             });
          };
       // Callback that creates and populates a data table,
       // instantiates the pie chart, passes in the data and
@@ -43,11 +54,30 @@
           chart.draw(data, options);
       }
 
+         function sortByColumn(j)
+         {
+             table = $('#table_div').children('table');
+
+             sortFunction = function(a,b){
+                 a_val = parseFloat($(a).children("td")[j+1].innerHTML);
+                 b_val = parseFloat($(b).children("td")[j+1].innerHTML);
+                 return b_val - a_val;
+             }
+
+             unsorted_rows = table.children('tbody').children('tr:not(:first)');
+             sorted_rows = unsorted_rows.sort(sortFunction);
+
+             unsorted_rows.detach();
+             table.children('tbody').append(sorted_rows);
+
+
+         }
+
          function tableClickFunction(event)
          {
-            var cell = $(event.target);
-             var col = cell.parent().children().index($(this)) - 1;
-             var row = cell.parent().parent().children().index($(this).parent())-1;
+             var cell = $(event.target);
+             var row = cell.data("row_num");
+             var col = cell.data("col_num");
 
              drawChart(row, col);
          }
@@ -120,11 +150,16 @@
             tbody = document.createElement("tbody");
 
             //Create column headers
+            function generateColSortFcn(col_num)
+            {
+                return function(){sortByColumn(col_num)};
+            }
             tr = document.createElement("tr");
             tr.appendChild(document.createElement("th")); //Empty upper left cell
             for(var j=0; j < col_labels.length; j++){
                 th = document.createElement("th");
                 th.appendChild(document.createTextNode(col_labels[j]));
+                $(th).click(generateColSortFcn(j));
                 tr.appendChild(th);
             }
             tbody.appendChild(tr);
@@ -145,6 +180,8 @@
                     td.appendChild(document.createTextNode(data_matrix[i][j].toString()));
                     tr.appendChild(td);
                     td = $(td);
+                    td.data("row_num", i);
+                    td.data("col_num", j);
                     td.click(tableClickFunction);
                     td.css("background-color", floatToColor(data_matrix[i][j], cmin, cmax));
                 }
@@ -155,6 +192,7 @@
             tbldiv = document.getElementById("table_div");
             tbldiv.appendChild(tbl);
         }
+
     </script>
     <style>
         table th {
@@ -162,15 +200,24 @@
             transform-origin: left top 0;
         }
 
-        table td:not(:first-child){
-            width: 70px;
+        table td:not(:first-child), table th:not(:first-child){
+            text-align: center;
+            width: 50px;
+            max-width: 50px;
             cursor: pointer;
         }
+
+        .hidden {
+            display: none;
+        }
+
     </style>
 </head>
 <body>
 <h1>FastProject Viewer</h1>
-<div id="table_div"></div>
-<div id="chart_div"></div>
+<input id="sig_filt_input" type="text" placeholder="Filter Signatures...">
+<br>
+<div id="table_div" style="display:inline-block; float:left"></div>
+<div id="chart_div" style="float:left"></div>
 </body>
 </html>

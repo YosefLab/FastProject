@@ -2,6 +2,17 @@
 This module contains functions for generating html and js files so that
 plots can be easily viewed.
 """
+import shutil;
+import os;
+
+this_directory = os.path.dirname(os.path.abspath(__file__));
+RESOURCE_DIR = this_directory + os.sep + "Viewer Resources";
+
+def copy_html_file(destination_dir):
+    shutil.copy(RESOURCE_DIR + os.sep + "viewer.html", destination_dir + os.sep + "viewer.html");
+
+
+
 def ndarray_to_JS(np_array, format_str = "{:.3f}"):
     """
     Returns a string representation of np_array in JS list of lists syntax
