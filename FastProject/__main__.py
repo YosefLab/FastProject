@@ -211,13 +211,13 @@ while(True):
 while(True):
     
     if(options.interactive and (not options.pca)):
-        choice = raw_input("Reduce data into top 30 pincipal components before projection? [y/n]: ");
+        choice = raw_input("Perform PCA before projection? [y/n]: ");
     else:
         choice = 'y' if options.pca else 'n';
     
     if(choice.lower()[0] == 'y'):
         #Transform into top N principal components
-        pc_data = Projections.perform_PCA(data, 30);
+        pc_data = Projections.perform_PCA(data);
         pc_data = PCData(pc_data, data);
         pc_data = Projections.filter_PCA(pc_data, sample_scores);
         data = pc_data;

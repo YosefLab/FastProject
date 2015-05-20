@@ -154,7 +154,7 @@ def generate_projections(data):
 
     return projections; 
 
-def perform_PCA(data, N=0):
+def perform_PCA(data, N=0, variance_proportion=1.0):
     """
     Performs PCA on the data
     
@@ -183,10 +183,12 @@ def perform_PCA(data, N=0):
     
     if(N > pca_data.shape[1]): N = pca_data.shape[1];
     
-    if(N != 0):
+    if(N != 0): #If N is specified, then return top N PC's
         pca_data = pca_data[:,range(N)];
-    
-    row_labels = ["PC"+str(i+1) for i in range(N)];    
+    else: #Otherwise, if variance_proportion is specified, then return top PCs until variance proportion is reached
+        total_variance = np.cumsum(pca.explained_variance_ratio_);
+        last_i = np.nonzero(total_variance <= variance_proportion)[0][-1];
+        pca_data = pca_data[:,range(last_i+1)];
     
     return pca_data.T;
 
@@ -223,7 +225,7 @@ def filter_PCA(data, scores):
     for i in xrange(data.shape[0]):
        rho[i], p[i] = scipy.stats.spearmanr(data[i,:], scores)
 
-    good_pcs = np.nonzero(p > 1e-5);
+    good_pcs = np.nonzero(p > 1e-5)[0];
 
     data = data.subset_components(good_pcs);
     return data
