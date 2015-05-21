@@ -4,6 +4,7 @@ plots can be easily viewed.
 """
 import shutil;
 import os;
+import numpy as np;
 
 this_directory = os.path.dirname(os.path.abspath(__file__));
 RESOURCE_DIR = this_directory + os.sep + "Viewer Resources";
@@ -11,7 +12,38 @@ RESOURCE_DIR = this_directory + os.sep + "Viewer Resources";
 def copy_html_file(destination_dir):
     shutil.copy(RESOURCE_DIR + os.sep + "viewer.html", destination_dir + os.sep + "viewer.html");
 
+def toJS_variable(variable_name, obj):
+    return "var " + variable_name + " = " + toJS(obj) + ";\n";
 
+def toJS(obj):
+    """
+    Convert a python object into a javascript format.
+    Only certain object types are supported:
+        List >> Javascript Array
+        Numpy.ndarray >> Javascript Array
+        Dictionary >> Javascript Object if keys are strings
+    :param obj: object to be converted
+    :return: string representation of the object in javascript
+    """
+
+    if(type(obj) is str):
+        return obj;
+    if(type(obj) is int or type(obj) is float):
+        return str(obj);
+    if(type(obj) is np.ndarray and obj.ndim < 3):
+        return ndarray_to_JS(obj);
+    if(type(obj) is list):
+        return '[' + ','.join([toJS(x) for x in obj]) + ']';
+    if(type(obj) is dict):
+        pairs = list();
+        for key in obj.keys():
+            if(type(key) is str or type(key) is int or type(key) is float):
+                pairs.append(toJS(key)+':'+toJS(obj[key]));
+            else:
+                raise ValueError("Non-compatible Value Encountered for Object Key");
+        return '{' + ','.join(pairs) + '}';
+
+    raise ValueError("Non-convertible Value Encountered");
 
 def ndarray_to_JS(np_array, format_str = "{:.3f}"):
     """
