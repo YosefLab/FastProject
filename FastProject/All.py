@@ -64,6 +64,8 @@ while(True):
     else:
         if(len(args) > 0):
             filename = args[0];
+            if(not os.path.isfile(filename)):
+                raise ValueError("Argument Error: data file not found.\nExiting...");
         else:
             raise ValueError("Argument Error:  data_file not specified.\nExiting...");
 
@@ -181,6 +183,16 @@ if(options.qc):
 
 Transforms.z_normalize(data);
 
+#Perform PCA on the data, with and without the probability xfrm
+pc_data = Projections.perform_PCA(data);
+pc_data = PCData(pc_data, data);
+pc_data = Projections.filter_PCA(pc_data, sample_scores);
+
+
+pc_prob = Projections.perform_PCA(prob);
+pc_prob = PCData(pc_prob, prob);
+pc_prob = Projections.filter_PCA(pc_prob, sample_scores);
+
 #%% Signature file
 sigs = [];
 #Use signature?
@@ -230,15 +242,6 @@ if(options.interactive):
             keywords = [word.strip() for word in keywords.split(',')];
             sigs = Signatures.filter_sig_list(sigs, keywords);
 
-#Perform PCA on the data, with and without the probability xfrm
-pc_data = Projections.perform_PCA(data);
-pc_data = PCData(pc_data, data);
-pc_data = Projections.filter_PCA(pc_data, sample_scores);
-
-
-pc_prob = Projections.perform_PCA(prob);
-pc_prob = PCData(pc_prob, prob);
-pc_prob = Projections.filter_PCA(pc_prob, sample_scores);
 
 data_matrices = [data, prob, pc_data, pc_prob];
 data_labels = ["Expression", "Probability", "ExpressionPC", "ProbabilityPC"];
@@ -303,15 +306,15 @@ for label, data in zip(data_labels, data_matrices):
 
     #Wrap data into an object
     js_out = dict();
-    js_out.update({'Projections', projections});
-    js_out.update({'SigScores', sig_scores});
-    js_out.update({'SigProjMatrix', sig_proj_matrix});
-    js_out.update({'SigProjMatrix_p', sig_proj_matrix_p});
-    js_out.update({'ProjectionKeys', sp_col_labels});
-    js_out.update({'SignatureKeys', sp_row_labels});
+    js_out.update({'Projections': projections});
+    js_out.update({'SigScores': sig_scores});
+    js_out.update({'SigProjMatrix': sig_proj_matrix});
+    js_out.update({'SigProjMatrix_p': sig_proj_matrix_p});
+    js_out.update({'ProjectionKeys': sp_col_labels});
+    js_out.update({'SignatureKeys': sp_row_labels});
 
     fout_js.write(HtmlViewer.toJS_variable("FP_" + label, js_out));
 
 fout_js.close();
-HtmlViewer.copy_html_file(dir_name);
+HtmlViewer.copy_html_files(dir_name);
 print("FastProject Analysis Complete")

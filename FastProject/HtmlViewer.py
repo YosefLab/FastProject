@@ -9,8 +9,9 @@ import numpy as np;
 this_directory = os.path.dirname(os.path.abspath(__file__));
 RESOURCE_DIR = this_directory + os.sep + "Viewer Resources";
 
-def copy_html_file(destination_dir):
+def copy_html_files(destination_dir):
     shutil.copy(RESOURCE_DIR + os.sep + "viewer.html", destination_dir + os.sep + "viewer.html");
+    shutil.copy(RESOURCE_DIR + os.sep + "jquery-2.1.4.min.js", destination_dir + os.sep + "jquery-2.1.4.min.js");
 
 def toJS_variable(variable_name, obj):
     return "var " + variable_name + " = " + toJS(obj) + ";\n";
@@ -27,10 +28,10 @@ def toJS(obj):
     """
 
     if(type(obj) is str):
-        return obj;
+        return '"' + obj + '"';
     if(type(obj) is int or type(obj) is float):
         return str(obj);
-    if(type(obj) is np.ndarray and obj.ndim < 3):
+    if(issubclass(type(obj),np.ndarray) and obj.ndim < 3):
         return ndarray_to_JS(obj);
     if(type(obj) is list):
         return '[' + ','.join([toJS(x) for x in obj]) + ']';
