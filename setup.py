@@ -9,14 +9,14 @@ setup(
 	version = "0.7.2",
 	packages = find_packages(),
 	
-	install_requires = ['numpy>=1.9','matplotlib>=1.4.0','scikit-learn>=0.15.2'],
+	install_requires = ['numpy>=1.9','scipy>=0.14.0','matplotlib>=1.4.0','scikit-learn>=0.15.2'],
 	
 	include_package_data = True,
 	
 	author = "David DeTomaso",
 	author_email = "David.DeTomaso@berkeley.edu",
 	description = "A python module for evaulating dimensionality reduction techniques on gene expression data.",
-	keywords = "Bioinformatics dimensionality reduction projection",
+	keywords = "Bioinformatics dimensionality reduction projection rna-seq",
 	url = "https://github.com/deto/FastProject",
 	)
 	
