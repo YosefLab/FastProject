@@ -159,18 +159,17 @@ def perform_PCA(data, N=0, variance_proportion=1.0):
     ----------
     data : (Num_Features x Num_Samples) numpy.ndarray 
         Matrix containing data to project into 2 dimensions
-    row_labels : list(String) len=Num_Features
-        Former row labels
     N : int
         Number of Principle Components to retain
+    variance_proportion: float (0.0 - 1.0)
+        Retain top X principal components such that a total of <variance_proportion>
+        of the variance is retained.
 
     Returns
     -------
     pca_data : (Num_Components x Num_Samples) numpy.ndarray
         Data transformed using PCA.  Num_Components = Num_Samples
-    row_labels : list(String) len=N
-        New row labels since former labels no longer make sense
-          
+
     """
     # PCA
     # Note, by default, PCA will subtract out the mean, but will not divide by
@@ -188,6 +187,67 @@ def perform_PCA(data, N=0, variance_proportion=1.0):
         pca_data = pca_data[:,range(last_i+1)];
     
     return pca_data.T;
+
+def perform_weighted_PCA(data, sample_weights, N=0, variance_proportion=1.0):
+    """
+    Performs Weighted PCA on the data
+
+    Parameters
+    ----------
+    data : (Num_Features x Num_Samples) numpy.ndarray
+        Matrix containing data to project into 2 dimensions
+    sample_weights : (Num_Samples) numpy.ndarray
+        Weight for each sample
+    N : int
+        Number of Principle Components to retain
+    variance_proportion: float (0.0 - 1.0)
+        Retain top X principal components such that a total of <variance_proportion>
+        of the variance is retained.
+
+    Returns
+    -------
+    pca_data : (Num_Components x Num_Samples) numpy.ndarray
+        Data transformed using PCA.  Num_Components = Num_Samples
+
+    """
+
+    sample_weights = sample_weights.reshape((1,sample_weights.size));
+
+    #Weighted means
+    wmean = np.sum(data * sample_weights, axis=1, keepdims=True) / np.sum(sample_weights);
+
+    data_centered = data - wmean;
+
+    wcov = np.dot(data_centered*sample_weights, data_centered.T * sample_weights.T) / np.dot(sample_weights, sample_weights.T);
+
+    e_val, e_vec = np.linalg.eigh(wcov);
+
+    ii = np.argsort(e_val)[::-1];
+    e_val = e_val[ii];
+    e_vec = e_vec[:,ii];
+
+    wpca_data = np.dot(e_vec.T, data_centered);
+
+    #Remove uninformative principal components
+    N_SAMPLES = wpca_data.shape[1];
+    N_COMPONENTS = wpca_data.shape[0];
+    if(N_COMPONENTS > N_SAMPLES):
+        wpca_data = wpca_data[0:N_SAMPLES,:];
+        e_val = e_val[0:N_SAMPLES];
+
+    #Prune PCs based on arguments
+    if(N > 0):
+        if(N > wpca_data.shape[0]):
+            N = wpca_data.shape[0];
+        wpca_data = wpca_data[0:N,:];
+    else:
+        explained_variance_ratio = e_val / np.sum(e_val);
+        total_variance = np.cumsum(explained_variance_ratio);
+        last_i = np.nonzero(total_variance <= variance_proportion)[0][-1];
+        wpca_data = wpca_data[:,range(last_i+1)];
+
+    return wpca_data;
+
 
 def filter_PCA(data, scores):
     """

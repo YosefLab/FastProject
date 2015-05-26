@@ -219,7 +219,7 @@ while(True):
     
     if(choice.lower()[0] == 'y'):
         #Transform into top N principal components
-        pc_data = Projections.perform_PCA(data);
+        pc_data = Projections.perform_weighted_PCA(data, sample_scores**-1);
         pc_data = PCData(pc_data, data);
         pc_data = Projections.filter_PCA(pc_data, sample_scores);
         data = pc_data;

@@ -184,12 +184,12 @@ if(options.qc):
 Transforms.z_normalize(data);
 
 #Perform PCA on the data, with and without the probability xfrm
-pc_data = Projections.perform_PCA(data);
+pc_data = Projections.perform_weighted_PCA(data, sample_scores**-1);
 pc_data = PCData(pc_data, data);
 pc_data = Projections.filter_PCA(pc_data, sample_scores);
 
 
-pc_prob = Projections.perform_PCA(prob);
+pc_prob = Projections.perform_weightd_PCA(prob, sample_scores**-1);
 pc_prob = PCData(pc_prob, prob);
 pc_prob = Projections.filter_PCA(pc_prob, sample_scores);
 
