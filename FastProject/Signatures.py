@@ -149,7 +149,7 @@ def filter_sig_list(signatures, match_terms):
     return filtered_signatures;
 
 
-def conformity_with_p(data_loc, sig_values, n_neighbors):
+def conformity_with_p(data_loc, sig_values, NEIGHBORHOOD_SIZE = 0.1):
     """
     Score each sample based on how similar its signature score is to its neighborhood
     Then compare similarity to shuffled data and derive a p-value
@@ -160,9 +160,9 @@ def conformity_with_p(data_loc, sig_values, n_neighbors):
         locations of points used to calculate neareset neighbors
     sig_values : array-like, 1D, shape (Num_Samples)
         Signature value for each sample.  Get using Signature.eval_data
-    n_neighbors : int
-        Number of neighbors to use in defining the neighborhood
-    
+    NEIGHBORHOOD_SIZE : float
+        Approximate size of the neighborhood to consider around points
+
     Returns
     -------
     dissimilarity : array-like, 1D, shape (Num_Samples)
@@ -172,8 +172,6 @@ def conformity_with_p(data_loc, sig_values, n_neighbors):
         
     """
     
-    #Incremenet n_neighbors since it counts a point as it's own neighbor
-    NEIGHBORHOOD_SIZE = .1
     distance_matrix = pairwise_distances(data_loc.T, metric='euclidean');
 
     weights = np.exp(-1 * distance_matrix**2 / NEIGHBORHOOD_SIZE);
