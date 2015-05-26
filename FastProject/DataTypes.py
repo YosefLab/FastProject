@@ -162,9 +162,9 @@ class ProbabilityData(np.ndarray):
 
         pdata = self * sig_vector * weights;
         
-        sig_scores = pdata.sum(axis=0) / np.sum(weights, axis=0);
-        sig_scores = sig_scores / signature_norm;
-        
+        sig_scores = pdata.sum(axis=0);
+        sig_scores /= np.sum(np.abs(sig_vector)*weights, axis=0); #Only normalize by weights in the signature
+
         return sig_scores;
         
     def subset_genes(self, indices):

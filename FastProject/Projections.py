@@ -83,7 +83,7 @@ def generate_projections(data):
     # ICA
     
     ica = FastICA(n_components = 2);
-    result = ica.fit_transform(data.T);
+    result = ica.fit_transform(data.T.copy());
     
     projections['ICA'] = result;
     pbar.update();
@@ -120,12 +120,9 @@ def generate_projections(data):
     pbar.update();
         
     # Spectral Embedding
-    if(type(data) is DataTypes.ProbabilityData):
-        model = SpectralEmbedding(n_components=2, affinity="precomputed")
-        result = model.fit_transform(1-dist_matrix);
-    else:
-        model = SpectralEmbedding(n_components=2)
-        result = model.fit_transform(data.T);
+    # Issues using precomputed affinity matrix.  Need to understand how to construct it better
+    model = SpectralEmbedding(n_components=2)
+    result = model.fit_transform(data.T);
     
     projections['Spectral Embedding'] = result;
     pbar.update();

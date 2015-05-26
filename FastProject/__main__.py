@@ -72,6 +72,8 @@ while(True):
     else:
         if(len(args) > 0):
             filename = args[0];
+            if(not os.path.isfile(filename)):
+                raise ValueError("Argument Error: data file not found.\nExiting...");
         else:
             raise ValueError("Argument Error:  data_file not specified.\nExiting...");
 
