@@ -180,13 +180,13 @@ def quality_check(params):
     int_high = H*high - (H-L)/a * np.log(np.exp(a*(high-x0)) + 1)
     
     int_val = int_high - int_low;
-    int_val_mean = np.mean(int_val);    
+    int_val_med = np.median(int_val);
     
-    abs_dev = np.abs(int_val - int_val_mean);
+    abs_dev = np.abs(int_val - int_val_med);
     
-    MAD = np.mean(abs_dev);
+    MAD = np.median(abs_dev);
     
-    sample_passes = int_val < (int_val_mean + 1.6*MAD);
+    sample_passes = int_val < (int_val_med + 1.6*MAD);
 
     sample_score = int_val;
     
