@@ -206,9 +206,10 @@ def conformity_with_p(data_loc, sig_values, NEIGHBORHOOD_SIZE = 0.1):
     count_random_wins = np.count_nonzero(random_dissimilarity <= np.median(dissimilarity));
     p_value = (1 + count_random_wins) / (1 + NUM_RAND_TRIALS);
 
-    #Scale dissimilarity by the std
+    #Scale dissimilarity by the MAD
     #  this allows dissimilarity values to better be compared between signatures of varying magnitudes
-    dissimilarity /= np.std(sig_values);
+    MAD = np.median(np.abs(sig_values - np.median(sig_values)));
+    dissimilarity /= MAD;
     
     return dissimilarity, p_value
 
