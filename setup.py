@@ -6,8 +6,10 @@ from setuptools import setup, find_packages
 
 setup(
 	name = "FastProject",
-	version = "0.7.2",
+	version = "0.7.3",
 	packages = find_packages(),
+
+	entry_points = { 'console_scripts': ['FastProject = FastProject.__main__:entry']},
 	
 	install_requires = ['numpy>=1.9','scipy>=0.14.0','matplotlib>=1.4.0','scikit-learn>=0.15.2'],
 	
