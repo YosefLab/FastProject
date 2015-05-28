@@ -7,6 +7,7 @@ Created on Thu Mar 05 20:13:40 2015
 
 import numpy as np;
 from scipy.spatial import distance;
+import scipy.stats;
 
 class ExpressionData(np.ndarray):
     
@@ -79,6 +80,8 @@ class ExpressionData(np.ndarray):
         
         sig_scores = pdata.sum(axis=0);
         sig_scores /= np.sum(np.abs(sig_vector)*weights, axis=0); #Only normalize by weights in the signature
+
+        sig_scores = scipy.stats.rankdata(sig_scores, method="average");
         
         return sig_scores;
         
@@ -164,6 +167,8 @@ class ProbabilityData(np.ndarray):
         
         sig_scores = pdata.sum(axis=0);
         sig_scores /= np.sum(np.abs(sig_vector)*weights, axis=0); #Only normalize by weights in the signature
+
+        sig_scores = scipy.stats.rankdata(sig_scores, method="average");
 
         return sig_scores;
         

@@ -221,44 +221,7 @@ class Signature:
         self.signed = signed;
         self.source = filename;
         self.name = name;
-    
-    def eval_data(self, data, fn_prob=[]):
-        """For each sample, calculate a score against the signature
-        
-        Parameters
-        ----------
-        data :   array-like, shape (Num_Genes, Num_Samples)
-            expression data to evaluate the signature against
-        genes :  list of strings
-            list containing gene names (symbol) for each row in data
-        fn_prob : array-like, shape (Num_Genes, Num_Samples)
-            false-negative probability used to weight signature score
-            (Optional)
-        
-        Returns
-        -------
-        out : 1D ndarray, length = Num_Samples 
-            result of evaluating this signature on each sample in data
-        
-        """
-        
-        sig_vector = self.sig_indices(data.row_labels);
-        
-        if(data.ndim == 1):
-            data.shape = (data.shape[0], 1);
-        
-        weights = np.ones(data.shape);
-        if(len(fn_prob) != 0):
-            weights[data==0] = 1-fn_prob[data==0];
-        
-        pdata = data * sig_vector * weights;
-        
-        sig_scores = pdata.sum(axis=0) / np.sum(weights, axis=0);        
 
-        sig_scores = sig_scores / np.sum(abs(sig_vector));
-     
-        return sig_scores;
-        
     def sig_indices(self, genes):
         """Helper method
         
