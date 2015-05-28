@@ -33,7 +33,7 @@
              var data = getDataContext();
              $('#sig_filt_input').detach(); //Save this for when the table is rebuilt.
              $('#table_div').children('table').remove();
-             createTableFromData(data.SigProjMatrix, data.ProjectionKeys, data.SignatureKeys);
+             createTableFromData(data.SigProjMatrix_p, data.ProjectionKeys, data.SignatureKeys);
              $('#sig_filt_input').change();
              sortByColumn();
              drawChart();
@@ -75,13 +75,45 @@
               'width': 800,
               'height': 600,
               'legend': {position: 'none'},
-              'dataOpacity': 0.7
+              'dataOpacity': 0.5
           };
 
           // Instantiate and draw our chart, passing in some options.
           var chart = new google.visualization.ScatterChart(document.getElementById('chart_div'));
           chart.draw(chartdata, options);
       }
+
+         Array.prototype.argSort = function()
+         {
+             out = new Array(this.length);
+             for(var i = 0; i < out.length; i++) out[i] = i;
+             var that = this;
+             out.sort(function(a,b){return that[a] - that[b];});
+             return out;
+         };
+
+         function transpose(inputMatrix){
+             var IN_ROWS = inputMatrix.length;
+             var IN_COLS = inputMatrix[0].length;
+
+             var outputMatrix = new Array(IN_COLS);
+
+             //allocate arrays
+             for(var i = 0; i < IN_COLS; i++)
+             {
+                outputMatrix[i] = new Array(IN_ROWS);
+             }
+
+             for(var i = 0; i < IN_ROWS; i++)
+             {
+                 for (var j = 0; j < IN_COLS; j++)
+                 {
+                     outputMatrix[j][i] = inputMatrix[i][j];
+                 }
+             }
+
+             return outputMatrix;
+         }
 
          function sortByColumn()
          {
@@ -116,7 +148,7 @@
              drawChart(row, col);
          }
 
-        function floatToColor(value, cmin, cmax)
+        function floatToColor(value, cmin, cmax, cmap)
         {
             norm_val = (value - cmin) / (cmax-cmin); //Normalize to 0-1
             norm_val = 1-norm_val;  //Invert
@@ -130,17 +162,19 @@
             var red = norm_val;
             var green = 1-Math.abs(norm_val - 0.5)*2;
 
-            //lighten
-            blue = (blue/2)+0.5;
-            red = (red/2)+0.5;
-            green = (green/2)+0.5;
-
             if(blue < 0) blue = 0;
             if(blue > 1) blue = 1;
             if(green < 0) green = 0;
             if(green > 1) green = 1;
             if(red < 0) red = 0;
             if(red > 1) red = 1;
+
+            //color maps
+            if(cmap == "light") {
+                blue = (blue / 2) + 0.5;
+                red = (red / 2) + 0.5;
+                green = (green / 2) + 0.5;
+            }
 
             blue = Math.round(blue*255);
             red = Math.round(red*255);
@@ -183,9 +217,6 @@
                 return rowMax(matrix.map(rowMax));
             };
 
-            var cmin = matrixMin(data_matrix);
-            var cmax = matrixMax(data_matrix);
-
             var tbl = document.createElement("table");
             var tbody = document.createElement("tbody");
 
@@ -224,6 +255,12 @@
             }
             tbody.appendChild(tr);
 
+            //Create color matrix
+            dmT = transpose(data_matrix);
+            for(i = 0; i < dmT.length; i++){
+                dmT[i] = dmT[i].argSort().argSort();
+            }
+            color_matrix = transpose(dmT);
 
             for(var i=0; i < data_matrix.length; i++)
             {
@@ -243,7 +280,7 @@
                     td.data("row_num", i);
                     td.data("col_num", j);
                     td.click(tableClickFunction);
-                    td.css("background-color", floatToColor(data_matrix[i][j], cmin, cmax));
+                    td.css("background-color", floatToColor(color_matrix[i][j], 0, data_matrix.length,"light"));
                 }
                 tbody.appendChild(tr);
             }
