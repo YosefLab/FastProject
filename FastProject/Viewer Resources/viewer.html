@@ -115,6 +115,19 @@
              return outputMatrix;
          }
 
+         function median(inputArray){
+             var sorted_array = inputArray.slice().sort();
+             if(sorted_array.length%2 == 0){
+                 center_i = (sorted_array.length-1)/2;
+                 med_val = sorted_array[center_i];
+             }
+             else{
+                 center_i = (sorted_array.length-1)/2;
+                 med_val = sorted_array[center_i-1]/2 + sorted_array[center_i]/2;
+             }
+             return med_val;
+         }
+
          function sortByColumn()
          {
              var j = global_status.sorted_column;
