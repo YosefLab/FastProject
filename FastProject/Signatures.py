@@ -208,7 +208,8 @@ def conformity_with_p(data_loc, sig_values, NEIGHBORHOOD_SIZE = 0.1):
     #Scale dissimilarity by the MAD
     #  this allows dissimilarity values to better be compared between signatures of varying magnitudes
     MAD = np.median(np.abs(sig_values - np.median(sig_values)));
-    dissimilarity /= MAD;
+    if(MAD != 0):
+        dissimilarity /= MAD;
     
     return dissimilarity, p_value
 

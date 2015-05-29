@@ -213,7 +213,8 @@ def perform_weighted_PCA(data, sample_weights, N=0, variance_proportion=1.0):
     sample_weights = sample_weights.reshape((1,sample_weights.size));
 
     #Weighted means
-    wmean = np.sum(data * sample_weights, axis=1, keepdims=True) / np.sum(sample_weights);
+    wmean = np.sum(data * sample_weights, axis=1) / np.sum(sample_weights);
+    wmean = wmean.reshape((wmean.size, 1));
 
     data_centered = data - wmean;
 
