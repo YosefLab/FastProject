@@ -379,10 +379,36 @@ def SingleOutput(options, args):
 
         pp.complete();
 
-    from FastProject import HtmlViewer;
+        #Output to the viewer
+        from FastProject import HtmlViewer;
 
-    HtmlViewer.copy_html_file(dir_name);
-    HtmlViewer.generate_js_data_file(dir_name + os.sep + "sample.js", projections, sig_scores, sig_proj_matrix, sig_proj_matrix_p, sp_col_labels, sp_row_labels);
+        if(type(data) is PCData and type(data.parent_data) is ExpressionData):
+            label = "ExpressionPD";
+        elif(type(data) is PCData and type(data.parent_data) is ProbabilityData):
+            label = "ProbabilityPC";
+        elif(type(data) is ExpressionData):
+            label = "Expression";
+        elif(type(data) is ProbabilityData):
+            label = "Probability";
+        else:
+            raise Exception("Unrecognized Data Type");
+
+        HtmlViewer.copy_html_files(dir_name);
+        #Wrap data into an object
+        js_out = dict();
+        js_out.update({'Projections': projections});
+        js_out.update({'SigScores': sig_scores});
+        js_out.update({'SigProjMatrix': sig_proj_matrix});
+        js_out.update({'SigProjMatrix_p': sig_proj_matrix_p});
+        js_out.update({'ProjectionKeys': sp_col_labels});
+        js_out.update({'SignatureKeys': sp_row_labels});
+
+        #Ouput object to js file
+        fout_js = open(dir_name + os.sep + "FP_data.js", 'w');
+        fout_js.write(HtmlViewer.toJS_variable("FP_" + label, js_out));
+        fout_js.close();
+
+        HtmlViewer.generate_js_data_file(dir_name + os.sep + "sample.js", projections, sig_scores, sig_proj_matrix, sig_proj_matrix_p, sp_col_labels, sp_row_labels);
 
     print("FastProject Analysis Complete")
 
@@ -540,7 +566,7 @@ def FullOutput(options, args):
     pc_data = Projections.filter_PCA(pc_data, sample_scores);
 
 
-    pc_prob = Projections.perform_weightd_PCA(prob, sample_scores**-1);
+    pc_prob = Projections.perform_weighted_PCA(prob, sample_scores**-1);
     pc_prob = PCData(pc_prob, prob);
     pc_prob = Projections.filter_PCA(pc_prob, sample_scores);
 

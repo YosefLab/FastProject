@@ -18,14 +18,24 @@
          global_status.sorted_column = -1;
          global_status.signature_filter = "";
 
+         var global_options = {};
+
 
          window.onload = function()
          {
              updateTable();
-
-
              $("#probability_checkbox").change(updateTable);
              $("#pca_checkbox").change(updateTable);
+
+             full_output = (typeof FP_Expression !== "undefined") &
+                     (typeof FP_Probability !== "undefined") &
+                     (typeof FP_ExpressionPC !== "undefined") &
+                     (typeof FP_ProbabilityPC !== "undefined");
+
+             global_options.full_output = full_output;
+             if(!global_options.full_output){
+                 $("#data_options_div").hide();
+             }
          };
 
          function updateTable()
@@ -41,12 +51,28 @@
 
          function getDataContext()
          {
-             var probability = $('#probability_checkbox').is(":checked");
-             var pca = $('#pca_checkbox').is(":checked");
-             if(!probability && !pca){ return FP_Expression;}
-             if(!probability && pca){ return FP_ExpressionPC;}
-             if(probability && !pca){ return FP_Probability;}
-             if(probability && pca){ return FP_ProbabilityPC;}
+             if(global_options.full_output) {
+                 var probability = $('#probability_checkbox').is(":checked");
+                 var pca = $('#pca_checkbox').is(":checked");
+                 if (!probability && !pca) {
+                     return FP_Expression;
+                 }
+                 if (!probability && pca) {
+                     return FP_ExpressionPC;
+                 }
+                 if (probability && !pca) {
+                     return FP_Probability;
+                 }
+                 if (probability && pca) {
+                     return FP_ProbabilityPC;
+                 }
+             }
+             else{
+                if(typeof FP_Expression !== "undefined") return FP_Expression;
+                 if(typeof FP_ExpressionPC !== "undefined") return FP_ExpressionPC;
+                 if(typeof FP_Probability !== "undefined") return FP_Probability;
+                 if(typeof FP_ProbabilityPC !== "undefined") return FP_ProbabilityPC;
+             }
          }
 
       // Callback that creates and populates a data table,
@@ -314,7 +340,9 @@
         }
 
         table td:first-child{
-            width:200px;
+            width:450px;
+            -ms-word-wrap: break-word;
+            word-wrap: break-word;
         }
 
         .altRow{
@@ -352,14 +380,16 @@
 <body>
 <h1>FastProject Viewer</h1>
 <br>
-<span>
-    <label for="probability_checkbox">Probability Model?</label>
-    <input id="probability_checkbox" type="checkbox">
-</span>
-<span>
-    <label for="pca_checkbox">PCA Before Project?</label>
-    <input id="pca_checkbox" type="checkbox">
-</span>
+<div id="data_options_div">
+    <span>
+        <label for="probability_checkbox">Probability Model?</label>
+        <input id="probability_checkbox" type="checkbox">
+    </span>
+    <span>
+        <label for="pca_checkbox">PCA Before Project?</label>
+        <input id="pca_checkbox" type="checkbox">
+    </span>
+</div>
 <br>
 <div id="table_div" style="display:inline-block; float:left"></div>
 <div id="chart_div"></div>
