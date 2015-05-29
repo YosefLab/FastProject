@@ -14,7 +14,6 @@ from sklearn.manifold import SpectralEmbedding
 import scipy.stats;
 
 from .Utils import ProgressBar;
-from . import DataTypes
 
 import numpy as np;
 

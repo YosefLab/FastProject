@@ -7,7 +7,6 @@ Created on Wed Jan 21 16:34:49 2015
 from __future__ import division;
 
 import numpy as np;
-from sklearn.neighbors import NearestNeighbors;
 from sklearn.metrics.pairwise import pairwise_distances;
 
 def read_signatures(filename='', match_terms=[]):

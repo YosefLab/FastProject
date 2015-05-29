@@ -16,7 +16,7 @@ import os;
 this_directory = os.path.dirname(os.path.abspath(__file__));
 
 
-def probability_of_expression(data, nozero=True):
+def probability_of_expression(data):
     cutoffs = np.mean(data,axis=1)/4;  #Empirically found to be good mosy of the time
     
     (gamma, mu_l, mu_h, st_l, st_h, Pi, L) = em_exp_norm_mixture(data,cutoffs);
