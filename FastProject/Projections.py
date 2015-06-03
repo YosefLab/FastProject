@@ -187,7 +187,7 @@ def perform_PCA(data, N=0, variance_proportion=1.0):
     
     return pca_data.T;
 
-def perform_weighted_PCA(data, sample_weights, N=0, variance_proportion=1.0):
+def perform_weighted_PCA(data, weights, N=0, variance_proportion=1.0):
     """
     Performs Weighted PCA on the data
 
@@ -195,8 +195,8 @@ def perform_weighted_PCA(data, sample_weights, N=0, variance_proportion=1.0):
     ----------
     data : (Num_Features x Num_Samples) numpy.ndarray
         Matrix containing data to project into 2 dimensions
-    sample_weights : (Num_Samples) numpy.ndarray
-        Weight for each sample
+    weights : (Num_Features x Num_Samples) numpy.ndarray
+        Weight for each data point
     N : int
         Number of Principle Components to retain
     variance_proportion: float (0.0 - 1.0)
@@ -210,15 +210,14 @@ def perform_weighted_PCA(data, sample_weights, N=0, variance_proportion=1.0):
 
     """
 
-    sample_weights = sample_weights.reshape((1,sample_weights.size));
-
     #Weighted means
-    wmean = np.sum(data * sample_weights, axis=1) / np.sum(sample_weights);
+    wmean = np.sum(data * weights, axis=1) / np.sum(weights, axis=1);
     wmean = wmean.reshape((wmean.size, 1));
 
     data_centered = data - wmean;
+    weighted_data_centered = data_centered * weights;
 
-    wcov = np.dot(data_centered*sample_weights, data_centered.T * sample_weights.T) / np.dot(sample_weights, sample_weights.T);
+    wcov = np.dot(weighted_data_centered, weighted_data_centered.T) / np.dot(weights,weights.T);
 
     e_val, e_vec = np.linalg.eigh(wcov);
 
@@ -244,7 +243,7 @@ def perform_weighted_PCA(data, sample_weights, N=0, variance_proportion=1.0):
         explained_variance_ratio = e_val / np.sum(e_val);
         total_variance = np.cumsum(explained_variance_ratio);
         last_i = np.nonzero(total_variance <= variance_proportion)[0][-1];
-        wpca_data = wpca_data[:,range(last_i+1)];
+        wpca_data = wpca_data[range(last_i+1),:];
 
     return wpca_data;
 

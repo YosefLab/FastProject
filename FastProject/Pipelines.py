@@ -192,7 +192,7 @@ def SingleOutput(options, args):
 
         if(choice.lower()[0] == 'y'):
             #Transform into top N principal components
-            pc_data = Projections.perform_weighted_PCA(data, sample_scores**-1);
+            pc_data = Projections.perform_weighted_PCA(data,1-fn_prob);
             pc_data = PCData(pc_data, data);
             pc_data = Projections.filter_PCA(pc_data, sample_scores);
             data = pc_data;
@@ -565,12 +565,12 @@ def FullOutput(options, args):
     Transforms.z_normalize(data);
 
     #Perform PCA on the data, with and without the probability xfrm
-    pc_data = Projections.perform_weighted_PCA(data, sample_scores**-1);
+    pc_data = Projections.perform_weighted_PCA(data, 1-fn_prob);
     pc_data = PCData(pc_data, data);
     pc_data = Projections.filter_PCA(pc_data, sample_scores);
 
 
-    pc_prob = Projections.perform_weighted_PCA(prob, sample_scores**-1);
+    pc_prob = Projections.perform_weighted_PCA(prob, 1-fn_prob);
     pc_prob = PCData(pc_prob, prob);
     pc_prob = Projections.filter_PCA(pc_prob, sample_scores);
 
