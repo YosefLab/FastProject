@@ -151,6 +151,7 @@ def SingleOutput(options, args):
     print('Correcting for false-negatives using housekeeping gene levels');
     (fit_func, params) = Transforms.create_false_neg_map(original_data, housekeeping_filename);
     (prob, fn_prob) = Transforms.correct_for_fn(prob, mu_h, fit_func, params);
+    fn_prob[data > 0] = 0;
 
     prob = ProbabilityData(prob, data);
 
@@ -550,6 +551,7 @@ def FullOutput(options, args):
     print('Correcting for false-negatives using housekeeping gene levels');
     (fit_func, params) = Transforms.create_false_neg_map(original_data, housekeeping_filename);
     (prob, fn_prob) = Transforms.correct_for_fn(prob, mu_h, fit_func, params);
+    fn_prob[data > 0] = 0;
 
     prob = ProbabilityData(prob, data);
 
