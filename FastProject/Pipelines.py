@@ -159,6 +159,7 @@ def SingleOutput(options, args):
     if(options.qc):
         prob = prob.subset_samples(sample_passes);
         data = data.subset_samples(sample_passes);
+        sample_scores = sample_scores[sample_passes];
 
     Transforms.z_normalize(data);
 
@@ -557,6 +558,7 @@ def FullOutput(options, args):
     if(options.qc):
         prob = prob.subset_samples(sample_passes);
         data = data.subset_samples(sample_passes);
+        sample_scores = sample_scores[sample_passes];
 
     Transforms.z_normalize(data);
 

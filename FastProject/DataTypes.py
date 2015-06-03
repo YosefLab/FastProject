@@ -88,7 +88,7 @@ class ExpressionData(np.ndarray):
     def subset_genes(self, indices):
         if(type(indices) is np.ndarray):
             if(indices.dtype == np.bool):
-                indices = np.nonzero(indices);
+                indices = np.nonzero(indices)[0];
         
         out = self[indices,:];
         out.row_labels = [self.row_labels[i] for i in indices];
@@ -97,7 +97,7 @@ class ExpressionData(np.ndarray):
     def subset_samples(self, indices):
         if(type(indices) is np.ndarray):
             if(indices.dtype == np.bool):
-                indices = np.nonzero(indices);
+                indices = np.nonzero(indices)[0];
         
         out = self[:, indices];
         out.col_labels = [self.col_labels[i] for i in indices];
@@ -175,7 +175,7 @@ class ProbabilityData(np.ndarray):
     def subset_genes(self, indices):
         if(type(indices) is np.ndarray):
             if(indices.dtype == np.bool):
-                indices = np.nonzero(indices);
+                indices = np.nonzero(indices)[0];
         
         out = self[indices,:];
         out.row_labels = [self.row_labels[i] for i in indices];
@@ -185,7 +185,7 @@ class ProbabilityData(np.ndarray):
     def subset_samples(self, indices):
         if(type(indices) is np.ndarray):
             if(indices.dtype == np.bool):
-                indices = np.nonzero(indices);
+                indices = np.nonzero(indices)[0];
         
         out = self[:, indices];
         out.col_labels = [self.col_labels[i] for i in indices];
@@ -244,7 +244,7 @@ class PCData(np.ndarray):
     def subset_samples(self, indices):
         if(type(indices) is np.ndarray):
             if(indices.dtype == np.bool):
-                indices = np.nonzero(indices);
+                indices = np.nonzero(indices)[0];
         
         out = self[:, indices];
         out.col_labels = [self.col_labels[i] for i in indices];
@@ -254,7 +254,7 @@ class PCData(np.ndarray):
     def subset_components(self, indices):
         if(type(indices) is np.ndarray):
             if(indices.dtype == np.bool):
-                indices = np.nonzero(indices);
+                indices = np.nonzero(indices)[0];
 
         out = self[indices,:];
         out.row_labels = [self.row_labels[i] for i in indices];
