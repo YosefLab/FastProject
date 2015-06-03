@@ -9,7 +9,7 @@ from optparse import OptionParser;
 from FastProject import Pipelines;
 
 def parseFPArgs():
-    parser = OptionParser(usage = 'usage: %prog [options] data_file');
+    parser = OptionParser(usage = 'usage: FastProject [options] data_file');
     parser.add_option("-k", "--housekeeping", metavar="FILE",
                       help="Read list of housekeeping genes from FILE.  Uses default list if not specified");
     parser.add_option("-s", "--signatures", metavar="FILE",
