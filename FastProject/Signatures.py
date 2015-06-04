@@ -184,11 +184,12 @@ def conformity_with_p(data_loc, sig_values, NEIGHBORHOOD_SIZE = 0.1):
     
     ##Neighborhood dissimilarity score = |actual - predicted|
     dissimilarity = np.abs(sig_values - neighborhood_prediction);
+
+    #Minimum of 100 iterations.  Add in more if needed.
+    NUM_RAND_TRIALS_L1 = 100
+    random_dissimilarity = np.zeros(NUM_RAND_TRIALS_L1);
     
-    NUM_RAND_TRIALS = 100
-    random_dissimilarity = np.zeros(NUM_RAND_TRIALS);
-    
-    for i in range(NUM_RAND_TRIALS):
+    for i in range(NUM_RAND_TRIALS_L1):
         random_sig_values = np.random.permutation(sig_values);
         random_neighborhood = random_sig_values.reshape((1,len(random_sig_values)));
 
@@ -203,7 +204,52 @@ def conformity_with_p(data_loc, sig_values, NEIGHBORHOOD_SIZE = 0.1):
     #Compare number of times the random permutation has a better (median) sig score
     #than the signature score of non-shuffled.  Ratio is p value.
     count_random_wins = np.count_nonzero(random_dissimilarity <= np.median(dissimilarity));
-    p_value = (1 + count_random_wins) / (1 + NUM_RAND_TRIALS);
+    p_value = (1 + count_random_wins) / (1 + NUM_RAND_TRIALS_L1);
+
+    if(p_value < 0.05):
+
+        NUM_RAND_TRIALS_L2 = 100
+        random_dissimilarity = np.zeros(NUM_RAND_TRIALS_L2);
+
+        for i in range(NUM_RAND_TRIALS_L2):
+            random_sig_values = np.random.permutation(sig_values);
+            random_neighborhood = random_sig_values.reshape((1,len(random_sig_values)));
+
+            neighborhood_prediction = np.sum(random_neighborhood * weights, axis=1) \
+                                      / np.sum(weights, axis=1);
+
+            random_dissimilarity[i] = np.median(
+                np.abs(
+                    random_sig_values - neighborhood_prediction
+                ));
+
+        #Compare number of times the random permutation has a better (median) sig score
+        #than the signature score of non-shuffled.  Ratio is p value.
+        count_random_wins += np.count_nonzero(random_dissimilarity <= np.median(dissimilarity));
+        p_value = (1 + count_random_wins) / (1 + NUM_RAND_TRIALS_L1 + NUM_RAND_TRIALS_L2);
+
+
+    if(p_value < 0.01):
+
+        NUM_RAND_TRIALS_L3 = 500
+        random_dissimilarity = np.zeros(NUM_RAND_TRIALS_L3);
+
+        for i in range(NUM_RAND_TRIALS_L3):
+            random_sig_values = np.random.permutation(sig_values);
+            random_neighborhood = random_sig_values.reshape((1,len(random_sig_values)));
+
+            neighborhood_prediction = np.sum(random_neighborhood * weights, axis=1) \
+                                      / np.sum(weights, axis=1);
+
+            random_dissimilarity[i] = np.median(
+                np.abs(
+                    random_sig_values - neighborhood_prediction
+                ));
+
+        #Compare number of times the random permutation has a better (median) sig score
+        #than the signature score of non-shuffled.  Ratio is p value.
+        count_random_wins += np.count_nonzero(random_dissimilarity <= np.median(dissimilarity));
+        p_value = (1 + count_random_wins) / (1 + NUM_RAND_TRIALS_L1 + NUM_RAND_TRIALS_L2 + NUM_RAND_TRIALS_L3);
 
     #Scale dissimilarity by the MAD
     #  this allows dissimilarity values to better be compared between signatures of varying magnitudes
