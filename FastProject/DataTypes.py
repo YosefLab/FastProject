@@ -86,7 +86,7 @@ class ExpressionData(np.ndarray):
         return sig_scores;
         
     def subset_genes(self, indices):
-        if(type(indices) is np.ndarray):
+        if(issubclass(type(indices), np.ndarray)):
             if(indices.dtype == np.bool):
                 indices = np.nonzero(indices)[0];
         
@@ -95,7 +95,7 @@ class ExpressionData(np.ndarray):
         return(out);
     
     def subset_samples(self, indices):
-        if(type(indices) is np.ndarray):
+        if(issubclass(type(indices), np.ndarray)):
             if(indices.dtype == np.bool):
                 indices = np.nonzero(indices)[0];
         
@@ -173,7 +173,7 @@ class ProbabilityData(np.ndarray):
         return sig_scores;
         
     def subset_genes(self, indices):
-        if(type(indices) is np.ndarray):
+        if(issubclass(type(indices), np.ndarray)):
             if(indices.dtype == np.bool):
                 indices = np.nonzero(indices)[0];
         
@@ -183,7 +183,7 @@ class ProbabilityData(np.ndarray):
         return(out);
     
     def subset_samples(self, indices):
-        if(type(indices) is np.ndarray):
+        if(issubclass(type(indices), np.ndarray)):
             if(indices.dtype == np.bool):
                 indices = np.nonzero(indices)[0];
         
@@ -242,7 +242,7 @@ class PCData(np.ndarray):
         
     
     def subset_samples(self, indices):
-        if(type(indices) is np.ndarray):
+        if(issubclass(type(indices), np.ndarray)):
             if(indices.dtype == np.bool):
                 indices = np.nonzero(indices)[0];
         
@@ -252,7 +252,7 @@ class PCData(np.ndarray):
         return(out);
 
     def subset_components(self, indices):
-        if(type(indices) is np.ndarray):
+        if(issubclass(type(indices), np.ndarray)):
             if(indices.dtype == np.bool):
                 indices = np.nonzero(indices)[0];
 
