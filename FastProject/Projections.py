@@ -6,6 +6,7 @@ Created on Wed Feb 04 13:21:47 2015
 """
 from sklearn.decomposition import PCA
 from sklearn.decomposition import FastICA
+from sklearn.decomposition import KernelPCA
 from sklearn.manifold import TSNE;
 from sklearn.manifold import Isomap
 from sklearn.manifold import LocallyLinearEmbedding
@@ -64,7 +65,7 @@ def generate_projections(data):
           
     """
     
-    pbar = ProgressBar(7);
+    pbar = ProgressBar(9);
     
     projections = dict();
     
@@ -74,11 +75,20 @@ def generate_projections(data):
     
     pca = PCA();
     result = pca.fit_transform(data.T);
-    result = result[:,[0,1]]
-  
-    projections['PCA'] = result;
+
+
+    result12 = result[:,[0,1]]
+    projections['PCA: 1,2'] = result12;
     pbar.update();
-      
+
+    result23 = result[:,[1,2]]
+    projections['PCA: 2,3'] = result23;
+    pbar.update();
+
+    result13 = result[:,[0,2]]
+    projections['PCA: 1,3'] = result13;
+    pbar.update();
+
     # ICA
     
     ica = FastICA(n_components = 2);
@@ -88,7 +98,7 @@ def generate_projections(data):
     pbar.update();
     
     # tSNE, but with built-in from sklearn
-    model = TSNE(n_components=2, perplexity=1, metric="precomputed", learning_rate = 100, early_exaggeration=1);
+    model = TSNE(n_components=2, perplexity=30, metric="precomputed", learning_rate = 100, early_exaggeration=4.0);
     result = model.fit_transform(dist_matrix);
     
     projections['tSNE'] = result;
@@ -104,10 +114,10 @@ def generate_projections(data):
     
     # LLE
     
-    model = LocallyLinearEmbedding(n_neighbors = 2, n_components=2)
+    model =  KernelPCA(n_components=2, kernel='rbf');
     result = model.fit_transform(data.T);
     
-    projections['LLE'] = result;
+    projections['RBF Kernel PCA'] = result;
     pbar.update();
     
     # MDS
