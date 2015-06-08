@@ -42,25 +42,16 @@ def read_signatures(filename='', match_terms=[]):
     match_terms = [term.lower() for term in match_terms];
     
     try:    
-        
-        firstline = ff.readline();
-        
-        num_cols = len(firstline.split('\t'));
-        
-        if(num_cols == 2):
-            signed = False;
-        elif(num_cols == 3):
-            signed = True;
-        else:
-            raise ValueError("Signature file should contain 2 (unsigned) or 3 (signed) columns")
-        
-        ff.seek(0);
-        
+
         for i, line in enumerate(ff):
             row_data = line.strip().split('\t');
-            if(len(row_data) != 2 and len(row_data) != 3):
-                print i
-                
+            if(len(row_data) == 2):
+                signed = False;
+            elif(len(row_data) == 3):
+                signed = True;
+            else:
+                raise ValueError("Line " + str(i) + " Signature file should contain 2 (unsigned) or 3 (signed) columns");
+
             name = row_data[0];
             if(not found_signatures.has_key(name)):  ## Add the signature if we haven't seen it yet
                 
