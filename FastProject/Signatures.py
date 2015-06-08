@@ -169,8 +169,9 @@ def conformity_with_p(data_loc, sig_values, NEIGHBORHOOD_SIZE = 0.1):
 
     neighborhood = sig_values.reshape((1,len(sig_values)));
 
+    sum_weights = np.sum(weights, axis=1);
     neighborhood_prediction = np.sum(neighborhood * weights, axis=1) \
-                / np.sum(weights,axis=1);
+                / sum_weights;
     
     
     ##Neighborhood dissimilarity score = |actual - predicted|
@@ -185,7 +186,7 @@ def conformity_with_p(data_loc, sig_values, NEIGHBORHOOD_SIZE = 0.1):
         random_neighborhood = random_sig_values.reshape((1,len(random_sig_values)));
 
         neighborhood_prediction = np.sum(random_neighborhood * weights, axis=1) \
-                / np.sum(weights, axis=1);
+                / sum_weights;
 
         random_dissimilarity[i] = np.median(
                                     np.abs(
@@ -207,7 +208,7 @@ def conformity_with_p(data_loc, sig_values, NEIGHBORHOOD_SIZE = 0.1):
             random_neighborhood = random_sig_values.reshape((1,len(random_sig_values)));
 
             neighborhood_prediction = np.sum(random_neighborhood * weights, axis=1) \
-                                      / np.sum(weights, axis=1);
+                                      / sum_weights;
 
             random_dissimilarity[i] = np.median(
                 np.abs(
@@ -230,7 +231,7 @@ def conformity_with_p(data_loc, sig_values, NEIGHBORHOOD_SIZE = 0.1):
             random_neighborhood = random_sig_values.reshape((1,len(random_sig_values)));
 
             neighborhood_prediction = np.sum(random_neighborhood * weights, axis=1) \
-                                      / np.sum(weights, axis=1);
+                                      / sum_weights;
 
             random_dissimilarity[i] = np.median(
                 np.abs(
