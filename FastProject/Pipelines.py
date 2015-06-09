@@ -329,7 +329,6 @@ def SingleOutput(options, args):
 
     #%% Evaluating signatures against projections
     if(USE_SIGNATURES):
-        N_NEIGHBORS = 5;
         sig_proj_matrix   = np.zeros((len(sig_scores),len(projections)));
         sig_proj_matrix_p = np.zeros((len(sig_scores),len(projections)));
 
@@ -341,7 +340,7 @@ def SingleOutput(options, args):
         pp = ProgressBar(len(sp_row_labels) * len(sp_col_labels));
         for i, sig in enumerate(sp_row_labels):
             for j, proj in enumerate(sp_col_labels):
-                dissimilarity, p = Signatures.conformity_with_p(projections[proj],sig_scores[sig],N_NEIGHBORS);
+                dissimilarity, p = Signatures.conformity_with_p(projections[proj],sig_scores[sig]);
                 sig_proj_matrix[i,j] = np.median(dissimilarity);
                 sig_proj_matrix_p[i,j] = p;
                 pp.update();
@@ -663,7 +662,6 @@ def FullOutput(options, args):
 
 
         #%% Evaluating signatures against projections
-        N_NEIGHBORS = 5;
         sig_proj_matrix   = np.zeros((len(sig_scores),len(projections)));
         sig_proj_matrix_p = np.zeros((len(sig_scores),len(projections)));
 
@@ -675,7 +673,7 @@ def FullOutput(options, args):
         pp = ProgressBar(len(sp_row_labels) * len(sp_col_labels));
         for i, sig in enumerate(sp_row_labels):
             for j, proj in enumerate(sp_col_labels):
-                dissimilarity, p = Signatures.conformity_with_p(projections[proj],sig_scores[sig],N_NEIGHBORS);
+                dissimilarity, p = Signatures.conformity_with_p(projections[proj],sig_scores[sig]);
                 sig_proj_matrix[i,j] = np.median(dissimilarity);
                 sig_proj_matrix_p[i,j] = p;
                 pp.update();
