@@ -329,23 +329,7 @@ def SingleOutput(options, args):
 
     #%% Evaluating signatures against projections
     if(USE_SIGNATURES):
-        sig_proj_matrix   = np.zeros((len(sig_scores),len(projections)));
-        sig_proj_matrix_p = np.zeros((len(sig_scores),len(projections)));
-
-        sp_row_labels = sig_scores.keys();
-        sp_col_labels = projections.keys();
-
-        print();
-        print("Evaluating Signatures against Projections");
-        pp = ProgressBar(len(sp_row_labels) * len(sp_col_labels));
-        for i, sig in enumerate(sp_row_labels):
-            for j, proj in enumerate(sp_col_labels):
-                dissimilarity, p = Signatures.conformity_with_p(projections[proj],sig_scores[sig]);
-                sig_proj_matrix[i,j] = np.median(dissimilarity);
-                sig_proj_matrix_p[i,j] = p;
-                pp.update();
-
-        pp.complete();
+        sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p = Signatures.sigs_vs_projections(projections, sig_scores);
 
 
         #Output matrix of p-values for conformity scores
@@ -662,23 +646,7 @@ def FullOutput(options, args):
 
 
         #%% Evaluating signatures against projections
-        sig_proj_matrix   = np.zeros((len(sig_scores),len(projections)));
-        sig_proj_matrix_p = np.zeros((len(sig_scores),len(projections)));
-
-        sp_row_labels = sig_scores.keys();
-        sp_col_labels = projections.keys();
-
-        print();
-        print("Evaluating Signatures against Projections");
-        pp = ProgressBar(len(sp_row_labels) * len(sp_col_labels));
-        for i, sig in enumerate(sp_row_labels):
-            for j, proj in enumerate(sp_col_labels):
-                dissimilarity, p = Signatures.conformity_with_p(projections[proj],sig_scores[sig]);
-                sig_proj_matrix[i,j] = np.median(dissimilarity);
-                sig_proj_matrix_p[i,j] = p;
-                pp.update();
-
-        pp.complete();
+        sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p = Signatures.sigs_vs_projections(projections, sig_scores);
 
         #Output matrix of p-values for conformity scores
         FileIO.write_matrix(dir_name + os.sep + label + "_PMatrix.txt",sig_proj_matrix_p, sp_row_labels, sp_col_labels);
