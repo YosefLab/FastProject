@@ -111,7 +111,7 @@ def SingleOutput(options, args):
                 except ValueError:
                     print("Error:  Bad option for -f, --filters.  Exiting");
                     sys.exit();
-
+        print();
         if(choice==0):
             break;
         elif(choice==1): #Housekeeping
@@ -133,7 +133,6 @@ def SingleOutput(options, args):
             continue;
 
         if(0 < choice < 4):
-            print();
             print("Removed ", original[0]-edata.shape[0], " Genes");
             print(edata.shape[0], " Genes retained");
 
@@ -395,6 +394,7 @@ def SingleOutput(options, args):
 
         HtmlViewer.generate_js_data_file(dir_name + os.sep + "sample.js", projections, sig_scores, sig_proj_matrix, sig_proj_matrix_p, sp_col_labels, sp_row_labels);
 
+    print();
     print("FastProject Analysis Complete")
 
 def FullOutput(options, args):
@@ -494,7 +494,7 @@ def FullOutput(options, args):
                 except ValueError:
                     print("Error:  Bad option for -f, --filters.  Exiting");
                     sys.exit();
-
+        print();
         if(choice==0):
             break;
         elif(choice==1): #Housekeeping
@@ -516,7 +516,6 @@ def FullOutput(options, args):
             continue;
 
         if(0 < choice < 4):
-            print();
             print("Removed ", original[0]-edata.shape[0], " Genes");
             print(edata.shape[0], " Genes retained");
 
@@ -613,6 +612,7 @@ def FullOutput(options, args):
     fout_js = open(dir_name + os.sep + "FP_data.js", 'w');
 
     for label, data in zip(data_labels, data_matrices):
+        print();
         print("Evaluating: ", label);
         #%% Dimensional Reduction procedures
         print();
@@ -664,4 +664,5 @@ def FullOutput(options, args):
 
     fout_js.close();
     HtmlViewer.copy_html_files(dir_name);
+    print();
     print("FastProject Analysis Complete")

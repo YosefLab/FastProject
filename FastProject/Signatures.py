@@ -4,7 +4,7 @@ Created on Wed Jan 21 16:34:49 2015
 
 @author: David
 """
-from __future__ import division;
+from __future__ import division, print_function;
 
 import numpy as np;
 from sklearn.metrics.pairwise import pairwise_distances;
@@ -84,8 +84,8 @@ def read_signatures(filename='', match_terms=[]):
                     sig_val = -1;
                 ## Other spelling variants go here
                 else:
-                    print "Error on line ", str(i), " Couldn't read signature value."
-                    print "   :", line;
+                    print("Error on line ", str(i), " Couldn't read signature value.");
+                    print("   :", line);
                     continue;
                     
                 sig_dict[row_data[2]] = sig_val;
