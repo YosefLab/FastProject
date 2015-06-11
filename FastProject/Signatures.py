@@ -11,6 +11,16 @@ from sklearn.metrics.pairwise import pairwise_distances;
 from .Utils import ProgressBar;
 
 def read_signatures(filename='', match_terms=[]):
+    """Calls either read_signatures_txt or read_signatures_gmt when appropriate
+    """
+
+    if(filename.lower().endswith('.gmt')):
+        return read_signatures_gmt(filename, match_terms);
+    else:
+        return read_signatures_txt(filename, match_terms);
+
+
+def read_signatures_txt(filename='', match_terms=[]):
     """Reads in a signature file.  Returns a list of Signature objects
     
     Parameters
@@ -20,6 +30,7 @@ def read_signatures(filename='', match_terms=[]):
         If no file is entered, opens a file dialog
     match_terms : list(String)
         List of terms to be matched against signature names.
+        If empty or omitted, reads all signatures
         Signature is retained if any of the terms match.
     
     Returns
@@ -55,8 +66,9 @@ def read_signatures(filename='', match_terms=[]):
 
             name = row_data[0];
             if(not found_signatures.has_key(name)):  ## Add the signature if we haven't seen it yet
-                
-                matched = False if len(match_terms) > 0 else True                ## Only add signatures if they match one of the supplied terms
+
+                ## Only add signatures if they match one of the supplied terms
+                matched = False if len(match_terms) > 0 else True
                 lname = name.lower();                
                 for term in match_terms:
                     if(lname.find(term) >= 0):
@@ -100,6 +112,105 @@ def read_signatures(filename='', match_terms=[]):
         ff.close();
     
     return [found_signatures[key] for key in found_signatures.keys()]  #dict to list
+
+def read_signatures_gmt(filename='', match_terms=[]):
+    """Reads in a signature file in GMT format.
+
+    Each row is tab delimited with gene set name, description, and list of genes
+    Signed signatures should be on adjacent rows with identical set names except for
+    a _plus or _minus suffix.
+
+    Example:
+    Memory_plus description gene1 gene2 gene3
+    Memory_minus description gene1 gene2 gene3
+
+    Returns a list of Signature objects
+
+    Parameters
+    ----------
+    filename : string
+        Name (and path if not in working directory) of signature file to read
+        If no file is entered, opens a file dialog
+    match_terms : list(String)
+        List of terms to be matched against signature names.
+        If empty or omitted, reads all signatures
+        Signature is retained if any of the terms match.
+
+    Returns
+    -------
+    signatures : list(FastProject.Signature)
+        The filtered signature list
+    """
+
+    if(filename == ''):
+        from Tkinter import Tk
+        from tkFileDialog import askopenfilename
+        Tk().withdraw();
+        filename = askopenfilename();
+
+    if(type(match_terms) is str):
+        match_terms = [match_terms];
+
+    match_terms = [term.lower() for term in match_terms];
+
+    with open(filename, 'r') as ff:
+        found_signatures = dict();    ## dictionary of signatures
+
+        end_of_file = False;
+        while(not end_of_file):
+            line = ff.readline();
+            if(line == ""):
+                end_of_file = True;
+                continue;
+
+            row_data = line.strip().split('\t');
+            name = row_data[0];
+
+            ## Only add signatures if they match one of the supplied terms
+            matched = False if len(match_terms) > 0 else True
+            lname = name.lower().rstrip("_minus").rstrip("_plus");
+            for term in match_terms:
+                if(term in lname):
+                    matched = True;
+                    break;
+            if(not matched): continue;
+
+            if(name.lower().endswith("_plus") or name.lower().endswith("_minus")):
+                #Signature is first of a signed pair
+                row2_data = ff.readline().strip().split('\t');
+                name2 = row2_data[0];
+                if(name.lower().endswith("_plus") and name2.lower().endswith("_minus")):
+                    plus_row = row_data;
+                    minus_row = row2_data;
+                elif(name2.lower().endswith("_plus") and name.lower().endswith("_minus")):
+                    minus_row = row_data;
+                    plus_row = row2_data;
+                else:
+                    raise ValueError("Missing pair for signed signature: " + name);
+
+                sig_name = plus_row[0];
+                ii = sig_name.lower().rfind("_plus");
+                sig_name = sig_name[:ii]
+                sig = Signature(dict(), True, filename,sig_name)
+
+                for gene_name in plus_row[2:]:
+                    sig.sig_dict.update({gene_name: 1});
+                for gene_name in minus_row[2:]:
+                    sig.sig_dict.update({gene_name: -1});
+
+                found_signatures.update({name: sig});
+
+            else:
+                if(found_signatures.has_key(name)):
+                    raise ValueError("Duplicate Signature name in Signature file: " + name);
+
+                sig = Signature(dict(), False, filename, name);
+                for gene_name in row_data[2:]:
+                    sig.sig_dict.update({gene_name: 0});
+                found_signatures.update({name: sig});
+
+
+    return found_signatures.values();  #dict to list
 
 def filter_sig_list(signatures, match_terms):
     """
