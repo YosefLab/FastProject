@@ -328,7 +328,7 @@ def SingleOutput(options, args):
 
     #%% Evaluating signatures against projections
     if(USE_SIGNATURES):
-        sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p = Signatures.sigs_vs_projections(projections, sig_scores);
+        sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p = Signatures.sigs_vs_projections_v2(projections, sig_scores);
 
 
         #Output matrix of p-values for conformity scores
@@ -646,7 +646,7 @@ def FullOutput(options, args):
 
 
         #%% Evaluating signatures against projections
-        sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p = Signatures.sigs_vs_projections(projections, sig_scores);
+        sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p = Signatures.sigs_vs_projections_v2(projections, sig_scores);
 
         #Output matrix of p-values for conformity scores
         FileIO.write_matrix(dir_name + os.sep + label + "_PMatrix.txt",sig_proj_matrix_p, sp_row_labels, sp_col_labels);

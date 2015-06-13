@@ -444,6 +444,96 @@ def sigs_vs_projections(projections, sig_scores, NEIGHBORHOOD_SIZE = 0.1):
 
     return (sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p);
 
+def sigs_vs_projections_v2(projections, sig_scores, NEIGHBORHOOD_SIZE = 0.1):
+    """
+    Evaluates the significance of each signature vs each projection
+
+    :param projections: dict of (string) => (numpy.ndarray of shape 2xNum_Samples)
+        Maps projections to their spatial coordinates for each sample
+    :param sig_scores: dict of (string) => (numpy.ndarray of shape Num_Samples)
+        Maps signature names to their value at each coordinate
+    :return:
+    """
+    sp_row_labels = sig_scores.keys();
+    sp_col_labels = projections.keys();
+
+    N_SAMPLES = sig_scores[sp_row_labels[0]].shape[0];
+    N_SIGNATURES = len(sp_row_labels);
+    N_PROJECTIONS = len(sp_col_labels);
+
+
+    sig_proj_matrix   = np.zeros((N_SIGNATURES,N_PROJECTIONS));
+    sig_proj_matrix_p = np.zeros((N_SIGNATURES,N_PROJECTIONS));
+
+
+    #Build a matrix of all signatures
+    sig_score_matrix = np.zeros((N_SAMPLES, N_SIGNATURES));
+
+    for j, sig in enumerate(sp_row_labels):
+        sig_score_matrix[:,j] = sig_scores[sig];
+
+
+    print();
+    print("Evaluating Signatures against Projections");
+    pp = ProgressBar(N_PROJECTIONS);
+    for i, proj in enumerate(sp_col_labels):
+        data_loc = projections[proj];
+
+        distance_matrix = pairwise_distances(data_loc.T, metric='euclidean');
+
+        weights = np.exp(-1 * distance_matrix**2 / NEIGHBORHOOD_SIZE);
+        np.fill_diagonal(weights,0); #Don't count self
+        weights /= np.sum(weights, axis=1, keepdims=True);
+
+        neighborhood_prediction = np.dot(weights, sig_score_matrix);
+
+
+        ##Neighborhood dissimilarity score = |actual - predicted|
+        dissimilarity = np.abs(sig_score_matrix - neighborhood_prediction);
+        med_dissimilarity = np.median(dissimilarity, axis=0);
+
+        NUM_REPLICATES = 10000;
+        ordered_sig_vector = np.arange(N_SAMPLES).reshape(N_SAMPLES,1);
+        random_sig_values = np.repeat(ordered_sig_vector, NUM_REPLICATES, axis=1)
+        for j in xrange(random_sig_values.shape[1]):
+            np.random.shuffle(random_sig_values[:,j]);
+
+        random_predictions = np.dot(weights, random_sig_values);
+        random_scores = np.median(np.abs(ordered_sig_vector - random_predictions), axis=0);
+
+        mu = np.mean(random_scores);
+        sigma = np.std(random_scores);
+
+        from scipy.stats import norm;
+        p_values = norm.cdf((med_dissimilarity - mu)/sigma);
+
+
+        sig_proj_matrix[:,i] = med_dissimilarity;
+        sig_proj_matrix_p[:,i] = np.log10(p_values);
+        pp.update();
+
+
+    pp.complete();
+
+    return (sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p);
+
+def p_to_q(p_values):
+    """
+    Uses the Benjamini-Hochberg procedure to convert p_values to q_values
+
+    :param p_values:  numpy.ndarray of p_values
+    :return q_values: numpy.ndarray of q_values, same shape as p_values
+    """
+    original_shape = p_values.shape;
+    p_vals_flat = p_values.flatten();
+    rank = p_vals_flat.argsort().argsort()+1;
+    num_tests = p_values.size;
+    q_vals = p_vals_flat * num_tests / rank;
+    q_vals.shape = original_shape;
+
+    return q_vals;
+
+
 
 class Signature:
     
