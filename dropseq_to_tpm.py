@@ -46,16 +46,22 @@ transcript_lengths.shape = (transcript_lengths.size, 1);
 #Use transcript_lengths and counts to compute tpm
 total_reads = np.sum(count_matrix, axis=0, keepdims=True);
 
-#convert count_matrix to TPM in place
 tpm = count_matrix;
+
+#convert count_matrix to TPM in place
+#np.divide(tpm, total_reads, tpm);
+#np.divide(tpm, transcript_lengths, tpm);
+#
+#norm_factor = np.sum(tpm, axis=0, keepdims=True);
+#np.divide(tpm, norm_factor, tpm);
+#np.multiply(tpm, 1e6, tpm);
+
+#Perform the normalization described in the supplement
+tmp = count_matrix;
 np.divide(tpm, total_reads, tpm);
-np.divide(tpm, transcript_lengths, tpm);
+np.multiply(tpm, 10000.0, tpm);
 
-norm_factor = np.sum(tpm, axis=0, keepdims=True);
-np.divide(tpm, norm_factor, tpm);
-np.multiply(tpm, 1e6, tpm);
-
-#convert to log(tpm+1)
+##convert to log(tpm+1)
 np.add(tpm, 1, tpm);
 np.log(tpm, tpm);
 
@@ -73,6 +79,7 @@ with open(outfile,'w') as fout:
     for i,gene in enumerate(gene_names):
         tpm_str = ["{:.4g}".format(x) for x in tpm[i,:]];
         fout.write(gene + '\t' + '\t'.join(tpm_str) + '\n');
-        print(i);
+        if(i % 100 == 0):
+            print(i);
 
 
