@@ -194,9 +194,11 @@ class ProbabilityData(np.ndarray):
         
 class PCData(np.ndarray):
     
-    def __new__(subtype, data, parent_data):
+    def __new__(subtype, data, variance, parent_data):
         
         obj = np.asarray(data).view(subtype);
+
+        obj.variance = variance;
         
         obj.row_labels = ["PC"+str(i+1) for i in range(data.shape[0])];
         
@@ -209,7 +211,8 @@ class PCData(np.ndarray):
     def __array_finalize__(self, obj):
         if obj is None:
             return;
-        
+
+        self.variance = getattr(obj, 'variance', []);
         self.row_labels = getattr(obj, 'row_labels', []);
         self.col_labels = getattr(obj, 'col_labels', []);
         self.parent_data = getattr(obj, 'parent_data', []);
@@ -257,5 +260,6 @@ class PCData(np.ndarray):
                 indices = np.nonzero(indices)[0];
 
         out = self[indices,:];
+        out.variance = out.variance[indices];
         out.row_labels = [self.row_labels[i] for i in indices];
         return(out);

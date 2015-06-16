@@ -192,8 +192,7 @@ def SingleOutput(options, args):
         if(choice.lower()[0] == 'y'):
             #Transform into top N principal components
             pc_data = Projections.perform_weighted_PCA(data,1-fn_prob);
-            pc_data = PCData(pc_data, data);
-            pc_data = Projections.filter_PCA(pc_data, sample_scores);
+            pc_data = Projections.filter_PCA(pc_data, scores=sample_scores, variance_proportion=0.25);
             data = pc_data;
             break;
         elif(choice.lower()[0] == 'n'):
@@ -548,13 +547,11 @@ def FullOutput(options, args):
 
     #Perform PCA on the data, with and without the probability xfrm
     pc_data = Projections.perform_weighted_PCA(data, 1-fn_prob);
-    pc_data = PCData(pc_data, data);
-    pc_data = Projections.filter_PCA(pc_data, sample_scores);
+    pc_data = Projections.filter_PCA(pc_data, scores=sample_scores, variance_proportion=0.25);
 
 
     pc_prob = Projections.perform_weighted_PCA(prob, 1-fn_prob);
-    pc_prob = PCData(pc_prob, prob);
-    pc_prob = Projections.filter_PCA(pc_prob, sample_scores);
+    pc_prob = Projections.filter_PCA(pc_prob, scores=sample_scores, variance_proportion=0.25);
 
     #%% Signature file
     sigs = [];

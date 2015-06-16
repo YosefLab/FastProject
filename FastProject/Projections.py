@@ -15,6 +15,7 @@ from sklearn.manifold import SpectralEmbedding
 import scipy.stats;
 
 from .Utils import ProgressBar;
+from .DataTypes import PCData;
 
 import numpy as np;
 
@@ -194,8 +195,11 @@ def perform_PCA(data, N=0, variance_proportion=1.0):
         total_variance = np.cumsum(pca.explained_variance_ratio_);
         last_i = np.nonzero(total_variance <= variance_proportion)[0][-1];
         pca_data = pca_data[:,range(last_i+1)];
-    
-    return pca_data.T;
+
+    pca_data = pca_data.T
+
+    output = PCData(pca_data, pca.explained_variance_, data);
+    return output;
 
 def perform_weighted_PCA(data, weights, N=0, variance_proportion=1.0):
     """
@@ -244,26 +248,19 @@ def perform_weighted_PCA(data, weights, N=0, variance_proportion=1.0):
         wpca_data = wpca_data[0:N_SAMPLES,:];
         e_val = e_val[0:N_SAMPLES];
 
-    #Prune PCs based on arguments
-    if(N > 0):
-        if(N > wpca_data.shape[0]):
-            N = wpca_data.shape[0];
-        wpca_data = wpca_data[0:N,:];
-    else:
-        explained_variance_ratio = e_val / np.sum(e_val);
-        total_variance = np.cumsum(explained_variance_ratio);
-        last_i = np.nonzero(total_variance <= variance_proportion)[0][-1];
-        wpca_data = wpca_data[range(last_i+1),:];
+    pcdata = PCData(wpca_data, e_val, data);
 
-    return wpca_data;
+    return pcdata;
 
 
-def filter_PCA(data, scores):
+def filter_PCA(data, scores=None, N=0, variance_proportion=1.0):
     """
     Removes PC's that correlate with scores across samples
 
     :param data: Data that has been PCA transformed.  ndarray (Num Components x Num Samples)
     :param scores: Values (1 per sample)
+    :param N: Int.  Number of PCs to retain (performed first)
+    :param variance_proportion: Float.  Proportion of variance to retain (performed last)
     :return: The data with some PC's (rows) removed
     """
 
@@ -286,12 +283,25 @@ def filter_PCA(data, scores):
     # print("Done");
 
     #Not as fast, but fast enough for a few thousand genes
-    rho = np.zeros(data.shape[0]);
-    p = np.zeros(data.shape[0]);
-    for i in xrange(data.shape[0]):
-       rho[i], p[i] = scipy.stats.spearmanr(data[i,:], scores)
+    if(N > 0):
+        if(N > data.shape[0]):
+            N = data.shape[0];
+        data = data.subset_components(np.arange(N));
 
-    good_pcs = np.nonzero(p > 1e-5)[0];
+    if(scores is not None):
+        rho = np.zeros(data.shape[0]);
+        p = np.zeros(data.shape[0]);
+        for i in xrange(data.shape[0]):
+           rho[i], p[i] = scipy.stats.spearmanr(data[i,:], scores)
 
-    data = data.subset_components(good_pcs);
+        good_pcs = np.nonzero(p > 1e-5)[0];
+
+        data = data.subset_components(good_pcs);
+
+    if(variance_proportion < 1.0):
+        explained_variance_ratio = data.variance / np.sum(data.variance);
+        total_variance = np.cumsum(explained_variance_ratio);
+        last_i = np.nonzero(total_variance <= variance_proportion)[0][-1];
+        data = data.subset_components(np.arange(last_i+1));
+
     return data
