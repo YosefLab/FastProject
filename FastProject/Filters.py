@@ -53,16 +53,17 @@ def remove_from_file(data, filename):
     hk_genes = list();
     for line in ff:
       entries = line.split(',');
-      hk_genes.append(entries[0].strip());
+      hk_genes.append(entries[0].strip().lower());
     
     ff.close();
     
     #match hk genes to gene indices
     missing = 0;
     hk_indices = list();
+    lower_row_labels = [gene.lower() for gene in data.row_labels];
     for hk_gene in hk_genes:
       try:
-        ii = data.row_labels.index(hk_gene);
+        ii = lower_row_labels.index(hk_gene);
         hk_indices.append(ii);
       except ValueError:
         missing+=1;
@@ -112,14 +113,14 @@ def load_from_file(data, filename):
     
     ff = open(filename,'r')
     for line in ff.readlines():
-      loaded_genes.append(line.replace('\n',''));
+      loaded_genes.append(line.strip().lower());
     
     ff.close();
     
     keep_indices = list();
     for lgene in loaded_genes:
       for i, gene in enumerate(data.row_labels):
-        if(gene == lgene):
+        if(gene.lower() == lgene):
           keep_indices.append(i);
           continue;
     
