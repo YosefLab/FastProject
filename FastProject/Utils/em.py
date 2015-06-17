@@ -4,7 +4,7 @@ Created on Sun Dec 14 12:29:19 2014
 
 @author: daved_000
 """
-
+from __future__ import division, print_function;
 import numpy as np;
 from FastProject.Utils import ProgressBar
 
@@ -26,6 +26,7 @@ def em_exp_norm_mixture(zmat, cutoff, progressbar = True):
         cutoffs = np.tile(cutoff, (1,zmat.shape[1]));
         gamma = zmat > cutoffs;
         Pi = np.mean(gamma,axis=1).reshape((zmat.shape[0],1));
+        Pi[Pi == 0] = 1 / zmat.shape[1];
 
         mu_l=weighted_mean(zmat,1-gamma);
         mu_h=weighted_mean(zmat,gamma);
