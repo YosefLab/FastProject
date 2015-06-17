@@ -301,7 +301,11 @@ def filter_PCA(data, scores=None, N=0, variance_proportion=1.0):
     if(variance_proportion < 1.0):
         explained_variance_ratio = data.variance / np.sum(data.variance);
         total_variance = np.cumsum(explained_variance_ratio);
-        last_i = np.nonzero(total_variance <= variance_proportion)[0][-1];
-        data = data.subset_components(np.arange(last_i+1));
+        good_pcs = np.nonzero(total_variance <= variance_proportion)[0];
+        if(good_pcs.size == 0):  #This means the first PC is already more than total_variance
+            data = data.subset_components(np.array([0]));
+        else:
+            last_i = good_pcs[-1];
+            data = data.subset_components(np.arange(last_i+1));
 
     return data
