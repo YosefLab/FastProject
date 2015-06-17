@@ -90,7 +90,7 @@
           var data = getDataContext();
 
           // Create the data table.
-          var proj_sig_array = mergeProjSig(data.Projections[data.ProjectionKeys[j]], data.SigScores[data.SignatureKeys[i]]);
+          var proj_sig_array = mergeProjSig(data.Projections[data.ProjectionKeys[j]], data.SigScores[data.SignatureKeys[i]], data.SampleLabels);
           var chartdata = new google.visualization.arrayToDataTable(proj_sig_array);
 
           var titleStr = data.ProjectionKeys[j] + ": " + data.SignatureKeys[i];
@@ -227,10 +227,13 @@
             return "#" + rpad + red.toString(16) + gpad + green.toString(16) + bpad + blue.toString(16);
         }
 
-        function mergeProjSig(projection, signature)
+        function mergeProjSig(projection, signature, sampleLabels)
         {
             var output = [];
-            output.push(["X","Y",{"type": "string", "role": "style"}]);
+            output.push(["X",
+                "Y",
+                {"type": "string", "role": "style"},
+                {"type": "string", "role": "tooltip"}]);
 
             var cmin = Math.min.apply(Math, signature);
             var cmax = Math.max.apply(Math, signature);
@@ -238,7 +241,7 @@
             for (var i = 0; i < projection[0].length; i++)
             {
                 var point_style = "point { fill-color: " + floatToColor(signature[i], cmin, cmax);
-                var row = [projection[0][i], projection[1][i], point_style];  //copies the row
+                var row = [projection[0][i], projection[1][i], point_style, sampleLabels[i]];  //copies the row
                 output.push(row);
             }
 
