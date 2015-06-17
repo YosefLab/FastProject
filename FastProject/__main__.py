@@ -14,6 +14,8 @@ def parseFPArgs():
                       help="Read list of housekeeping genes from FILE.  Uses default list if not specified");
     parser.add_option("-s", "--signatures", metavar="FILE",
                       help="Loads signatures from FILE.  Otherwise, signature analysis is skipped in unless in interactive mode.");
+    parser.add_option("--precomputed", metavar="FILE",
+                      help="Loads precomputed signature scores from FILE.");
     parser.add_option("-f","--filters",default="0",help="""Specifies filters to be used on genes\n\n1. Remove Housekeeping
     2. Threshold (Gene expressed in at least 20% of samples)
     3. Bimodal (Using Hartigans Dip Test p<0.05

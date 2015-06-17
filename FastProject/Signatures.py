@@ -534,7 +534,47 @@ def p_to_q(p_values):
 
     return q_vals;
 
+def load_precomputed(filename, sample_labels):
+    """
+    Reads precomputed signature values form a tab-delimited text file
+    First row of the file contains sample labels that the signatures correspond with
+    Each subsequent row contains a signature name in the first column, followed by the signature values,
+        one for each sample label in the file
 
+    :param filename: signature score file name
+    :param sample_labels: labels for which we want the signature scores
+    :return: a dictionary mapping signature names (string) to signature scores (np.ndarray)
+        Each signature score consists of an array with signatures corresponding, by position,
+        with the sample labels in the sample_labels argument.
+    """
+    with open(filename, 'r') as fin:
+        line1 = fin.readline().strip().split('\t');
+        if(line1[0] == ""): #Remove empty upper-left cell if present
+            line1 = line1[1:];
+
+        #match indices between signatures in file and sample_labels
+        #want x such that file_cols[x] == sample labels
+        target_l = [sl.lower() for sl in sample_labels];
+        source_l = [sl.lower() for sl in line1];
+        translation_indices = np.zeros(len(target_l), dtype=np.int32);
+        for i in xrange(translation_indices.size):
+            try:
+                translation_indices[i] = source_l.index(target_l[i]);
+            except ValueError:
+                raise ValueError("Error: Missing value in precomputed signatures for sample " + target_l[i]);
+
+        #Gather signatures
+        sig_scores = dict();
+        for line in fin:
+            line = line.strip();
+            if(line == ""): continue;
+            s_line = line.split("\t");
+            sig_name = s_line[0];
+            sig_vals = np.array([float(x) for x in s_line[1:]]);
+            sig_vals = sig_vals[translation_indices];
+            sig_scores[sig_name] = sig_vals;
+
+        return sig_scores;
 
 class Signature:
     

@@ -159,6 +159,7 @@ def SingleOutput(options, args):
     if(options.qc):
         prob = prob.subset_samples(sample_passes);
         data = data.subset_samples(sample_passes);
+        fn_prob = fn_prob[:, sample_passes];
         sample_scores = sample_scores[sample_passes];
 
     Transforms.z_normalize(data);
@@ -234,7 +235,7 @@ def SingleOutput(options, args):
 
     #Save data
     out_file = 'projections.txt'
-    Projections.write_projection_file(dir_name + os.sep + out_file, cells, projections);
+    Projections.write_projection_file(dir_name + os.sep + out_file, data.col_labels, projections);
 
 
     #%% Output Projection Plots
@@ -319,9 +320,13 @@ def SingleOutput(options, args):
             pbar.update();
         pbar.complete();
 
+        if(options.precomputed):
+            precomputed_sig_scores = Signatures.load_precomputed(options.precomputed, data.col_labels);
+            sig_scores.update(precomputed_sig_scores);
+
         #Prompt to save data
         out_file = 'sig_scores.txt';
-        FileIO.write_signature_scores(dir_name + os.sep + out_file, sig_scores, cells);
+        FileIO.write_signature_scores(dir_name + os.sep + out_file, sig_scores, data.col_labels);
 
 
 
@@ -397,6 +402,7 @@ def SingleOutput(options, args):
     print("FastProject Analysis Complete")
 
 def FullOutput(options, args):
+    start_time = time.time();
     if(options.housekeeping):
         housekeeping_filename = options.housekeeping;
     else:
@@ -541,6 +547,7 @@ def FullOutput(options, args):
     if(options.qc):
         prob = prob.subset_samples(sample_passes);
         data = data.subset_samples(sample_passes);
+        fn_prob = fn_prob[:, sample_passes];
         sample_scores = sample_scores[sample_passes];
 
     Transforms.z_normalize(data);
@@ -619,7 +626,7 @@ def FullOutput(options, args):
 
         #Save data
         out_file = label + '_Projections.txt'
-        Projections.write_projection_file(dir_name + os.sep + out_file, cells, projections);
+        Projections.write_projection_file(dir_name + os.sep + out_file, data.col_labels, projections);
 
         #Evaluate Signatures
         print();
@@ -636,9 +643,13 @@ def FullOutput(options, args):
             pbar.update();
         pbar.complete();
 
+        if(options.precomputed):
+            precomputed_sig_scores = Signatures.load_precomputed(options.precomputed, data.col_labels);
+            sig_scores.update(precomputed_sig_scores);
+
         #Prompt to save data
         out_file = label + '_SigScores.txt';
-        FileIO.write_signature_scores(dir_name + os.sep + out_file, sig_scores, cells);
+        FileIO.write_signature_scores(dir_name + os.sep + out_file, sig_scores, data.col_labels);
 
 
 
@@ -656,6 +667,7 @@ def FullOutput(options, args):
         js_out.update({'SigProjMatrix_p': sig_proj_matrix_p});
         js_out.update({'ProjectionKeys': sp_col_labels});
         js_out.update({'SignatureKeys': sp_row_labels});
+        js_out.update({'SampleLabels': data.col_labels});
 
         fout_js.write(HtmlViewer.toJS_variable("FP_" + label, js_out));
 
@@ -663,3 +675,5 @@ def FullOutput(options, args):
     HtmlViewer.copy_html_files(dir_name);
     print();
     print("FastProject Analysis Complete")
+    elapsed_time = time.time() - start_time;
+    print("Elapsed Time {:.2f} seconds".format(elapsed_time));
