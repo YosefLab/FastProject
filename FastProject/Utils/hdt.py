@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 from __future__ import print_function, division;
 
-import numpy as num
+import numpy as np;
 from FastProject.Utils import ProgressBar;
 
 def HDT_Sig_batch(xpdf_matrix, nboot, progressbar=True):
@@ -17,9 +17,9 @@ def HDT_Sig_batch(xpdf_matrix, nboot, progressbar=True):
                 xups: xup for each row in xpdf_matrix
     """
 
-    dips = num.zeros(xpdf_matrix.shape[0]);
-    xlows = num.zeros(xpdf_matrix.shape[0]);
-    xups = num.zeros(xpdf_matrix.shape[0]);
+    dips = np.zeros(xpdf_matrix.shape[0]);
+    xlows = np.zeros(xpdf_matrix.shape[0]);
+    xups = np.zeros(xpdf_matrix.shape[0]);
 
     if(progressbar): pbar = ProgressBar(xpdf_matrix.shape[0] + nboot);
 
@@ -31,16 +31,16 @@ def HDT_Sig_batch(xpdf_matrix, nboot, progressbar=True):
         if(progressbar): pbar.update();
 
 
-    bootDip=num.zeros(nboot);
-    for i in num.arange(nboot):
-        unifpdf=num.sort(num.random.rand(xpdf_matrix.shape[1]))
+    bootDip=np.zeros(nboot);
+    for i in np.arange(nboot):
+        unifpdf=np.sort(np.random.rand(xpdf_matrix.shape[1]))
         bootDip[i] = DipTest(unifpdf)[0];
         if(progressbar): pbar.update();
 
-    dips = num.expand_dims(dips, axis=1);        #Make dips Nx1
-    bootDip = num.expand_dims(bootDip, axis=0);  #Make bootDip 1xnboot
+    dips = np.expand_dims(dips, axis=1);        #Make dips Nx1
+    bootDip = np.expand_dims(bootDip, axis=0);  #Make bootDip 1xnboot
 
-    ps = num.sum(dips < bootDip, axis=1) / float(nboot);
+    ps = np.sum(dips < bootDip, axis=1) / float(nboot);
 
     if(progressbar): pbar.complete();
 
@@ -52,12 +52,12 @@ def HDT_Sig(xpdf,nboot):
 
     (dip,xlow,xup,ifault,gcm,lcm,mn,mj)=DipTest(xpdf)
 
-    bootDip=num.zeros(nboot);
-    for i in num.arange(nboot):
-        unifpdf=num.sort(num.random.rand(xpdf.shape[0]))
+    bootDip=np.zeros(nboot);
+    for i in np.arange(nboot):
+        unifpdf=np.sort(np.random.rand(xpdf.shape[0]))
         bootDip[i] = DipTest(unifpdf)[0];
     
-    p=num.sum(num.less(dip,bootDip))/float(nboot)
+    p=np.sum(np.less(dip,bootDip))/float(nboot)
     
     return (dip,p,xlow,xup)
 
@@ -66,12 +66,12 @@ def DipTest(xpdf):
 
     This is a copy 
     """
-    x=num.sort(xpdf)
+    x=np.sort(xpdf)
     N=x.shape[0]
-    mn=num.zeros(x.shape,dtype=x.dtype)
-    mj=num.zeros(x.shape,dtype=x.dtype)
-    lcm=num.zeros(x.shape,dtype=x.dtype)
-    gcm=num.zeros(x.shape)
+    mn=np.zeros(x.shape,dtype=x.dtype)
+    mj=np.zeros(x.shape,dtype=x.dtype)
+    lcm=np.zeros(x.shape,dtype=x.dtype)
+    gcm=np.zeros(x.shape)
     ifault=False
     
     #Check that N is positive
@@ -99,10 +99,10 @@ def DipTest(xpdf):
         return (dip,xl,xu,ifault,gcm,lcm,mn,mj)
     
     #check if x is perfectly unimodal
-    xsign=-num.sign(num.diff(num.diff(xpdf)))
-    posi=num.greater(xsign,0.0)
-    negi=num.less(xsign,0.0)
-    if num.sum(posi)==0 or num.sum(negi)==0 or num.sum(num.less(posi,num.min(negi)))==N:
+    xsign=-np.sign(np.diff(np.diff(xpdf)))
+    posi=np.greater(xsign,0.0)
+    negi=np.less(xsign,0.0)
+    if np.sum(posi)==0 or np.sum(negi)==0 or np.sum(np.less(posi,np.min(negi)))==N:
         #A unimodal function is its own best unimodal approximation, 
         #with a zero corresponding dip
         xl=x[0]
@@ -310,7 +310,7 @@ def DipTest(xpdf):
 
 if __name__=="__main__":
     """
-    xpdf=num.array([-0.316502,  
+    xpdf=np.array([-0.316502,
            -0.4760215,  
            -0.2745295,  
            -0.043012,  
@@ -365,7 +365,7 @@ if __name__=="__main__":
            0.063467,  
            -0.34901  ])
            """
-    xpdf=num.random.randn(100)
-    xpdf+=num.random.randn(100)+5
+    xpdf=np.random.randn(100)
+    xpdf+=np.random.randn(100)+5
     print(HDT_Sig(xpdf,1000))
     #print DipTest(xpdf)
