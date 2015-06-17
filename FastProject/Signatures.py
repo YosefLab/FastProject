@@ -509,10 +509,12 @@ def sigs_vs_projections_v2(projections, sig_scores, NEIGHBORHOOD_SIZE = 0.1):
 
 
         sig_proj_matrix[:,i] = med_dissimilarity;
-        sig_proj_matrix_p[:,i] = np.log10(p_values);
+        sig_proj_matrix_p[:,i] = p_values;
         pp.update();
 
     sig_proj_matrix_p = p_to_q(sig_proj_matrix_p);
+    sig_proj_matrix_p[sig_proj_matrix_p == 0] = 1e-300; #Correct for -inf
+    sig_proj_matrix_p = np.log10(sig_proj_matrix_p);
 
     pp.complete();
 
