@@ -208,7 +208,7 @@ def perform_weighted_PCA(data):
 
     Parameters
     ----------
-    data : (Num_Features x Num_Samples) numpy.ndarray
+    data : (Num_Features x Num_Samples) numpy.ndarray (or subclass)
         Matrix containing data to project into 2 dimensions
 
     Returns
@@ -217,6 +217,10 @@ def perform_weighted_PCA(data):
         Data transformed using PCA.  Num_Components = Num_Samples
 
     """
+
+    #If the data has already been transformed with PCA, just spit it back out.
+    if(type(data) is PCData):
+        return data;
 
     #Weighted means
     weights = data.weights;
