@@ -161,10 +161,8 @@
              var table = $('#table_div').children('table');
 
              var sortFunction = function(a,b){
-                 var a_val = parseFloat($(a).children("td")[j+1].innerHTML);
-                 if(isNaN(a_val)){a_val = -20;}
-                 var b_val = parseFloat($(b).children("td")[j+1].innerHTML);
-                 if(isNaN(b_val)){b_val = -20;}
+                 var a_val = $(a).children("td").eq(j+1).data("data_val");
+                 var b_val = $(b).children("td").eq(j+1).data("data_val");
                  return a_val - b_val;
              };
 
@@ -318,18 +316,21 @@
                 for(var j = 0; j < data_matrix[i].length; j++)
                 {
                     var td = document.createElement("td");
+                    var td_text;
                     if(data_matrix[i][j] > -20)
                     {
-                        td.appendChild(document.createTextNode(data_matrix[i][j].toString()));
+                        td_text = data_matrix[i][j].toString();
                     }
                     else
                     {
-                        td.appendChild(document.createTextNode("< -20"));
+                        td_text = "< -20";
                     }
+                    td.appendChild(document.createTextNode(td_text));
                     tr.appendChild(td);
                     td = $(td);
                     td.data("row_num", i);
                     td.data("col_num", j);
+                    td.data("data_val", data_matrix[i][j]);
                     td.click(tableClickFunction);
                     td.css("background-color", floatToColor(color_matrix[i][j], 0, data_matrix.length,"light"));
                 }
