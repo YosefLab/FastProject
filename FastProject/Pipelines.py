@@ -154,12 +154,14 @@ def SingleOutput(options, args):
 
     prob = ProbabilityData(prob, data);
 
+    data.weights = 1-fn_prob;
+    prob.weights = 1-fn_prob;
+
     sample_passes, sample_scores = Transforms.quality_check(params);
 
     if(options.qc):
         prob = prob.subset_samples(sample_passes);
         data = data.subset_samples(sample_passes);
-        fn_prob = fn_prob[:, sample_passes];
         sample_scores = sample_scores[sample_passes];
 
     Transforms.z_normalize(data);
@@ -192,7 +194,7 @@ def SingleOutput(options, args):
 
         if(choice.lower()[0] == 'y'):
             #Transform into top N principal components
-            pc_data = Projections.perform_weighted_PCA(data,1-fn_prob);
+            pc_data = Projections.perform_weighted_PCA(data);
             pc_data = Projections.filter_PCA(pc_data, scores=sample_scores, variance_proportion=0.25);
             data = pc_data;
             break;
@@ -314,7 +316,7 @@ def SingleOutput(options, args):
         pbar = ProgressBar(len(sigs));
         for sig in sigs:
             try:
-                sig_scores[sig.name] = data.eval_signature(sig, fn_prob);
+                sig_scores[sig.name] = data.eval_signature(sig);
             except ValueError:  #Only thrown when the signature has no genes in the data
                 pass #Just discard the signature then
             pbar.update();
@@ -542,21 +544,21 @@ def FullOutput(options, args):
 
     prob = ProbabilityData(prob, data);
 
+    data.weights = 1-fn_prob;
+    prob.weights = 1-fn_prob;
+
     sample_passes, sample_scores = Transforms.quality_check(params);
 
     if(options.qc):
         prob = prob.subset_samples(sample_passes);
         data = data.subset_samples(sample_passes);
-        fn_prob = fn_prob[:, sample_passes];
         sample_scores = sample_scores[sample_passes];
 
     Transforms.z_normalize(data);
 
     #Perform PCA on the data, with and without the probability xfrm
-    pc_data = Projections.perform_weighted_PCA(data, 1-fn_prob);
-
-
-    pc_prob = Projections.perform_weighted_PCA(prob, 1-fn_prob);
+    pc_data = Projections.perform_weighted_PCA(data);
+    pc_prob = Projections.perform_weighted_PCA(prob);
 
     if(options.pca_filter):
         pc_data = Projections.filter_PCA(pc_data, scores=sample_scores, variance_proportion=0.25);
@@ -644,7 +646,7 @@ def FullOutput(options, args):
         pbar = ProgressBar(len(sigs));
         for sig in sigs:
             try:
-                sig_scores[sig.name] = data.eval_signature(sig, fn_prob);
+                sig_scores[sig.name] = data.eval_signature(sig);
             except ValueError:  #Only thrown when the signature has no genes in the data
                 pass #Just discard the signature then
             pbar.update();

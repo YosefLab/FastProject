@@ -74,8 +74,8 @@ def generate_projections(data):
     
     # PCA
     
-    pca = PCA();
-    result = pca.fit_transform(data.T);
+    result = perform_weighted_PCA(data);
+    result = result.T; #Now rows are samples, columns are components
 
 
     result12 = result[:,[0,1]]
@@ -93,7 +93,7 @@ def generate_projections(data):
     # ICA
     
     ica = FastICA(n_components = 2);
-    result = ica.fit_transform(data.T.copy());
+    result = ica.fit_transform(data.T.copy()); #Copy needed because ICA whitens the input matrix
     
     projections['ICA'] = result;
     pbar.update();
@@ -201,21 +201,15 @@ def perform_PCA(data, N=0, variance_proportion=1.0):
     output = PCData(pca_data, pca.explained_variance_, data);
     return output;
 
-def perform_weighted_PCA(data, weights, N=0, variance_proportion=1.0):
+def perform_weighted_PCA(data):
     """
     Performs Weighted PCA on the data
+    Weights are derived from the data object (of a type defined in DataTypes)
 
     Parameters
     ----------
     data : (Num_Features x Num_Samples) numpy.ndarray
         Matrix containing data to project into 2 dimensions
-    weights : (Num_Features x Num_Samples) numpy.ndarray
-        Weight for each data point
-    N : int
-        Number of Principle Components to retain
-    variance_proportion: float (0.0 - 1.0)
-        Retain top X principal components such that a total of <variance_proportion>
-        of the variance is retained.
 
     Returns
     -------
@@ -225,6 +219,7 @@ def perform_weighted_PCA(data, weights, N=0, variance_proportion=1.0):
     """
 
     #Weighted means
+    weights = data.weights;
     wmean = np.sum(data * weights, axis=1) / np.sum(weights, axis=1);
     wmean = wmean.reshape((wmean.size, 1));
 

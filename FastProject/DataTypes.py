@@ -28,6 +28,8 @@ class ExpressionData(np.ndarray):
             raise ValueError("Number of column labels does not equal number of columns in data");
         else:
             obj.col_labels = col_labels;
+
+        obj.weights = np.ones(data.shape);
         
         return obj;
         
@@ -37,7 +39,8 @@ class ExpressionData(np.ndarray):
     def __array_finalize__(self, obj):
         if obj is None:
             return;
-        
+
+        self.weights    = getattr(obj, 'weights'   , []);
         self.row_labels = getattr(obj, 'row_labels', []);
         self.col_labels = getattr(obj, 'col_labels', []);
         
@@ -46,17 +49,14 @@ class ExpressionData(np.ndarray):
         dist_vec = distance.pdist(self.T, metric='euclidean');
         return distance.squareform(dist_vec);
 
-    def eval_signature(self, signature, fn_prob=[]):
+    def eval_signature(self, signature):
         """For a signature, calculate a score against each sample in the data
         
         Parameters
         ----------
         signature :   Signature,
             expression data to evaluate the signature against
-        fn_prob : array-like, shape (Num_Genes, Num_Samples)
-            false-negative probability used to weight signature score
-            (Optional)
-        
+
         Returns
         -------
         out : 1D ndarray, length = Num_Samples 
@@ -70,12 +70,7 @@ class ExpressionData(np.ndarray):
         if(signature_norm == 0): #If no genes match signature
             raise ValueError("No genes match signature");
 
-        fn_prob = np.array(fn_prob);
-        if(len(fn_prob)==0):
-            weights = np.ones(self.shape);
-        else:
-            weights = 1-fn_prob;
-
+        weights = self.weights;
         pdata = self * sig_vector * weights;
         
         sig_scores = pdata.sum(axis=0);
@@ -91,6 +86,7 @@ class ExpressionData(np.ndarray):
                 indices = np.nonzero(indices)[0];
         
         out = self[indices,:];
+        out.weights = out.weights[indices,:];
         out.row_labels = [self.row_labels[i] for i in indices];
         return(out);
     
@@ -100,6 +96,7 @@ class ExpressionData(np.ndarray):
                 indices = np.nonzero(indices)[0];
         
         out = self[:, indices];
+        out.weights = out.weights[:, indices];
         out.col_labels = [self.col_labels[i] for i in indices];
         return(out);
         
@@ -114,13 +111,16 @@ class ProbabilityData(np.ndarray):
         obj.col_labels = expression_data.col_labels;
         
         obj.expression_data = expression_data;
+
+        obj.weights = expression_data.weights;
         
         return obj;
                 
     def __array_finalize__(self, obj):
         if obj is None:
             return;
-        
+
+        self.weights    = getattr(obj, 'weights'   , []);
         self.row_labels = getattr(obj, 'row_labels', []);
         self.col_labels = getattr(obj, 'col_labels', []);
         self.expression_data = getattr(obj, 'expression_data', []);
@@ -137,18 +137,14 @@ class ProbabilityData(np.ndarray):
         
         return prob_dist;
 
-    def eval_signature(self, signature, fn_prob=[]):
+    def eval_signature(self, signature):
         """For a signature, calculate a score against each sample in the data
         
         Parameters
         ----------
         signature :   Signature,
             expression data to evaluate the signature against
-        fn_prob : array-like, shape (Num_Genes, Num_Samples)
-            false-negative probability used to weight signature score
-            (Optional). This is ignored for probability data as the probability
-            values already capture the false-negative probability.
-        
+
         Returns
         -------
         out : 1D ndarray, length = Num_Samples 
@@ -161,6 +157,7 @@ class ProbabilityData(np.ndarray):
         if(signature_norm == 0): #No genes match signature
             raise ValueError("No genes match signature");
 
+        #Probablity data already incorporates false-negative probability so no weights are used.
         weights = np.ones(self.shape);
 
         pdata = self * sig_vector * weights;
@@ -178,6 +175,7 @@ class ProbabilityData(np.ndarray):
                 indices = np.nonzero(indices)[0];
         
         out = self[indices,:];
+        out.weights = out.weights[indices,:];
         out.row_labels = [self.row_labels[i] for i in indices];
         out.expression_data = out.expression_data.subset_genes(indices);
         return(out);
@@ -188,6 +186,7 @@ class ProbabilityData(np.ndarray):
                 indices = np.nonzero(indices)[0];
         
         out = self[:, indices];
+        out.weights = out.weights[:, indices];
         out.col_labels = [self.col_labels[i] for i in indices];
         out.expression_data = out.expression_data.subset_samples(indices);
         return(out);
@@ -207,7 +206,12 @@ class PCData(np.ndarray):
         obj.parent_data = parent_data;
         
         return obj;
-                
+
+    #All data values in PCData have the same weight
+    @property
+    def weights(self):
+        return np.ones(self.shape);
+
     def __array_finalize__(self, obj):
         if obj is None:
             return;
@@ -222,17 +226,14 @@ class PCData(np.ndarray):
         dist_vec = distance.pdist(self.T, metric='euclidean');
         return distance.squareform(dist_vec);
 
-    def eval_signature(self, signature, fn_prob=[]):
+    def eval_signature(self, signature):
         """For a signature, calculate a score against each sample in the data
         
         Parameters
         ----------
         signature :   Signature,
             expression data to evaluate the signature against
-        fn_prob : array-like, shape (Num_Genes, Num_Samples)
-            false-negative probability used to weight signature score
-            (Optional)
-        
+
         Returns
         -------
         out : 1D ndarray, length = Num_Samples 
@@ -241,7 +242,7 @@ class PCData(np.ndarray):
         """
         
         #On Principle Components, just evaluate signature on parent data
-        return self.parent_data.eval_signature(signature, fn_prob);
+        return self.parent_data.eval_signature(signature);
         
     
     def subset_samples(self, indices):
