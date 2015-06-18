@@ -21,18 +21,17 @@ def read_matrix(filename='', delimiter = '\t'):
     #load matrix data
     #First read in list of cell names
     
-    ff = open(filename,'r');
-    col_labels = ff.readline().strip().split(delimiter);
-    col_labels = [col_label.strip() for col_label in col_labels];
-    
-    #col_labels in first line may or may not be shifted by one to line up with 
-    #data in following lines.  Determine # of datapoints from second line
-    line2 = ff.readline().strip().split(delimiter);
-    if(len(line2) == len(col_labels)):
-        col_labels = col_labels[1:];
-    
-    ff.close();
-    
+    with open(filename,'r') as ff:
+        col_labels = ff.readline().strip().split(delimiter);
+        col_labels = [col_label.strip() for col_label in col_labels];
+
+        #col_labels in first line may or may not be shifted by one to line up with
+        #data in following lines.  Determine # of datapoints from second line
+        line2 = ff.readline().strip().split(delimiter);
+        if(len(line2) == len(col_labels)):
+            col_labels = col_labels[1:];
+
+
     #read all columns, start at 1 to skip first column of row labels
     cols_to_read = np.arange(1,len(col_labels)+1);
     
@@ -43,17 +42,14 @@ def read_matrix(filename='', delimiter = '\t'):
         data = np.log(data + 1);
     
     #read in gene names
-    ff = open(filename,'r');
-    xx = ff.readline();
+    with open(filename,'r') as ff:
+        xx = ff.readline();
+
+        row_labels = list();
+        for line in ff:
+          entries = line.split(delimiter);
+          row_labels.append(entries[0]);
     
-    row_labels = list();
-    for line in ff:
-      entries = line.split(delimiter);
-      row_labels.append(entries[0].split('.')[0]);  #remove anything after the decimal
-      #or
-      #row_labels.append(entries[0]);
-    
-    ff.close();
 
     #Test for unique row and column labels
     if(len(set(row_labels)) != len(row_labels)):
