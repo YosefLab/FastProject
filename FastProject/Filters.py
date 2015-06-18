@@ -29,17 +29,19 @@ def filter_genes_threshold(data, threshold):
     return data.subset_genes(keep_indices);
     
 
-def filter_genes_hdt(data, p_val):
+def filter_genes_hdt(data, p_val, return_mask=False):
     """Filters out genes that pass the Hartigans Dip Test for bimodality
     with at least p < p_val"""
     #perform Hartigans dip test on the rest of the rows
 
     (dips, ps, xlows, xups) = Utils.HDT_Sig_batch(data, 1000);
 
-    keep_indices = np.nonzero(ps <= p_val)[0];
-    data = data.subset_genes(keep_indices);
-    
-    return data
+    if(return_mask == True):
+        return ps <= p_val;
+    else:
+        keep_indices = np.nonzero(ps <= p_val)[0];
+        data = data.subset_genes(keep_indices);
+        return data
     
 def remove_from_file(data, filename):
     """trim out rows that match genes found in file <filename>

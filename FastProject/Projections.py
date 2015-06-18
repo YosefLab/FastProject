@@ -70,7 +70,8 @@ def generate_projections(data):
     
     projections = dict();
     
-    dist_matrix = data.distance_matrix();    
+    dist_matrix = data.distance_matrix();
+    proj_data = data.projection_data();
     
     # PCA
     
@@ -93,7 +94,7 @@ def generate_projections(data):
     # ICA
     
     ica = FastICA(n_components = 2);
-    result = ica.fit_transform(data.T.copy()); #Copy needed because ICA whitens the input matrix
+    result = ica.fit_transform(proj_data.T.copy()); #Copy needed because ICA whitens the input matrix
     
     projections['ICA'] = result;
     pbar.update();
@@ -108,7 +109,7 @@ def generate_projections(data):
     # ISOMap
     
     model = Isomap(n_neighbors = 4, n_components = 2);
-    result = model.fit_transform(data.T);
+    result = model.fit_transform(proj_data.T);
     
     projections['ISOMap'] = result;
     pbar.update();
@@ -116,7 +117,7 @@ def generate_projections(data):
     # LLE
     
     model =  KernelPCA(n_components=2, kernel='rbf');
-    result = model.fit_transform(data.T);
+    result = model.fit_transform(proj_data.T);
     
     projections['RBF Kernel PCA'] = result;
     pbar.update();
@@ -132,7 +133,7 @@ def generate_projections(data):
     # Spectral Embedding
     # Issues using precomputed affinity matrix.  Need to understand how to construct it better
     model = SpectralEmbedding(n_components=2)
-    result = model.fit_transform(data.T);
+    result = model.fit_transform(proj_data.T);
     
     projections['Spectral Embedding'] = result;
     pbar.update();
@@ -221,6 +222,9 @@ def perform_weighted_PCA(data):
     #If the data has already been transformed with PCA, just spit it back out.
     if(type(data) is PCData):
         return data;
+    #Use only rows where data.projection_mask is true
+    #   This is so aggressive filtering applies to projections only.
+    data = data.projection_data();
 
     #Weighted means
     weights = data.weights;

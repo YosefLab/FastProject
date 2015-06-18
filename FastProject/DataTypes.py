@@ -30,6 +30,7 @@ class ExpressionData(np.ndarray):
             obj.col_labels = col_labels;
 
         obj.weights = np.ones(data.shape);
+        obj.projection_mask = np.zeros(data.shape[0]) == 0; #All True to start
         
         return obj;
         
@@ -40,13 +41,14 @@ class ExpressionData(np.ndarray):
         if obj is None:
             return;
 
+        self.projection_mask = getattr(obj, 'projection_mask'   , []);
         self.weights    = getattr(obj, 'weights'   , []);
         self.row_labels = getattr(obj, 'row_labels', []);
         self.col_labels = getattr(obj, 'col_labels', []);
         
     def distance_matrix(self):
         
-        dist_vec = distance.pdist(self.T, metric='euclidean');
+        dist_vec = distance.pdist(self.projection_data().T, metric='euclidean');
         return distance.squareform(dist_vec);
 
     def eval_signature(self, signature):
@@ -88,6 +90,8 @@ class ExpressionData(np.ndarray):
         out = self[indices,:];
         out.weights = out.weights[indices,:];
         out.row_labels = [self.row_labels[i] for i in indices];
+        out.projection_mask = out.projection_mask[indices];
+
         return(out);
     
     def subset_samples(self, indices):
@@ -99,7 +103,15 @@ class ExpressionData(np.ndarray):
         out.weights = out.weights[:, indices];
         out.col_labels = [self.col_labels[i] for i in indices];
         return(out);
-        
+
+    def projection_data(self):
+        """
+        Returns the data matrix in self filtered by projection_mask
+        :return: A sliced copy of self
+        """
+
+        return self[self.projection_mask, :];
+
 class ProbabilityData(np.ndarray):
     
     def __new__(subtype, data, expression_data):
@@ -113,6 +125,8 @@ class ProbabilityData(np.ndarray):
         obj.expression_data = expression_data;
 
         obj.weights = expression_data.weights;
+
+        obj.projection_mask = expression_data.projection_mask;
         
         return obj;
                 
@@ -120,20 +134,22 @@ class ProbabilityData(np.ndarray):
         if obj is None:
             return;
 
+        self.projection_mask = getattr(obj, 'projection_mask'   , []);
         self.weights    = getattr(obj, 'weights'   , []);
         self.row_labels = getattr(obj, 'row_labels', []);
         self.col_labels = getattr(obj, 'col_labels', []);
         self.expression_data = getattr(obj, 'expression_data', []);
         
     def distance_matrix(self):
+
+        pos_self = self.projection_data()
+        neg_self = 1-pos_self;
         
-        neg_self = 1-self;
-        
-        prob_dist = np.dot(neg_self.T, self) + np.dot(self.T, neg_self);       
+        prob_dist = np.dot(neg_self.T, pos_self) + \
+                    np.dot(pos_self.T, neg_self);
         
         #Set all diagonal entries equal to zero
-        i = np.arange(prob_dist.shape[0]);
-        prob_dist[i,i] = 0;        
+        np.fill_diagonal(prob_dist, 0.0);
         
         return prob_dist;
 
@@ -177,6 +193,7 @@ class ProbabilityData(np.ndarray):
         out = self[indices,:];
         out.weights = out.weights[indices,:];
         out.row_labels = [self.row_labels[i] for i in indices];
+        out.projection_mask = out.projection_mask[indices];
         out.expression_data = out.expression_data.subset_genes(indices);
         return(out);
     
@@ -190,6 +207,14 @@ class ProbabilityData(np.ndarray):
         out.col_labels = [self.col_labels[i] for i in indices];
         out.expression_data = out.expression_data.subset_samples(indices);
         return(out);
+
+    def projection_data(self):
+        """
+        Returns the data matrix in self filtered by projection_mask
+        :return: A sliced copy of self
+        """
+
+        return self[self.projection_mask, :];
         
 class PCData(np.ndarray):
     
@@ -264,3 +289,12 @@ class PCData(np.ndarray):
         out.variance = out.variance[indices];
         out.row_labels = [self.row_labels[i] for i in indices];
         return(out);
+
+
+    def projection_data(self):
+        """
+        Returns the data matrix in self filtered by projection_mask
+        :return: A sliced copy of self
+        """
+        #PCA Data does not have projection_mask, just reutrn all
+        return self;

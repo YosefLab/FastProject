@@ -123,7 +123,8 @@ def SingleOutput(options, args):
             edata = Filters.filter_genes_threshold(edata, 0.2);
         elif(choice==3): #HDT test
             print("Removing genes with unimodal distribution across samples using Hartigans DT...");
-            edata = Filters.filter_genes_hdt(edata, 0.05);
+            gene_passes = Filters.filter_genes_hdt(edata, 0.05, return_mask=True);
+            edata.projection_mask = np.logical_and(edata.projection_mask, gene_passes);
         elif(choice==4): #Save to file
             out_file = raw_input("Enter name of file to create : ");
             FileIO.write_data(dir_name + os.sep + out_file, edata);
@@ -513,7 +514,8 @@ def FullOutput(options, args):
             edata = Filters.filter_genes_threshold(edata, 0.2);
         elif(choice==3): #HDT test
             print("Removing genes with unimodal distribution across samples using Hartigans DT...");
-            edata = Filters.filter_genes_hdt(edata, 0.05);
+            gene_passes = Filters.filter_genes_hdt(edata, 0.05, return_mask=True);
+            edata.projection_mask = np.logical_and(edata.projection_mask, gene_passes);
         elif(choice==4): #Save to file
             out_file = raw_input("Enter name of file to create : ");
             FileIO.write_data(dir_name + os.sep + out_file, edata);
