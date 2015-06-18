@@ -162,7 +162,9 @@
 
              var sortFunction = function(a,b){
                  var a_val = parseFloat($(a).children("td")[j+1].innerHTML);
+                 if(isNaN(a_val)){a_val = -20;}
                  var b_val = parseFloat($(b).children("td")[j+1].innerHTML);
+                 if(isNaN(b_val)){b_val = -20;}
                  return a_val - b_val;
              };
 
@@ -316,7 +318,14 @@
                 for(var j = 0; j < data_matrix[i].length; j++)
                 {
                     var td = document.createElement("td");
-                    td.appendChild(document.createTextNode(data_matrix[i][j].toString()));
+                    if(data_matrix[i][j] > -20)
+                    {
+                        td.appendChild(document.createTextNode(data_matrix[i][j].toString()));
+                    }
+                    else
+                    {
+                        td.appendChild(document.createTextNode("< -20"));
+                    }
                     tr.appendChild(td);
                     td = $(td);
                     td.data("row_num", i);
