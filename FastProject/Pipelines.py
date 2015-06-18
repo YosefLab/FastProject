@@ -554,11 +554,18 @@ def FullOutput(options, args):
 
     #Perform PCA on the data, with and without the probability xfrm
     pc_data = Projections.perform_weighted_PCA(data, 1-fn_prob);
-    pc_data = Projections.filter_PCA(pc_data, scores=sample_scores, variance_proportion=0.25);
 
 
     pc_prob = Projections.perform_weighted_PCA(prob, 1-fn_prob);
-    pc_prob = Projections.filter_PCA(pc_prob, scores=sample_scores, variance_proportion=0.25);
+
+    if(options.pca_filter):
+        pc_data = Projections.filter_PCA(pc_data, scores=sample_scores, variance_proportion=0.25);
+        pc_prob = Projections.filter_PCA(pc_prob, scores=sample_scores, variance_proportion=0.25);
+    else:
+        pc_data = Projections.filter_PCA(pc_data, variance_proportion=0.25, min_components = 30);
+        pc_prob = Projections.filter_PCA(pc_prob, variance_proportion=0.25, min_components = 30);
+
+
 
     #%% Signature file
     sigs = [];
@@ -657,6 +664,7 @@ def FullOutput(options, args):
         sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p = Signatures.sigs_vs_projections_v2(projections, sig_scores);
 
         #Output matrix of p-values for conformity scores
+        FileIO.write_matrix(dir_name + os.sep + label + "_DissimilarityMatrix.txt",sig_proj_matrix, sp_row_labels, sp_col_labels);
         FileIO.write_matrix(dir_name + os.sep + label + "_PMatrix.txt",sig_proj_matrix_p, sp_row_labels, sp_col_labels);
 
         #Wrap data into an object

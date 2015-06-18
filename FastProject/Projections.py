@@ -253,7 +253,7 @@ def perform_weighted_PCA(data, weights, N=0, variance_proportion=1.0):
     return pcdata;
 
 
-def filter_PCA(data, scores=None, N=0, variance_proportion=1.0):
+def filter_PCA(data, scores=None, N=0, variance_proportion=1.0, min_components = 0):
     """
     Removes PC's that correlate with scores across samples
 
@@ -261,6 +261,8 @@ def filter_PCA(data, scores=None, N=0, variance_proportion=1.0):
     :param scores: Values (1 per sample)
     :param N: Int.  Number of PCs to retain (performed first)
     :param variance_proportion: Float.  Proportion of variance to retain (performed last)
+    :param min_components: Int.  Minimum # of components to retain if using variance_proportion
+        Default is no minimum.
     :return: The data with some PC's (rows) removed
     """
 
@@ -303,9 +305,11 @@ def filter_PCA(data, scores=None, N=0, variance_proportion=1.0):
         total_variance = np.cumsum(explained_variance_ratio);
         good_pcs = np.nonzero(total_variance <= variance_proportion)[0];
         if(good_pcs.size == 0):  #This means the first PC is already more than total_variance
-            data = data.subset_components(np.array([0]));
+            last_i = 0;
         else:
             last_i = good_pcs[-1];
-            data = data.subset_components(np.arange(last_i+1));
+        if(last_i+1 < min_components): last_i = min_components-1;
+
+        data = data.subset_components(np.arange(last_i+1));
 
     return data

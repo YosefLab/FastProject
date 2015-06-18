@@ -23,6 +23,7 @@ def parseFPArgs():
     e.g. -f 1, -f 3, -f 13, -f 123""");
     parser.add_option("-p","--probability", action="store_true", default=False, help="Projects using probability of expression rather than log expression level");
     parser.add_option("-c","--pca", action="store_true", default=False, help="Reduces to a smaller number of principal components before projection");
+    parser.add_option("--pca_filter", action="store_true", default=False, help="Filters PC principal components that correlate with a calculated QC metric for each sample");
     parser.add_option("-o", "--output", action="store_true", default=False, help="Outputs data after filtering and any transforms");
     parser.add_option("-q", "--qc", action="store_true", default=False, help="Performs a quality check on samples, filtering samples that do not pass");
     parser.add_option("-i", "--interactive", action="store_true", default=False, help="Prompts options via command line instead");
