@@ -54,7 +54,13 @@ def read_matrix(filename='', delimiter = '\t'):
       #row_labels.append(entries[0]);
     
     ff.close();
-    
+
+    #Test for unique row and column labels
+    if(len(set(row_labels)) != len(row_labels)):
+        raise ValueError("Row labels (gene identifiers) are not unique.  Exiting.");
+    if(len(set(col_labels)) != len(col_labels)):
+        raise ValueError("Column labels (sample labels) are not unique.  Exiting.");
+
     return (data, row_labels, col_labels);
 
 def write_matrix(filename, data, row_labels, col_labels):
