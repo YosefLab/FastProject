@@ -99,13 +99,20 @@ def generate_projections(data):
     projections['ICA'] = result;
     pbar.update();
     
-    # tSNE, but with built-in from sklearn
-    model = TSNE(n_components=2, perplexity=30, metric="precomputed", learning_rate = 100, early_exaggeration=4.0);
+    # tSNE with higher perplexity
+    model = TSNE(n_components=2, perplexity=30.0, metric="precomputed", learning_rate = 100, early_exaggeration=4.0);
     result = model.fit_transform(dist_matrix);
     
-    projections['tSNE'] = result;
+    projections['tSNE30'] = result;
     pbar.update();
-    
+
+    # tSNE with lower perplexity
+    model = TSNE(n_components=2, perplexity=1.0, metric="precomputed", learning_rate = 100, early_exaggeration=4.0);
+    result = model.fit_transform(dist_matrix);
+
+    projections['tSNE1'] = result;
+    pbar.update();
+
     # ISOMap
     
     model = Isomap(n_neighbors = 4, n_components = 2);
@@ -224,14 +231,14 @@ def perform_weighted_PCA(data):
         return data;
     #Use only rows where data.projection_mask is true
     #   This is so aggressive filtering applies to projections only.
-    data = data.projection_data();
+    proj_data = data.projection_data();
 
     #Weighted means
-    weights = data.weights;
-    wmean = np.sum(data * weights, axis=1) / np.sum(weights, axis=1);
+    weights = proj_data.projection_weights();
+    wmean = np.sum(proj_data * weights, axis=1) / np.sum(weights, axis=1);
     wmean = wmean.reshape((wmean.size, 1));
 
-    data_centered = data - wmean;
+    data_centered = proj_data - wmean;
     weighted_data_centered = data_centered * weights;
 
     wcov = np.dot(weighted_data_centered, weighted_data_centered.T) / np.dot(weights,weights.T);

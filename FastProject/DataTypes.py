@@ -109,8 +109,15 @@ class ExpressionData(np.ndarray):
         Returns the data matrix in self filtered by projection_mask
         :return: A sliced copy of self
         """
-
         return self[self.projection_mask, :];
+
+    def projection_weights(self):
+        """
+        Returns the weight matrix, filtered by projection_mask
+        :return: A sliced copy of the weight matrix
+        """
+
+        return self.weights[self.projection_mask, :];
 
 class ProbabilityData(np.ndarray):
     
@@ -173,7 +180,7 @@ class ProbabilityData(np.ndarray):
         if(signature_norm == 0): #No genes match signature
             raise ValueError("No genes match signature");
 
-        #Probablity data already incorporates false-negative probability so no weights are used.
+        #Probability data already incorporates false-negative probability so no weights are used.
         weights = np.ones(self.shape);
 
         pdata = self * sig_vector * weights;
@@ -215,7 +222,15 @@ class ProbabilityData(np.ndarray):
         """
 
         return self[self.projection_mask, :];
-        
+
+    def projection_weights(self):
+        """
+        Returns the weight matrix, filtered by projection_mask
+        :return: A sliced copy of the weight matrix
+        """
+
+        return self.weights[self.projection_mask, :];
+
 class PCData(np.ndarray):
     
     def __new__(subtype, data, variance, parent_data):
@@ -296,5 +311,13 @@ class PCData(np.ndarray):
         Returns the data matrix in self filtered by projection_mask
         :return: A sliced copy of self
         """
-        #PCA Data does not have projection_mask, just reutrn all
+        #PCA Data does not have projection_mask, just return all
         return self;
+
+    def projection_weights(self):
+        """
+        Returns the weight matrix, filtered by projection_mask
+        :return: A sliced copy of the weight matrix
+        """
+        #PCA Data does not have a projection mask, just return weights
+        return self.weights;
