@@ -53,9 +53,20 @@ def read_matrix(filename='', delimiter = '\t'):
 
     #Test for unique row and column labels
     if(len(set(row_labels)) != len(row_labels)):
-        raise ValueError("Row labels (gene identifiers) are not unique.  Exiting.");
+        #Find duplicates
+        row_labels_copy = [r for r in row_labels];
+        for row_label in set(row_labels_copy):
+            row_labels_copy.remove(row_label);
+
+        #Warning for duplicate genes
+        print("WARNING: Row labels (gene identifiers) are not unique.\n" + ", ".join(row_labels_copy));
+
     if(len(set(col_labels)) != len(col_labels)):
-        raise ValueError("Column labels (sample labels) are not unique.  Exiting.");
+        #Find duplicates
+        for col_label in set(col_labels):
+            col_labels.remove(col_label);
+
+        raise ValueError("Column labels (sample names) are not unique.\n" + ", ".join(col_labels) + "\nExiting.");
 
     return (data, row_labels, col_labels);
 
