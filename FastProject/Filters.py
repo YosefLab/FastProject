@@ -4,7 +4,7 @@ Created on Mon Dec 15
 
 @author: David DeTomaso
 """
-from __future__ import print_function;
+from __future__ import print_function, division;
 
 #Compute the distance matrix between samples
 #Input:  Data = matrix of NumGenes x NumSamples
@@ -15,6 +15,53 @@ import os;
 from . import Utils
 
 this_directory = os.path.dirname(os.path.abspath(__file__));
+
+def filter_genes_fano(data, num_mad):
+    """
+    Uses fano filtering on the genes.  Splits into quantiles first.
+    Only retains genes that have fano factor <num_mad> median absolute
+        deviations in each quantile.
+
+    :param data: numpy.ndarray (Num_Genes x Num_Samples)
+    :param num_mad: float
+    :return: numpy.ndarray, bool, (Num_Genes)
+        True for rows that pass the filter.  Otherwise, False;
+    """
+    mu = np.mean(data, axis=1);
+    sigma = np.std(data, axis=1);
+
+    #slice up mu and sigma into bins, by mu
+    aa = np.argsort(mu);
+    mu_sort = mu[aa];
+    sigma_sort = sigma[aa];
+
+    N_QUANTS = 30;
+    m = mu_sort.size//N_QUANTS;
+
+    gene_passes = np.zeros(data.shape[0]) == 1;
+
+    for i in xrange(N_QUANTS):
+        if(i == N_QUANTS-1):
+            rr = np.arange(i*m, mu_sort.size)
+        else:
+            rr = np.arange(i*m, (i+1)*m);
+
+        mu_quant = mu_sort[rr];
+        mu_quant[mu_quant == 0] = 1; #so we don't divide by zero later
+        sigma_quant = sigma_sort[rr];
+        fano_quant = sigma_quant**2 / mu_quant;
+        mad_quant = np.median(np.abs(fano_quant - np.median(fano_quant)));
+        gene_passes_quant = fano_quant > np.median(fano_quant) + num_mad*mad_quant;
+        gene_passes_quant_i = np.nonzero(gene_passes_quant)[0];
+        gene_passes_i = gene_passes_quant_i + i*m;
+        gene_passes[gene_passes_i] = True;
+
+    #gene_passes are in sorted mu order, need to revert back to original order
+    original_ii = np.argsort(aa);
+    gene_passes = gene_passes[original_ii];
+
+    return gene_passes;
+
 
 
 def filter_genes_threshold(data, threshold):

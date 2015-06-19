@@ -19,8 +19,9 @@ def parseFPArgs():
     parser.add_option("-f","--filters",default="0",help="""Specifies filters to be used on genes\n\n1. Remove Housekeeping
     2. Threshold (Gene expressed in at least 20% of samples)
     3. Bimodal (Using Hartigans Dip Test p<0.05
+    4. Fano Filtering on quantiles using MAD >= 2
 
-    e.g. -f 1, -f 3, -f 13, -f 123""");
+    e.g. -f 1, -f 4, -f 13, -f 123""");
     parser.add_option("-p","--probability", action="store_true", default=False, help="Projects using probability of expression rather than log expression level");
     parser.add_option("-c","--pca", action="store_true", default=False, help="Reduces to a smaller number of principal components before projection");
     parser.add_option("--pca_filter", action="store_true", default=False, help="Filters PC principal components that correlate with a calculated QC metric for each sample");

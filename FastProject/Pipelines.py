@@ -88,7 +88,7 @@ def SingleOutput(options, args):
             print("\t1.  Remove housekeeping genes");
             print("\t2.  Remove inactive genes");
             print("\t3.  Filter genes for biomadility using HDT");
-            print("\t4.  Save result of filtering to file");
+            print("\t4.  Apply Fano-factor filtering.");
             print();
 
             choice = raw_input("Make a selection: ");
@@ -106,7 +106,7 @@ def SingleOutput(options, args):
                 options.filters = options.filters[1:];
                 try:
                     choice = int(choice);
-                    if(choice > 3):
+                    if(choice > 4):
                         raise ValueError;
                 except ValueError:
                     print("Error:  Bad option for -f, --filters.  Exiting");
@@ -126,16 +126,18 @@ def SingleOutput(options, args):
             gene_passes = Filters.filter_genes_hdt(edata, 0.05, return_mask=True);
             edata.projection_mask = np.logical_and(edata.projection_mask, gene_passes);
         elif(choice==4): #Save to file
-            out_file = raw_input("Enter name of file to create : ");
-            FileIO.write_data(dir_name + os.sep + out_file, edata);
-            print("Data saved to " + out_file);
+            print("Applying Fano-Filtering...");
+            gene_passes = Filters.filter_genes_fano(edata, 2);
+            edata.projection_mask = np.logical_and(edata.projection_mask, gene_passes);
         else:
             print("Error : Invalid Choice\n");
             continue;
 
-        if(0 < choice < 4):
+        if(0 < choice < 3):
             print("Removed ", original[0]-edata.shape[0], " Genes");
             print(edata.shape[0], " Genes retained");
+        if(2 < choice < 5):
+            print(np.sum(edata.projection_mask), "Genes saved for projection.")
 
     data = edata;  #'data' is used for projections/signatures.  Can be overwritten with the probability data object
 
@@ -479,7 +481,7 @@ def FullOutput(options, args):
             print("\t1.  Remove housekeeping genes");
             print("\t2.  Remove inactive genes");
             print("\t3.  Filter genes for biomadility using HDT");
-            print("\t4.  Save result of filtering to file");
+            print("\t4.  Apply Fano-factor filtering.");
             print();
 
             choice = raw_input("Make a selection: ");
@@ -497,7 +499,7 @@ def FullOutput(options, args):
                 options.filters = options.filters[1:];
                 try:
                     choice = int(choice);
-                    if(choice > 3):
+                    if(choice > 4):
                         raise ValueError;
                 except ValueError:
                     print("Error:  Bad option for -f, --filters.  Exiting");
@@ -517,16 +519,18 @@ def FullOutput(options, args):
             gene_passes = Filters.filter_genes_hdt(edata, 0.05, return_mask=True);
             edata.projection_mask = np.logical_and(edata.projection_mask, gene_passes);
         elif(choice==4): #Save to file
-            out_file = raw_input("Enter name of file to create : ");
-            FileIO.write_data(dir_name + os.sep + out_file, edata);
-            print("Data saved to " + out_file);
+            print("Applying Fano-Filtering...");
+            gene_passes = Filters.filter_genes_fano(edata, 2);
+            edata.projection_mask = np.logical_and(edata.projection_mask, gene_passes);
         else:
             print("Error : Invalid Choice\n");
             continue;
 
-        if(0 < choice < 4):
+        if(0 < choice < 3):
             print("Removed ", original[0]-edata.shape[0], " Genes");
             print(edata.shape[0], " Genes retained");
+        if(2 < choice < 5):
+            print(np.sum(edata.projection_mask), "Genes saved for projection.")
 
     data = edata;  #'data' is used for projections/signatures.  Can be overwritten with the probability data object
 
