@@ -317,6 +317,7 @@
                 //Create row label
                 var label_td = document.createElement("td");
                 label_td.appendChild(document.createTextNode(row_labels[i]));
+                $(label_td).on("click", function(e){createSigModal($(this).html())});
                 tr.appendChild(label_td);
 
                 for(var j = 0; j < data_matrix[i].length; j++)
@@ -348,35 +349,59 @@
             tbldiv.appendChild(tbl);
         }
 
+        function createSigModal(signature_label){
+            sig_obj = FP_Signatures[signature_label];
+            sig_data = [];
+            for(i = 0; i < sig_obj.Genes.length; i++)
+            {
+                sig_data.push({'Gene': sig_obj.Genes[i], 'Sign': sig_obj.Signs[i]});
+            }
+            sigModal = $('#signatureModal');
+            sigModal.find('h4').text(signature_label);
+            tableRows = d3.select('#signatureModal').select('tbody').selectAll('tr')
+                .data(sig_data);
+            tableRows.enter().append('tr');
+            tableRows.exit().remove();
+
+            tableCells = tableRows.selectAll('td').data(function(d){return [d.Gene, d.Sign];});
+            tableCells.enter().append('td');
+            tableCells.text(function(d){console.log(d);return d;});
+
+            tableCells.exit().remove();
+
+            sigModal.modal();
+        };
+
     </script>
     <style>
-        table th:first-child{
+        #table_div table th:first-child{
             text-align:left;
         }
-        table th:not(:first-child) {
+        #table_div table th:not(:first-child) {
            transform: rotate(-60deg);
             transform-origin: left top 0;
         }
 
-        table td:first-child{
+        #table_div table td:first-child{
             max-width:450px;
             width:450px;
             -ms-word-wrap: break-word;
             word-wrap: break-word;
+            cursor: pointer;
         }
 
         .altRow{
             background-color: rgb(220,220,220);
         }
 
-        table td:not(:first-child), table th:not(:first-child){
+        #table_div table td:not(:first-child), table th:not(:first-child){
             text-align: center;
             width: 50px;
             max-width: 50px;
             cursor: pointer;
         }
 
-        table td:not(:first-child){
+        #table_div table td:not(:first-child){
             padding: 5px 0;
         }
 
@@ -399,6 +424,31 @@
     </style>
 </head>
 <body>
+<div class="modal fade" id="signatureModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="myModalLabel">Signature Info</h4>
+      </div>
+      <div class="modal-body">
+          <table>
+              <thead>
+                  <tr>
+                      <th>Gene</th>
+                      <th>Sign</th>
+                  </tr>
+              </thead>
+              <tbody>
+              </tbody>
+          </table>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
 <h1>FastProject Viewer</h1>
 <br>
 <div id="data_options_div">
