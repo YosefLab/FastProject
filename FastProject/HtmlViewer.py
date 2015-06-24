@@ -16,6 +16,7 @@ def copy_html_files(destination_dir):
     shutil.copy(RESOURCE_DIR + os.sep + "bootstrap.css", destination_dir + os.sep + "bootstrap.css");
     shutil.copy(RESOURCE_DIR + os.sep + "bootstrap.min.js", destination_dir + os.sep + "bootstrap.min.js");
     shutil.copy(RESOURCE_DIR + os.sep + "d3.min.js", destination_dir + os.sep + "d3.min.js");
+    shutil.copy(RESOURCE_DIR + os.sep + "ColorScatter.js", destination_dir + os.sep + "ColorScatter.js");
 
 def toJS_variable(variable_name, obj):
     return "var " + variable_name + " = " + toJS(obj) + ";\n";

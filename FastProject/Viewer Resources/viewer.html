@@ -7,6 +7,8 @@
     <script type="text/javascript" src="jquery-2.1.4.min.js"></script>
 	<script type="text/javascript" src="d3.min.js"></script>
     <script type="text/javascript" src="FP_data.js"></script>
+	<script type="text/javascript" src="ColorScatter.js"></script>
+
     <!-- Bootstrap Stuff -->
     <link rel="stylesheet" href="bootstrap.css">
     <link rel="stylesheet" href="bootstrap-theme.css">
@@ -25,6 +27,7 @@
          global_status.signature_filter = "";
 
          var global_options = {};
+        var global_scatter = {};
 
 
          window.onload = function()
@@ -42,6 +45,7 @@
              if(!global_options.full_output){
                  $("#data_options_div").hide();
              }
+             global_scatter = new ColorScatter("#scatter_div");
          };
 
          function updateTable()
@@ -191,7 +195,27 @@
 
 
              drawChart(row, col);
+			 data = getDataContext();
+			 sig_key = data.SignatureKeys[row];
+			 proj_key = data.ProjectionKeys[col];
+			 newScatterData(proj_key, sig_key);
          }
+		 
+		 newScatterData = function(proj_key, sig_key){
+			data = getDataContext();
+			proj = data.Projections[proj_key];
+			xcoords = proj[0];
+			ycoords = proj[1];
+			sig = data.SigScores[sig_key];
+			//Zip up the data into a new points object
+			points = [];
+			for(i = 0; i<xcoords.length; i++)
+			{
+				points.push([xcoords[i], ycoords[i], sig[i]]);
+			}
+			
+			global_scatter.setData(points);
+		}
 
         function floatToColor(value, cmin, cmax, cmap)
         {
@@ -420,6 +444,25 @@
             display:inline-block;
             padding-top: 40px;
         }
+		
+		svg {
+		  font: 10px sans-serif;
+		  shape-rendering: crispEdges;
+		}
+
+		rect {
+		  fill: #ddd;
+		}
+		
+		svg circle{
+			fill-opacity: 0.7;
+		}
+
+		.axis path,
+		.axis line {
+		  fill: none;
+		  stroke: #fff;
+		}
 
     </style>
 </head>
@@ -464,6 +507,7 @@
 <br>
 <div id="table_div" style="display:inline-block; float:left"></div>
 <div id="chart_div"></div>
+<div id="scatter_div"></div>
 <input id="sig_filt_input" type="text" placeholder="Filter Signatures...">
 </body>
 </html>
