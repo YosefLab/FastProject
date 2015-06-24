@@ -401,7 +401,6 @@ def SingleOutput(options, args):
         fout_js.write(HtmlViewer.toJS_variable("FP_" + label, js_out));
         fout_js.close();
 
-        HtmlViewer.generate_js_data_file(dir_name + os.sep + "sample.js", projections, sig_scores, sig_proj_matrix, sig_proj_matrix_p, sp_col_labels, sp_row_labels);
 
     print();
     print("FastProject Analysis Complete")
@@ -686,6 +685,26 @@ def FullOutput(options, args):
         js_out.update({'SampleLabels': data.col_labels});
 
         fout_js.write(HtmlViewer.toJS_variable("FP_" + label, js_out));
+
+    #Write signatures to file
+    #Assemble signatures into an object, then convert to JSON variable and write
+    sig_dict = {};
+    for sig in sigs:
+        sig_genes = sig.sig_dict.keys();
+        sig_values = sig.sig_dict.values();
+        sort_i = np.array(sig_values).argsort()[::-1];#Put positive signatures first
+        sig_genes = [sig_genes[i] for i in sort_i];
+        sig_values = [sig_values[i] for i in sort_i];
+        sig_dict.update({sig.name: {'Genes':sig_genes, 'Signs':sig_values}});
+    fout_js.write(HtmlViewer.toJS_variable("FP_Signatures", sig_dict));
+
+    #Write the original data matrix to the javascript file.
+    data_json = dict({
+        'data': edata,
+        'gene_labels': edata.row_labels,
+        'sample_labels': edata.col_labels,
+    });
+    fout_js.write(HtmlViewer.toJS_variable("FP_ExpressionMatrix", data_json));
 
     fout_js.close();
     HtmlViewer.copy_html_files(dir_name);
