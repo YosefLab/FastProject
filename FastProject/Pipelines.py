@@ -627,7 +627,7 @@ def FullOutput(options, args):
     data_matrices = [data, prob, pc_data, pc_prob];
     data_labels = ["Expression", "Probability", "ExpressionPC", "ProbabilityPC"];
 
-    fout_js = open(dir_name + os.sep + "FP_data.js", 'w');
+    fout_js = open(dir_name + os.sep + "FP_data.jsdata", 'w');
 
     for label, data in zip(data_labels, data_matrices):
         print();
