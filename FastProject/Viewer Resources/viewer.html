@@ -31,6 +31,8 @@
         {
             global_scatter = new ColorScatter("#scatter_div");
             global_heatmap = new HeatMap("#heatmap_div");
+            global_scatter.hovered_links.push(global_heatmap);
+            global_heatmap.hovered_links.push(global_scatter);
             updateTable();
             $("#probability_checkbox").change(updateTable);
             $("#pca_checkbox").change(updateTable);
@@ -463,6 +465,22 @@
         #heatmap_div{
             float: right;
             clear: both;
+        }
+
+        .point-hover{
+            fill-opacity: 1.0;
+            stroke: #444444;
+        }
+
+        .point-selected{
+            stroke: yellow;
+            stroke-width: 2px;
+        }
+
+        /* Style for hovered heatmap rows */
+        .heatmap-hover {
+           stroke: black;
+            stroke-width: 1px;
         }
 
     </style>
