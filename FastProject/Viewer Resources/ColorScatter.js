@@ -4,70 +4,70 @@
 */
 function ColorScatter(parent)
 {
-	self = this;
-	var xdomain = [-2, 2];
-	var ydomain = [-2, 2];
-	
-	this.margin = {top: 20, right: 20, bottom: 30, left: 40};
-	this.width = 500 - this.margin.left - this.margin.right;
-	this.height = 375 - this.margin.top - this.margin.bottom;
+    self = this;
+    var xdomain = [-2, 2];
+    var ydomain = [-2, 2];
 
-	this.x = d3.scale.linear()
-		.domain(xdomain)
-		.range([0, self.width]);
+    this.margin = {top: 20, right: 20, bottom: 30, left: 40};
+    this.width = 500 - this.margin.left - this.margin.right;
+    this.height = 375 - this.margin.top - this.margin.bottom;
 
-	this.y = d3.scale.linear()
-		.domain(ydomain)
-		.range([self.height, 0]);
+    this.x = d3.scale.linear()
+        .domain(xdomain)
+        .range([0, self.width]);
 
-	this.xAxis = d3.svg.axis()
-		.scale(self.x)
-		.orient("bottom")
-		.tickSize(-self.height);
+    this.y = d3.scale.linear()
+        .domain(ydomain)
+        .range([self.height, 0]);
 
-	this.yAxis = d3.svg.axis()
-		.scale(self.y)
-		.orient("left")
-		.ticks(5)
-		.tickSize(-self.width);
-	
-	this.zoom = d3.behavior.zoom()
-		.x(self.x)
-		.y(self.y)
-		.scaleExtent([.2, 32])
-		.on("zoom", self.redraw());
-	
-	this.colorScale = d3.scale.linear()
-	.domain([0, 60, 130])
-	.range(["red", "green", "blue"]);
-	
-	this.svg = d3.select(parent).append("svg")
-		.attr("width", self.width + self.margin.left + self.margin.right)
-		.attr("height", self.height + self.margin.top + self.margin.bottom)
-	  .append("g")
-		.attr("transform", "translate(" + self.margin.left + "," + self.margin.top + ")")
-		.call(self.zoom);
+    this.xAxis = d3.svg.axis()
+        .scale(self.x)
+        .orient("bottom")
+        .tickSize(-self.height);
 
-	this.svg.append("rect")
-		.attr("width", self.width)
-		.attr("height", self.height);
+    this.yAxis = d3.svg.axis()
+        .scale(self.y)
+        .orient("left")
+        .ticks(5)
+        .tickSize(-self.width);
 
-	this.svg.append("g")
-		.attr("class", "x axis")
-		.attr("transform", "translate(0," + self.height + ")")
-		.call(self.xAxis);
+    this.zoom = d3.behavior.zoom()
+        .x(self.x)
+        .y(self.y)
+        .scaleExtent([.2, 32])
+        .on("zoom", self.redraw());
 
-	this.svg.append("g")
-		.attr("class", "y axis")
-		.call(self.yAxis);
-	
-	this.points = [];
+    this.colorScale = d3.scale.linear()
+        .domain([0, 60, 130])
+        .range(["red", "green", "blue"]);
+
+    this.svg = d3.select(parent).append("svg")
+        .attr("width", self.width + self.margin.left + self.margin.right)
+        .attr("height", self.height + self.margin.top + self.margin.bottom)
+        .append("g")
+        .attr("transform", "translate(" + self.margin.left + "," + self.margin.top + ")")
+        .call(self.zoom);
+
+    this.svg.append("rect")
+        .attr("width", self.width)
+        .attr("height", self.height);
+
+    this.svg.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + self.height + ")")
+        .call(self.xAxis);
+
+    this.svg.append("g")
+        .attr("class", "y axis")
+        .call(self.yAxis);
+
+    this.points = [];
 }
 
 ColorScatter.prototype.setData = function(points)
 {
-	this.points = points;
-	this.redraw(true)();
+    this.points = points;
+    this.redraw(true)();
 };
 
 ColorScatter.prototype.redraw = function(performTransition) {

@@ -40,30 +40,30 @@ HeatMap.prototype.redraw = function(performTransition) {
         heatmapRow.enter()
             .append("g")
             .attr("transform", function(d, j){
-                    return "translate(0," + (j*self.h) + ")"});
+                return "translate(0," + (j*self.h) + ")"});
 
         heatmapRow.exit().remove();
 
         //generate heatmap columns
         var heatmapRects = heatmapRow
-         .selectAll("rect")
-         .data(function(d) {
-            return d;
-         });
+            .selectAll("rect")
+            .data(function(d) {
+                return d;
+            });
 
         heatmapRects.enter().append("rect")
-         .attr('width',self.w)
-         .attr('height',self.h)
-         .attr('y',0)
-         .attr('x', function(d,i) {
-            return (i * self.w);
-         });
+            .attr('width',self.w)
+            .attr('height',self.h)
+            .attr('y',0)
+            .attr('x', function(d,i) {
+                return (i * self.w);
+            });
 
-         heatmapRects.style('fill',function(d) {
+        heatmapRects.style('fill',function(d) {
             return self.colorScale(d);
-         });
+        });
 
-         heatmapRects.exit().remove();
+        heatmapRects.exit().remove();
 
     }
 };

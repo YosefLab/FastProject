@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <title>FastProject Viewer</title>
     <script type="text/javascript" src="jquery-2.1.4.min.js"></script>
-	<script type="text/javascript" src="d3.min.js"></script>
+    <script type="text/javascript" src="d3.min.js"></script>
     <script type="text/javascript" src="FP_data.jsdata"></script>
-	<script type="text/javascript" src="ColorScatter.js"></script>
+    <script type="text/javascript" src="ColorScatter.js"></script>
     <script type="text/javascript" src="HeatMap.js"></script>
 
     <!-- Bootstrap Stuff -->
@@ -16,209 +16,209 @@
 
     <script type="text/javascript">
 
-         var global_status = {};
-         global_status.plotted_projection = -1;
-         global_status.plotted_signature = -1;
-         global_status.sorted_column = -1;
-         global_status.signature_filter = "";
+        var global_status = {};
+        global_status.plotted_projection = -1;
+        global_status.plotted_signature = -1;
+        global_status.sorted_column = -1;
+        global_status.signature_filter = "";
 
-         var global_options = {};
-         var global_scatter = {};
-         var global_heatmap = {};
+        var global_options = {};
+        var global_scatter = {};
+        var global_heatmap = {};
 
 
-         window.onload = function()
-         {
-             global_scatter = new ColorScatter("#scatter_div");
-             global_heatmap = new HeatMap("#heatmap_div");
-             updateTable();
-             $("#probability_checkbox").change(updateTable);
-             $("#pca_checkbox").change(updateTable);
+        window.onload = function()
+        {
+            global_scatter = new ColorScatter("#scatter_div");
+            global_heatmap = new HeatMap("#heatmap_div");
+            updateTable();
+            $("#probability_checkbox").change(updateTable);
+            $("#pca_checkbox").change(updateTable);
 
-             full_output = (typeof FP_Expression !== "undefined") &
-                     (typeof FP_Probability !== "undefined") &
-                     (typeof FP_ExpressionPC !== "undefined") &
-                     (typeof FP_ProbabilityPC !== "undefined");
+            full_output = (typeof FP_Expression !== "undefined") &
+                    (typeof FP_Probability !== "undefined") &
+                    (typeof FP_ExpressionPC !== "undefined") &
+                    (typeof FP_ProbabilityPC !== "undefined");
 
-             global_options.full_output = full_output;
-             if(!global_options.full_output){
-                 $("#data_options_div").hide();
-             }
-         };
+            global_options.full_output = full_output;
+            if(!global_options.full_output){
+                $("#data_options_div").hide();
+            }
+        };
 
-         function updateTable()
-         {
-             var data = getDataContext();
-             $('#sig_filt_input').detach(); //Save this for when the table is rebuilt.
-             $('#table_div').children('table').remove();
-             createTableFromData(data.SigProjMatrix_p, data.ProjectionKeys, data.SignatureKeys);
-             $('#sig_filt_input').change();
-             sortByColumn();
-             drawChart();
-             drawHeat();
-         }
+        function updateTable()
+        {
+            var data = getDataContext();
+            $('#sig_filt_input').detach(); //Save this for when the table is rebuilt.
+            $('#table_div').children('table').remove();
+            createTableFromData(data.SigProjMatrix_p, data.ProjectionKeys, data.SignatureKeys);
+            $('#sig_filt_input').change();
+            sortByColumn();
+            drawChart();
+            drawHeat();
+        }
 
-         function getDataContext()
-         {
-             if(global_options.full_output) {
-                 var probability = $('#probability_checkbox').is(":checked");
-                 var pca = $('#pca_checkbox').is(":checked");
-                 if (!probability && !pca) {
-                     return FP_Expression;
-                 }
-                 if (!probability && pca) {
-                     return FP_ExpressionPC;
-                 }
-                 if (probability && !pca) {
-                     return FP_Probability;
-                 }
-                 if (probability && pca) {
-                     return FP_ProbabilityPC;
-                 }
-             }
-             else{
+        function getDataContext()
+        {
+            if(global_options.full_output) {
+                var probability = $('#probability_checkbox').is(":checked");
+                var pca = $('#pca_checkbox').is(":checked");
+                if (!probability && !pca) {
+                    return FP_Expression;
+                }
+                if (!probability && pca) {
+                    return FP_ExpressionPC;
+                }
+                if (probability && !pca) {
+                    return FP_Probability;
+                }
+                if (probability && pca) {
+                    return FP_ProbabilityPC;
+                }
+            }
+            else{
                 if(typeof FP_Expression !== "undefined") return FP_Expression;
-                 if(typeof FP_ExpressionPC !== "undefined") return FP_ExpressionPC;
-                 if(typeof FP_Probability !== "undefined") return FP_Probability;
-                 if(typeof FP_ProbabilityPC !== "undefined") return FP_ProbabilityPC;
-             }
-         }
+                if(typeof FP_ExpressionPC !== "undefined") return FP_ExpressionPC;
+                if(typeof FP_Probability !== "undefined") return FP_Probability;
+                if(typeof FP_ProbabilityPC !== "undefined") return FP_ProbabilityPC;
+            }
+        }
 
 
-         Array.prototype.argSort = function()
-         {
-             out = new Array(this.length);
-             for(var i = 0; i < out.length; i++) out[i] = i;
-             var that = this;
-             out.sort(function(a,b){return that[a] - that[b];});
-             return out;
-         };
+        Array.prototype.argSort = function()
+        {
+            out = new Array(this.length);
+            for(var i = 0; i < out.length; i++) out[i] = i;
+            var that = this;
+            out.sort(function(a,b){return that[a] - that[b];});
+            return out;
+        };
 
-         function transpose(inputMatrix){
-             var IN_ROWS = inputMatrix.length;
-             var IN_COLS = inputMatrix[0].length;
+        function transpose(inputMatrix){
+            var IN_ROWS = inputMatrix.length;
+            var IN_COLS = inputMatrix[0].length;
 
-             var outputMatrix = new Array(IN_COLS);
+            var outputMatrix = new Array(IN_COLS);
 
-             //allocate arrays
-             for(var i = 0; i < IN_COLS; i++)
-             {
+            //allocate arrays
+            for(var i = 0; i < IN_COLS; i++)
+            {
                 outputMatrix[i] = new Array(IN_ROWS);
-             }
+            }
 
-             for(var i = 0; i < IN_ROWS; i++)
-             {
-                 for (var j = 0; j < IN_COLS; j++)
-                 {
-                     outputMatrix[j][i] = inputMatrix[i][j];
-                 }
-             }
+            for(var i = 0; i < IN_ROWS; i++)
+            {
+                for (var j = 0; j < IN_COLS; j++)
+                {
+                    outputMatrix[j][i] = inputMatrix[i][j];
+                }
+            }
 
-             return outputMatrix;
-         }
+            return outputMatrix;
+        }
 
-         function median(inputArray){
-             var sorted_array = inputArray.slice().sort();
-             if(sorted_array.length%2 == 0){
-                 center_i = (sorted_array.length-1)/2;
-                 med_val = sorted_array[center_i];
-             }
-             else{
-                 center_i = (sorted_array.length-1)/2;
-                 med_val = sorted_array[center_i-1]/2 + sorted_array[center_i]/2;
-             }
-             return med_val;
-         }
+        function median(inputArray){
+            var sorted_array = inputArray.slice().sort();
+            if(sorted_array.length%2 == 0){
+                center_i = (sorted_array.length-1)/2;
+                med_val = sorted_array[center_i];
+            }
+            else{
+                center_i = (sorted_array.length-1)/2;
+                med_val = sorted_array[center_i-1]/2 + sorted_array[center_i]/2;
+            }
+            return med_val;
+        }
 
-         function sortByColumn()
-         {
-             var j = global_status.sorted_column;
-             if(j == -1){return;}
-             var table = $('#table_div').children('table');
+        function sortByColumn()
+        {
+            var j = global_status.sorted_column;
+            if(j == -1){return;}
+            var table = $('#table_div').children('table');
 
-             var sortFunction = function(a,b){
-                 var a_val = $(a).children("td").eq(j+1).data("data_val");
-                 var b_val = $(b).children("td").eq(j+1).data("data_val");
-                 return a_val - b_val;
-             };
+            var sortFunction = function(a,b){
+                var a_val = $(a).children("td").eq(j+1).data("data_val");
+                var b_val = $(b).children("td").eq(j+1).data("data_val");
+                return a_val - b_val;
+            };
 
-             var unsorted_rows = table.children('tbody').children('tr:not(:first)');
-             var sorted_rows = unsorted_rows.sort(sortFunction);
+            var unsorted_rows = table.children('tbody').children('tr:not(:first)');
+            var sorted_rows = unsorted_rows.sort(sortFunction);
 
-             unsorted_rows.detach();
-             table.children('tbody').append(sorted_rows);
+            unsorted_rows.detach();
+            table.children('tbody').append(sorted_rows);
 
-             $('#table_div').find('tr').removeClass('altRow')
-                     .not('.hidden').filter(':odd').addClass('altRow');
+            $('#table_div').find('tr').removeClass('altRow')
+                    .not('.hidden').filter(':odd').addClass('altRow');
 
-         }
+        }
 
-         function tableClickFunction(event)
-         {
-             var cell = $(event.target);
-             global_status.plotted_signature  = cell.data("row_num");
-             global_status.plotted_projection = cell.data("col_num");
-             drawChart();
-             drawHeat();
-         }
+        function tableClickFunction(event)
+        {
+            var cell = $(event.target);
+            global_status.plotted_signature  = cell.data("row_num");
+            global_status.plotted_projection = cell.data("col_num");
+            drawChart();
+            drawHeat();
+        }
 
-		 function drawChart() {
+        function drawChart() {
             i = global_status.plotted_signature;
             j = global_status.plotted_projection;
 
-             if(i > -1 && j > -1){
-                 data = getDataContext();
+            if(i > -1 && j > -1){
+                data = getDataContext();
 
-                 sig_key = data.SignatureKeys[i];
-                 proj_key = data.ProjectionKeys[j];
+                sig_key = data.SignatureKeys[i];
+                proj_key = data.ProjectionKeys[j];
 
-                 proj = data.Projections[proj_key];
-                 sig = data.SigScores[sig_key];
+                proj = data.Projections[proj_key];
+                sig = data.SigScores[sig_key];
 
-                 xcoords = proj[0];
-                 ycoords = proj[1];
-                 //Zip up the data into a new points object
-                 points = [];
-                 for(i = 0; i<xcoords.length; i++)
-                 {
-                     points.push([xcoords[i], ycoords[i], sig[i]]);
-                 }
-             }
-             else{
-                 points = [];
-             }
+                xcoords = proj[0];
+                ycoords = proj[1];
+                //Zip up the data into a new points object
+                points = [];
+                for(i = 0; i<xcoords.length; i++)
+                {
+                    points.push([xcoords[i], ycoords[i], sig[i]]);
+                }
+            }
+            else{
+                points = [];
+            }
 
-			global_scatter.setData(points);
-		}
+            global_scatter.setData(points);
+        }
 
-         function drawHeat(){
-             i = global_status.plotted_signature;
-             if( i > -1)
-             {
-                 sig_key = data.SignatureKeys[i];
-                 sig = FP_Signatures[sig_key]
-                 genes = sig.Genes;
+        function drawHeat(){
+            i = global_status.plotted_signature;
+            if( i > -1)
+            {
+                sig_key = data.SignatureKeys[i];
+                sig = FP_Signatures[sig_key]
+                genes = sig.Genes;
 
-                 //Construct data matrix
-                 //Look up gene indices
-                 gene_indices = [];
-                 for(j = 0; j < genes.length; j++)
-                 {
-                     gene_index = FP_ExpressionMatrix.gene_labels.indexOf(genes[j]);
-                     if(gene_index > -1) //Some genes are in signature, but not in data
-                     {
-                         gene_indices.push(gene_index);
-                     }
-                 }
+                //Construct data matrix
+                //Look up gene indices
+                gene_indices = [];
+                for(j = 0; j < genes.length; j++)
+                {
+                    gene_index = FP_ExpressionMatrix.gene_labels.indexOf(genes[j]);
+                    if(gene_index > -1) //Some genes are in signature, but not in data
+                    {
+                        gene_indices.push(gene_index);
+                    }
+                }
 
-                 dataMat = gene_indices.map(function(e,i){
-                     return FP_ExpressionMatrix.data[e];
-                 });
+                dataMat = gene_indices.map(function(e,i){
+                    return FP_ExpressionMatrix.data[e];
+                });
 
-                 global_heatmap.setData(dataMat);
+                global_heatmap.setData(dataMat);
 
-             }
-         }
+            }
+        }
 
         function floatToColor(value, cmin, cmax, cmap)
         {
@@ -227,8 +227,8 @@
 
             //Old color values
             /*blue = 4*(0.75-norm_val);
-            red = 4*(norm_val -.25);
-            green = 4*Math.abs(norm_val - 0.5)-1;*/
+             red = 4*(norm_val -.25);
+             green = 4*Math.abs(norm_val - 0.5)-1;*/
 
             var blue = 1-1*norm_val;
             var red = norm_val;
@@ -365,7 +365,7 @@
             sigModal = $('#signatureModal');
             sigModal.find('h4').text(signature_label);
             tableRows = d3.select('#signatureModal').select('tbody').selectAll('tr')
-                .data(sig_data);
+                    .data(sig_data);
             tableRows.enter().append('tr');
             tableRows.exit().remove();
 
@@ -380,26 +380,26 @@
 
     </script>
     <style>
-		html {
-			height: 100%;
-		}
-		
-		body {
-			height: 100%;
-			padding-top: 1px;
-		}
+        html {
+            height: 100%;
+        }
+
+        body {
+            height: 100%;
+            padding-top: 1px;
+        }
 
         #table_div table{
             margin-right: 50px; /* So the table div accounts for angled labels */
         }
-		
+
         #table_div table th:first-child{
             text-align:left;
         }
 
         #table_div table th:not(:first-child) {
-           transform-origin: left center 0;
-           transform: translate(15px,1em) rotate(-50deg);
+            transform-origin: left center 0;
+            transform: translate(15px,1em) rotate(-50deg);
         }
 
         #table_div table td:first-child{
@@ -431,30 +431,30 @@
 
         #table_div{
             padding-top: 40px;
-			overflow: auto;
-			position: absolute;
-			top: 150px;
-			bottom: 0px;
+            overflow: auto;
+            position: absolute;
+            top: 150px;
+            bottom: 0px;
         }
-		
-		svg {
-		  font: 10px sans-serif;
-		  shape-rendering: crispEdges;
-		}
 
-		rect {
-		  fill: #ddd;
-		}
-		
-		svg circle{
-			fill-opacity: 0.7;
-		}
+        svg {
+            font: 10px sans-serif;
+            shape-rendering: crispEdges;
+        }
 
-		.axis path,
-		.axis line {
-		  fill: none;
-		  stroke: #fff;
-		}
+        rect {
+            fill: #ddd;
+        }
+
+        svg circle{
+            fill-opacity: 0.7;
+        }
+
+        .axis path,
+        .axis line {
+            fill: none;
+            stroke: #fff;
+        }
 
         #scatter_div{
             float: right;
@@ -469,29 +469,29 @@
 </head>
 <body>
 <div class="modal fade" id="signatureModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-        <h4 class="modal-title" id="myModalLabel">Signature Info</h4>
-      </div>
-      <div class="modal-body">
-          <table>
-              <thead>
-                  <tr>
-                      <th>Gene</th>
-                      <th>Sign</th>
-                  </tr>
-              </thead>
-              <tbody>
-              </tbody>
-          </table>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-      </div>
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="myModalLabel">Signature Info</h4>
+            </div>
+            <div class="modal-body">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Gene</th>
+                        <th>Sign</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div>
     </div>
-  </div>
 </div>
 <h1>FastProject Viewer</h1>
 <br>
