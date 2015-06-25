@@ -9,8 +9,8 @@ function ColorScatter(parent)
 	var ydomain = [-2, 2];
 	
 	this.margin = {top: 20, right: 20, bottom: 30, left: 40};
-	this.width = 800 - this.margin.left - this.margin.right;
-	this.height = 600 - this.margin.top - this.margin.bottom;
+	this.width = 500 - this.margin.left - this.margin.right;
+	this.height = 375 - this.margin.top - this.margin.bottom;
 
 	this.x = d3.scale.linear()
 		.domain(xdomain)
@@ -68,34 +68,34 @@ ColorScatter.prototype.setData = function(points)
 {
 	this.points = points;
 	this.redraw(true)();
-}
+};
 
 ColorScatter.prototype.redraw = function(performTransition) {
-	  var self = this;
-	  return function(){
-		self.svg.select(".x.axis").call(self.xAxis);
-		self.svg.select(".y.axis").call(self.yAxis);
-		var circles = self.svg.selectAll("circle")
-			.data(self.points);
+    var self = this;
+    return function(){
+    self.svg.select(".x.axis").call(self.xAxis);
+    self.svg.select(".y.axis").call(self.yAxis);
+    var circles = self.svg.selectAll("circle")
+        .data(self.points);
 
-		circles.enter().append("circle").attr("r",4.5);
-		if(performTransition !== undefined && performTransition == true)
-		{
-			circles
-				.style("fill", function(d){return self.colorScale(d[2]);})
-				.transition()
-				.duration(1000)
-				.attr("cx", function(d){return self.x(d[0]);})
-				.attr("cy", function(d){return self.y(d[1]);});
-		}
-		else
-		{
-			circles
-				.attr("cx", function(d){return self.x(d[0]);})
-				.attr("cy", function(d){return self.y(d[1]);})
-				.style("fill", function(d){return self.colorScale(d[2]);});
-		}
-		
-		circles.exit().remove();
-	  }
-	}
+    circles.enter().append("circle").attr("r",4.5);
+    if(performTransition !== undefined && performTransition == true)
+    {
+        circles
+            .style("fill", function(d){return self.colorScale(d[2]);})
+            .transition()
+            .duration(1000)
+            .attr("cx", function(d){return self.x(d[0]);})
+            .attr("cy", function(d){return self.y(d[1]);});
+    }
+    else
+    {
+        circles
+            .attr("cx", function(d){return self.x(d[0]);})
+            .attr("cy", function(d){return self.y(d[1]);})
+            .style("fill", function(d){return self.colorScale(d[2]);});
+    }
+
+    circles.exit().remove();
+    }
+};
