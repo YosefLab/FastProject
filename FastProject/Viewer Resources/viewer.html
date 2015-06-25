@@ -3,12 +3,11 @@
 <head lang="en">
     <meta charset="UTF-8">
     <title>FastProject Viewer</title>
-    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
     <script type="text/javascript" src="jquery-2.1.4.min.js"></script>
 	<script type="text/javascript" src="d3.min.js"></script>
     <script type="text/javascript" src="FP_data.jsdata"></script>
-    <script type="text/javascript" src="FP_data.js"></script>
 	<script type="text/javascript" src="ColorScatter.js"></script>
+    <script type="text/javascript" src="HeatMap.js"></script>
 
     <!-- Bootstrap Stuff -->
     <link rel="stylesheet" href="bootstrap.css">
@@ -16,11 +15,7 @@
     <script src="bootstrap.min.js"></script>
 
     <script type="text/javascript">
-         // Load the Visualization API and the piechart package.
-      google.load('visualization', '1', {'packages':['corechart']});
 
-      // Set a callback to run when the Google Visualization API is loaded.
-      //google.setOnLoadCallback(drawChart);
          var global_status = {};
          global_status.plotted_projection = -1;
          global_status.plotted_signature = -1;
@@ -28,11 +23,14 @@
          global_status.signature_filter = "";
 
          var global_options = {};
-        var global_scatter = {};
+         var global_scatter = {};
+         var global_heatmap = {};
 
 
          window.onload = function()
          {
+             global_scatter = new ColorScatter("#scatter_div");
+             global_heatmap = new HeatMap("#heatmap_div");
              updateTable();
              $("#probability_checkbox").change(updateTable);
              $("#pca_checkbox").change(updateTable);
@@ -46,7 +44,6 @@
              if(!global_options.full_output){
                  $("#data_options_div").hide();
              }
-             global_scatter = new ColorScatter("#scatter_div");
          };
 
          function updateTable()
@@ -58,6 +55,7 @@
              $('#sig_filt_input').change();
              sortByColumn();
              drawChart();
+             drawHeat();
          }
 
          function getDataContext()
@@ -86,39 +84,6 @@
              }
          }
 
-      // Callback that creates and populates a data table,
-      // instantiates the pie chart, passes in the data and
-      // draws it.
-      function drawChart(i, j) {
-          if(i === undefined) {
-              j = global_status.plotted_projection;
-              i = global_status.plotted_signature;
-          }
-          global_status.plotted_signature = i;
-          global_status.plotted_projection = j;
-
-         if(i == -1 || j == -1){return;}
-          var data = getDataContext();
-
-          // Create the data table.
-          var proj_sig_array = mergeProjSig(data.Projections[data.ProjectionKeys[j]], data.SigScores[data.SignatureKeys[i]], data.SampleLabels);
-          var chartdata = new google.visualization.arrayToDataTable(proj_sig_array);
-
-          var titleStr = data.ProjectionKeys[j] + ": " + data.SignatureKeys[i];
-
-          // Set chart options
-          var options = {
-              'title': titleStr,
-              'width': 800,
-              'height': 600,
-              'legend': {position: 'none'},
-              'dataOpacity': 0.7
-          };
-
-          // Instantiate and draw our chart, passing in some options.
-          var chart = new google.visualization.ScatterChart(document.getElementById('chart_div'));
-          chart.draw(chartdata, options);
-      }
 
          Array.prototype.argSort = function()
          {
@@ -191,32 +156,69 @@
          function tableClickFunction(event)
          {
              var cell = $(event.target);
-             var row = cell.data("row_num");
-             var col = cell.data("col_num");
-
-
-             drawChart(row, col);
-			 data = getDataContext();
-			 sig_key = data.SignatureKeys[row];
-			 proj_key = data.ProjectionKeys[col];
-			 newScatterData(proj_key, sig_key);
+             global_status.plotted_signature  = cell.data("row_num");
+             global_status.plotted_projection = cell.data("col_num");
+             drawChart();
+             drawHeat();
          }
-		 
-		 newScatterData = function(proj_key, sig_key){
-			data = getDataContext();
-			proj = data.Projections[proj_key];
-			xcoords = proj[0];
-			ycoords = proj[1];
-			sig = data.SigScores[sig_key];
-			//Zip up the data into a new points object
-			points = [];
-			for(i = 0; i<xcoords.length; i++)
-			{
-				points.push([xcoords[i], ycoords[i], sig[i]]);
-			}
-			
+
+		 function drawChart() {
+            i = global_status.plotted_signature;
+            j = global_status.plotted_projection;
+
+             if(i > -1 && j > -1){
+                 data = getDataContext();
+
+                 sig_key = data.SignatureKeys[i];
+                 proj_key = data.ProjectionKeys[j];
+
+                 proj = data.Projections[proj_key];
+                 sig = data.SigScores[sig_key];
+
+                 xcoords = proj[0];
+                 ycoords = proj[1];
+                 //Zip up the data into a new points object
+                 points = [];
+                 for(i = 0; i<xcoords.length; i++)
+                 {
+                     points.push([xcoords[i], ycoords[i], sig[i]]);
+                 }
+             }
+             else{
+                 points = [];
+             }
+
 			global_scatter.setData(points);
 		}
+
+         function drawHeat(){
+             i = global_status.plotted_signature;
+             if( i > -1)
+             {
+                 sig_key = data.SignatureKeys[i];
+                 sig = FP_Signatures[sig_key]
+                 genes = sig.Genes;
+
+                 //Construct data matrix
+                 //Look up gene indices
+                 gene_indices = [];
+                 for(j = 0; j < genes.length; j++)
+                 {
+                     gene_index = FP_ExpressionMatrix.gene_labels.indexOf(genes[j]);
+                     if(gene_index > -1) //Some genes are in signature, but not in data
+                     {
+                         gene_indices.push(gene_index);
+                     }
+                 }
+
+                 dataMat = gene_indices.map(function(e,i){
+                     return FP_ExpressionMatrix.data[e];
+                 });
+
+                 global_heatmap.setData(dataMat);
+
+             }
+         }
 
         function floatToColor(value, cmin, cmax, cmap)
         {
@@ -256,27 +258,6 @@
             var bpad = (blue < 16) ? "0" : "";
 
             return "#" + rpad + red.toString(16) + gpad + green.toString(16) + bpad + blue.toString(16);
-        }
-
-        function mergeProjSig(projection, signature, sampleLabels)
-        {
-            var output = [];
-            output.push(["X",
-                "Y",
-                {"type": "string", "role": "style"},
-                {"type": "string", "role": "tooltip"}]);
-
-            var cmin = Math.min.apply(Math, signature);
-            var cmax = Math.max.apply(Math, signature);
-
-            for (var i = 0; i < projection[0].length; i++)
-            {
-                var point_style = "point { fill-color: " + floatToColor(signature[i], cmin, cmax);
-                var row = [projection[0][i], projection[1][i], point_style, sampleLabels[i]];  //copies the row
-                output.push(row);
-            }
-
-            return output;
         }
 
         function createTableFromData(data_matrix, col_labels, row_labels)
@@ -395,16 +376,30 @@
             tableCells.exit().remove();
 
             sigModal.modal();
-        };
+        }
 
     </script>
     <style>
+		html {
+			height: 100%;
+		}
+		
+		body {
+			height: 100%;
+			padding-top: 1px;
+		}
+
+        #table_div table{
+            margin-right: 50px; /* So the table div accounts for angled labels */
+        }
+		
         #table_div table th:first-child{
             text-align:left;
         }
+
         #table_div table th:not(:first-child) {
-           transform: rotate(-60deg);
-            transform-origin: left top 0;
+           transform-origin: left center 0;
+           transform: translate(15px,1em) rotate(-50deg);
         }
 
         #table_div table td:first-child{
@@ -434,16 +429,12 @@
             display: none;
         }
 
-        #chart_div{
-            z-index: -10;
-            position: fixed;
-            right: 0;
-            top: 0;
-        }
-
         #table_div{
-            display:inline-block;
             padding-top: 40px;
+			overflow: auto;
+			position: absolute;
+			top: 150px;
+			bottom: 0px;
         }
 		
 		svg {
@@ -464,6 +455,15 @@
 		  fill: none;
 		  stroke: #fff;
 		}
+
+        #scatter_div{
+            float: right;
+        }
+
+        #heatmap_div{
+            float: right;
+            clear: both;
+        }
 
     </style>
 </head>
@@ -507,8 +507,8 @@
 </div>
 <br>
 <div id="table_div" style="display:inline-block; float:left"></div>
-<div id="chart_div"></div>
 <div id="scatter_div"></div>
+<div id="heatmap_div"></div>
 <input id="sig_filt_input" type="text" placeholder="Filter Signatures...">
 </body>
 </html>
