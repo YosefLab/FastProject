@@ -26,12 +26,39 @@ function HeatMap(parent)
 
     this.last_event = 0;
 
+    this.col_clusters = null; //Cluster assignment for each column in data matrix
+    this.col_order = null;  //Position for each column in data matrix
+
 }
 
-HeatMap.prototype.setData = function(data)
+HeatMap.prototype.cluster_columns = function(assignments)
+{
+    self = this;
+    this.col_clusters = assignments;
+
+    //Argsort the col_clusters
+    rr = d3.range(0,this.col_clusters.length);
+    rr.sort(function(a,b){return self.col_clusters[a] - self.col_clusters[b];});
+    //Argsort again to get rank
+    rr2 = d3.range(0,rr.length);
+    rr2.sort(function(a,b){return rr[a] - rr[b];});
+    
+    this.col_order = rr2;
+    this.redraw()();
+};
+
+HeatMap.prototype.setData = function(data, render)
 {
     this.data = data;
-    this.redraw(true)();
+    N_ROWS = data.length;
+    N_COLS = data[0].length;
+    
+    this.col_clusters = Array.apply(null, Array(N_COLS)).map(Number.prototype.valueOf,0);
+    this.col_order = d3.range(0, N_COLS);  //Initial sorting
+    
+    if(render){
+        this.redraw(true)();
+    }
 };
 
 HeatMap.prototype.setSelected = function(selected_index, event_id)
@@ -85,7 +112,7 @@ HeatMap.prototype.redraw = function(performTransition) {
             .append("g")
             .attr("transform", function(d, j){
                 return "translate(0," + (j*self.h) + ")"});
-
+                
         heatmapRow.exit().remove();
 
         //generate heatmap columns
@@ -99,17 +126,15 @@ HeatMap.prototype.redraw = function(performTransition) {
             .attr('width',self.w)
             .attr('height',self.h)
             .attr('y',0)
-            .attr('x', function(d,i) {
-                return (i * self.w);
-            })
             .on("mouseover", function(d,i){self.setHovered(i);});
 
         self.svg
             .on("mouseleave", function(d,i){self.setHovered(-1);});
 
         heatmapRects.style('fill',function(d) {
-            return self.colorScale(d);
-        });
+            return self.colorScale(d);})
+        .attr('x', function(d,i) {
+                return (self.col_order[i] * self.w);})
 
         heatmapRects.exit().remove();
 

@@ -33,7 +33,6 @@
             global_heatmap = new HeatMap("#heatmap_div");
             global_scatter.hovered_links.push(global_heatmap);
             global_heatmap.hovered_links.push(global_scatter);
-            updateTable();
             $("#probability_checkbox").change(updateTable);
             $("#pca_checkbox").change(updateTable);
 
@@ -46,6 +45,17 @@
             if(!global_options.full_output){
                 $("#data_options_div").hide();
             }
+            
+            $('#cluster_select').change(function(){
+                data = getDataContext();
+                j = global_status.plotted_projection;
+                proj_key = data.ProjectionKeys[j];
+                choice = $(this).val();
+                assignments = data.Clusters[proj_key][choice];
+                global_heatmap.cluster_columns(assignments);
+            });
+            
+            updateTable();
         };
 
         function updateTable()
@@ -195,10 +205,11 @@
 
         function drawHeat(){
             i = global_status.plotted_signature;
+            data = getDataContext();
             if( i > -1)
             {
                 sig_key = data.SignatureKeys[i];
-                sig = FP_Signatures[sig_key]
+                sig = FP_Signatures[sig_key];
                 genes = sig.Genes;
 
                 //Construct data matrix
@@ -217,9 +228,22 @@
                     return FP_ExpressionMatrix.data[e];
                 });
 
-                global_heatmap.setData(dataMat);
+                global_heatmap.setData(dataMat, false);
 
             }
+
+
+            j = global_status.plotted_projection;
+            proj_key = data.ProjectionKeys[j];
+            clusters = data.Clusters[proj_key];
+            clust_dropdown = $('#cluster_select');
+            clust_dropdown.empty();
+            $.each(clusters, function(name, value){
+                clust_dropdown.append($("<option />").val(name).text(name));
+            });
+
+            clust_dropdown.prop('selectedIndex', 0).change();
+
         }
 
         function floatToColor(value, cmin, cmax, cmap)
@@ -526,7 +550,9 @@
 <br>
 <div id="table_div" style="display:inline-block; float:left"></div>
 <div id="scatter_div"></div>
-<div id="heatmap_div"></div>
+<div id="heatmap_div">
+    <select id="cluster_select"></select>
+</div>
 <input id="sig_filt_input" type="text" placeholder="Filter Signatures...">
 </body>
 </html>

@@ -12,6 +12,7 @@ from sklearn.manifold import Isomap
 from sklearn.manifold import LocallyLinearEmbedding
 from sklearn.manifold import MDS
 from sklearn.manifold import SpectralEmbedding
+from sklearn.cluster import MiniBatchKMeans
 import scipy.stats;
 
 from .Utils import ProgressBar;
@@ -66,7 +67,7 @@ def generate_projections(data):
           
     """
     
-    pbar = ProgressBar(9);
+    pbar = ProgressBar(10);
     
     projections = dict();
     
@@ -323,3 +324,44 @@ def filter_PCA(data, scores=None, N=0, variance_proportion=1.0, min_components =
         data = data.subset_components(np.arange(last_i+1));
 
     return data
+
+def define_clusters(projections):
+    """
+    Creates several different clusterings of the data in projections.
+
+    :param projections: dict(string, (2 x Num_Samples) numpy.ndarray)
+        dictionary mapping the projection type (e.g. "tSNE") to an array containing
+        the two-dimensional coordinates for each sample in the projection.
+
+    :return: dict of string (projection name) =>
+        (dict of string (cluster technique) => np.ndarray of size N_Samples (cluster assignments))
+    """
+
+    pbar = ProgressBar(4*len(projections));
+
+    out_clusters = dict();
+
+    for key in projections.keys():
+
+        proj_data = projections[key];
+        proj_clusters = dict();
+
+        #K-means for k = 2-5
+        for k in xrange(2,6):
+            clust_name = "K-Means, k=" + str(k);
+            kmeans = MiniBatchKMeans(n_clusters=k);
+            clust_assignments = kmeans.fit_predict(proj_data.T);
+            proj_clusters.update({clust_name: clust_assignments});
+            pbar.update();
+
+
+        out_clusters.update({key: proj_clusters});
+
+    pbar.complete();
+
+    return out_clusters;
+
+
+
+
+

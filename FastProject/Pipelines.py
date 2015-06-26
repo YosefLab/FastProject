@@ -670,6 +670,11 @@ def FullOutput(options, args):
         #%% Evaluating signatures against projections
         sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p = Signatures.sigs_vs_projections_v2(projections, sig_scores);
 
+
+        #Evaluate Clusters
+        print("Evaluating Clusters...");
+        clusters = Projections.define_clusters(projections);
+
         #Output matrix of p-values for conformity scores
         FileIO.write_matrix(dir_name + os.sep + label + "_DissimilarityMatrix.txt",sig_proj_matrix, sp_row_labels, sp_col_labels);
         FileIO.write_matrix(dir_name + os.sep + label + "_PMatrix.txt",sig_proj_matrix_p, sp_row_labels, sp_col_labels);
@@ -683,6 +688,7 @@ def FullOutput(options, args):
         js_out.update({'ProjectionKeys': sp_col_labels});
         js_out.update({'SignatureKeys': sp_row_labels});
         js_out.update({'SampleLabels': data.col_labels});
+        js_out.update({'Clusters': clusters});
 
         fout_js.write(HtmlViewer.toJS_variable("FP_" + label, js_out));
 
