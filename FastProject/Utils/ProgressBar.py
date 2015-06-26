@@ -38,16 +38,16 @@ class ProgressBar:
         if(self.i < self.max_i):
             self.i = self.i + 1;
 
-        #Only update stdout if number of hashes has changed        
-        if(int(self.i / self.max_i * ProgressBar.width) > int((self.i - 1) / self.max_i * ProgressBar.width)):
-        
-            new_str = self.build_str();
-            
-            sys.stdout.write(''.join(['\b']*len(new_str)));  #Erase old
-            sys.stdout.write(new_str);
-        
-        if(self.i == self.max_i):
-            sys.stdout.write('\n');
+            #Only update stdout if number of hashes has changed
+            if(int(self.i / self.max_i * ProgressBar.width) > int((self.i - 1) / self.max_i * ProgressBar.width)):
+
+                new_str = self.build_str();
+
+                sys.stdout.write(''.join(['\b']*len(new_str)));  #Erase old
+                sys.stdout.write(new_str);
+
+            if(self.i == self.max_i):
+                sys.stdout.write('\n');
         
         sys.stdout.flush();
 
