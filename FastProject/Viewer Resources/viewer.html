@@ -397,7 +397,15 @@
 
             tableCells = tableRows.selectAll('td').data(function(d){return [d.Gene, d.Sign];});
             tableCells.enter().append('td');
-            tableCells.text(function(d){console.log(d);return d;});
+            tableCells.text(function(d, i){
+                if(i == 0){return d;}
+                else{
+                    if(d == 1)  {return "+";}
+                    if(d == -1) {return "-";}
+                    if(d == 0)  {return "Unsigned";}
+                    return "Unknown";
+                    }
+                });
 
             tableCells.exit().remove();
 
@@ -440,7 +448,7 @@
             background-color: rgb(220,220,220);
         }
 
-        #table_div table td:not(:first-child), table th:not(:first-child){
+        #table_div table td:not(:first-child), #table_div table th:not(:first-child){
             text-align: center;
             width: 50px;
             max-width: 50px;
@@ -505,6 +513,20 @@
         .heatmap-hover {
            stroke: black;
             stroke-width: 1px;
+        }
+        
+        /*For bootstrap modal header*/
+        .modal-header{
+            word-break: break-all;
+        }
+        
+        .modal-body table{
+            margin: 0 auto;
+        }
+        
+        .modal-body table td:not(:first-child)
+        {
+            text-align: center;
         }
 
     </style>
