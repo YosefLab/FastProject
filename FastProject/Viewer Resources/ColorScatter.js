@@ -106,23 +106,26 @@ ColorScatter.prototype.setSelected = function(selected_index, event_id)
     }
 };
 
-ColorScatter.prototype.setHovered = function(hovered_index, event_id)
+ColorScatter.prototype.setHovered = function(hovered_indices, event_id)
 {
     if(event_id === undefined){
         event_id = Math.random();
     }
 
+    //test for single index, and wrap in list
+    if(typeof(hovered_indices) == "number"){hovered_indices = [hovered_indices];}
+
     //Needed to prevent infinite loops with linked hover and select events
     if(this.last_event != event_id) {
         this.last_event = event_id;
-        this.hover_col = hovered_index;
+        this.hover_col = hovered_indices;
         this.svg.selectAll("circle")
             .classed("point-hover", function (d, i) {
-                return i == hovered_index;
+                return hovered_indices.indexOf(i) > -1;
             });
 
         this.hovered_links.forEach(function (e, i) {
-            e.setHovered(hovered_index, event_id);
+            e.setHovered(hovered_indices, event_id);
         });
     }
 };

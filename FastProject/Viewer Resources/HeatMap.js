@@ -8,9 +8,28 @@ function HeatMap(parent)
     this.h = 1;  //height of row
     this.w = 4;  //width of column
 
+    this.width = 600;
+    this.height = 450;
+
     this.svg = d3.select(parent).append("svg")
-        .attr("width", 600)
-        .attr("height", 450);
+        .attr("width", self.width)
+        .attr("height", self.height);
+
+    this.grid = this.svg.append("g");
+    this.cluster_bar = this.svg.append("g");
+    this.cluster_bar.on("mouseleave", function(){
+        self.setHovered(-1);
+    });
+
+    this.cluster_bar_props = {
+        height: 10,
+        margin: 10,
+        colors: d3.scale.category10().domain(d3.range(10))
+    };
+
+    this.grid
+        .attr("transform", "translate(0," +
+        (self.cluster_bar_props.margin + self.cluster_bar_props.height)+")");
 
     //define a color scale using the min and max expression values
     this.colorScale = d3.scale.linear()
@@ -21,13 +40,15 @@ function HeatMap(parent)
     this.selected = -1;
     this.selected_links = [];
 
-    this.hover_col = -1;
+    this.hover_cols = -1;
     this.hovered_links = [];
 
     this.last_event = 0;
 
     this.col_clusters = null; //Cluster assignment for each column in data matrix
     this.col_order = null;  //Position for each column in data matrix
+
+
 
 }
 
@@ -52,7 +73,12 @@ HeatMap.prototype.setData = function(data, render)
     this.data = data;
     N_ROWS = data.length;
     N_COLS = data[0].length;
-    
+
+    this.w = Math.floor(this.width/N_COLS);
+    if(this.w == 0) {this.w = 1;}
+    this.h = Math.floor(this.height/N_ROWS);
+    if(this.h == 0) {this.h = 1;}
+
     this.col_clusters = Array.apply(null, Array(N_COLS)).map(Number.prototype.valueOf,0);
     this.col_order = d3.range(0, N_COLS);  //Initial sorting
     
@@ -78,22 +104,25 @@ HeatMap.prototype.setSelected = function(selected_index, event_id)
     }
 };
 
-HeatMap.prototype.setHovered = function(hovered_index, event_id)
+HeatMap.prototype.setHovered = function(hovered_indices, event_id)
 {
     if(event_id === undefined){
         event_id = Math.random();
     }
 
+    //test for single index, and wrap in list
+    if(typeof(hovered_indices) == "number"){hovered_indices = [hovered_indices];}
+
     //Needed to prevent infinite loops with linked hover and select events
     if(this.last_event != event_id) {
         this.last_event = event_id;
-        this.hover_col = hovered_index;
-        this.svg.selectAll("g").selectAll("rect")
+        this.hover_cols = hovered_indices;
+        this.grid.selectAll("g").selectAll("rect")
             .classed("heatmap-hover", function (d, i) {
-                return i == hovered_index
+                return hovered_indices.indexOf(i) > -1;
             });
         this.hovered_links.forEach(function (e, i) {
-            e.setHovered(hovered_index, event_id);
+            e.setHovered(hovered_indices, event_id);
         });
     }
 };
@@ -104,14 +133,39 @@ HeatMap.prototype.redraw = function(performTransition) {
         //self.svg.select(".x.axis").call(self.xAxis);
         //self.svg.select(".y.axis").call(self.yAxis);
 
+        //Draw cluster-bar
+        var clusterRects = self.cluster_bar.selectAll("rect")
+            .data(self.col_clusters);
+
+        clusterRects.enter()
+            .append("rect")
+            .attr('width', self.w)
+            .attr('height', self.cluster_bar_props.height)
+            .attr('y', 0);
+
+        clusterRects.style('fill',function(d) {
+                return self.cluster_bar_props.colors(d);})
+            .attr('x', function(d,i){
+                return (self.col_order[i] * self.w); })
+            .on("mouseover", function(d) {
+            ii = d3.range(self.col_clusters.length);
+            selected_i = ii.filter(function(e,j){
+                return self.col_clusters[j] == d;});
+            self.setHovered(selected_i);
+        });
+
+        clusterRects.exit().remove();
+
+
         //generate heatmap rows
-        var heatmapRow = self.svg.selectAll("g")
+        var heatmapRow = self.grid.selectAll("g")
             .data(self.data);
 
         heatmapRow.enter()
-            .append("g")
-            .attr("transform", function(d, j){
-                return "translate(0," + (j*self.h) + ")"});
+            .append("g");
+
+        heatmapRow.attr("transform", function(d, j){
+                return "translate(0," + (j*self.h)+ ")"});
                 
         heatmapRow.exit().remove();
 
@@ -123,8 +177,6 @@ HeatMap.prototype.redraw = function(performTransition) {
             });
 
         heatmapRects.enter().append("rect")
-            .attr('width',self.w)
-            .attr('height',self.h)
             .attr('y',0)
             .on("mouseover", function(d,i){self.setHovered(i);});
 
@@ -132,9 +184,11 @@ HeatMap.prototype.redraw = function(performTransition) {
             .on("mouseleave", function(d,i){self.setHovered(-1);});
 
         heatmapRects.style('fill',function(d) {
-            return self.colorScale(d);})
-        .attr('x', function(d,i) {
-                return (self.col_order[i] * self.w);})
+                return self.colorScale(d);})
+            .attr('width',self.w)
+            .attr('height',self.h)
+            .attr('x', function(d,i) {
+                return (self.col_order[i] * self.w);});
 
         heatmapRects.exit().remove();
 
