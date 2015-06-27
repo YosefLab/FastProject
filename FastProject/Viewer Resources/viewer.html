@@ -210,25 +210,27 @@
             {
                 sig_key = data.SignatureKeys[i];
                 sig = FP_Signatures[sig_key];
-                genes = sig.Genes;
+                if(sig !== undefined){  //undefined sig if it's precomputed
+                    genes = sig.Genes;
 
-                //Construct data matrix
-                //Look up gene indices
-                gene_indices = [];
-                for(j = 0; j < genes.length; j++)
-                {
-                    gene_index = FP_ExpressionMatrix.gene_labels.indexOf(genes[j]);
-                    if(gene_index > -1) //Some genes are in signature, but not in data
+                    //Construct data matrix
+                    //Look up gene indices
+                    gene_indices = [];
+                    for(j = 0; j < genes.length; j++)
                     {
-                        gene_indices.push(gene_index);
+                        gene_index = FP_ExpressionMatrix.gene_labels.indexOf(genes[j]);
+                        if(gene_index > -1) //Some genes are in signature, but not in data
+                        {
+                            gene_indices.push(gene_index);
+                        }
                     }
+
+                    dataMat = gene_indices.map(function(e,i){
+                        return FP_ExpressionMatrix.data[e];
+                    });
+
+                    global_heatmap.setData(dataMat, false);
                 }
-
-                dataMat = gene_indices.map(function(e,i){
-                    return FP_ExpressionMatrix.data[e];
-                });
-
-                global_heatmap.setData(dataMat, false);
 
             }
 
@@ -237,12 +239,14 @@
             proj_key = data.ProjectionKeys[j];
             clusters = data.Clusters[proj_key];
             clust_dropdown = $('#cluster_select');
+            old_i = clust_dropdown.prop('selectedIndex');
+            if(old_i == -1){old_i = 0;}
             clust_dropdown.empty();
             $.each(clusters, function(name, value){
                 clust_dropdown.append($("<option />").val(name).text(name));
             });
 
-            clust_dropdown.prop('selectedIndex', 0).change();
+            clust_dropdown.prop('selectedIndex', old_i).change();
 
         }
 
@@ -421,6 +425,7 @@
         body {
             height: 100%;
             padding-top: 1px;
+            padding-left: 20px;
         }
 
         #table_div table{
@@ -464,10 +469,10 @@
         }
 
         #table_div{
-            padding-top: 40px;
+            padding-top: 20px;
             overflow: auto;
             position: absolute;
-            top: 150px;
+            top: 110px;
             bottom: 0px;
         }
 
@@ -491,12 +496,18 @@
         }
 
         #scatter_div{
-            float: right;
+            float: left;
+            margin-left: 30px;
         }
 
         #heatmap_div{
-            float: right;
-            clear: both;
+            float: left;
+        }
+        
+        #spacer{
+            width: 1030px;
+            height: 800px;
+            float: left;
         }
 
         .point-hover{
@@ -511,8 +522,7 @@
 
         /* Style for hovered heatmap rows */
         .heatmap-hover {
-           stroke: black;
-            stroke-width: 1px;
+            fill-opacity: .7;
         }
         
         /*For bootstrap modal header*/
@@ -569,11 +579,11 @@
         <input id="pca_checkbox" type="checkbox">
     </span>
 </div>
-<br>
-<div id="table_div" style="display:inline-block; float:left"></div>
+<div id="table_div"></div>
+<div id="spacer"></div>
 <div id="scatter_div"></div>
 <div id="heatmap_div">
-    <select id="cluster_select"></select>
+    <select id="cluster_select" class="form-control" style="width: 200px; margin-bottom:20px"></select>
 </div>
 <input id="sig_filt_input" type="text" placeholder="Filter Signatures...">
 </body>
