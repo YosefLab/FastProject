@@ -159,8 +159,9 @@ def generate_projections(data):
         coordinates[:,1] = coordinates[:,1] - np.mean(coordinates[:,1]);
         
         ave_r2 = (coordinates*coordinates).mean(axis=0).sum();
-        
-        coordinates = coordinates / np.sqrt(ave_r2);
+
+        if(ave_r2 > 0):
+            coordinates = coordinates / np.sqrt(ave_r2);
         
         coordinates = coordinates.T;        
         
