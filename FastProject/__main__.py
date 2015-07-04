@@ -6,7 +6,6 @@ Created on Fri Jan 30 15:16:22 2015
 """
 
 from optparse import OptionParser;
-from FastProject import Pipelines;
 
 def parseFPArgs():
     parser = OptionParser(usage = 'usage: FastProject [options] data_file');
@@ -36,6 +35,8 @@ def parseFPArgs():
 
 def entry():
     options, args = parseFPArgs();
+
+    from FastProject import Pipelines;
 
     if(options.all):
         Pipelines.FullOutput(options, args);
