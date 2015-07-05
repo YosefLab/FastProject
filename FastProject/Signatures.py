@@ -456,6 +456,7 @@ def sigs_vs_projections_v2(projections, sig_scores, NEIGHBORHOOD_SIZE = 0.1):
     """
     sp_row_labels = sig_scores.keys();
     sp_col_labels = projections.keys();
+    sp_col_labels.sort();
 
     N_SAMPLES = sig_scores[sp_row_labels[0]].shape[0];
     N_SIGNATURES = len(sp_row_labels);
