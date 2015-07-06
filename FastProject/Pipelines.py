@@ -61,7 +61,7 @@ def SingleOutput(options, args):
     edata = ExpressionData(edata, genes, cells);
 
     #Hold on to originals so we don't lose data after filtering in case it's needed later
-    original_data = edata;
+    original_data = edata.copy();
 
     #Create directory for all outputs
     tt = time.localtime();
@@ -453,7 +453,7 @@ def FullOutput(options, args):
     edata = ExpressionData(edata, genes, cells);
 
     #Hold on to originals so we don't lose data after filtering in case it's needed later
-    original_data = edata;
+    original_data = edata.copy();
 
     #Create directory for all outputs
     tt = time.localtime();
@@ -562,7 +562,9 @@ def FullOutput(options, args):
     Transforms.z_normalize(data);
 
     #Perform PCA on the data, with and without the probability xfrm
+    print("Performing weighted PCA on Expression Data");
     pc_data = Projections.perform_weighted_PCA(data);
+    print("Performing weighted PCA on Probability Data");
     pc_prob = Projections.perform_weighted_PCA(prob);
 
     if(options.pca_filter):
@@ -705,10 +707,18 @@ def FullOutput(options, args):
     fout_js.write(HtmlViewer.toJS_variable("FP_Signatures", sig_dict));
 
     #Write the original data matrix to the javascript file.
+    Transforms.z_normalize(original_data);
+    #First, cluster genes
+    from scipy.cluster.hierarchy import leaves_list, linkage;
+    linkage_matrix = linkage(original_data);
+    leaves_i = leaves_list(linkage_matrix);
+    original_data = original_data[leaves_i, :];
+    original_data.row_labels = [original_data.row_labels[i] for i in leaves_i];
+
     data_json = dict({
-        'data': edata,
-        'gene_labels': edata.row_labels,
-        'sample_labels': edata.col_labels,
+        'data': original_data,
+        'gene_labels': original_data.row_labels,
+        'sample_labels': original_data.col_labels,
     });
     fout_js.write(HtmlViewer.toJS_variable("FP_ExpressionMatrix", data_json));
 

@@ -54,8 +54,12 @@
                 assignments = data.Clusters[proj_key][choice];
                 global_heatmap.cluster_columns(assignments);
             });
-            
+
+            data = getDataContext();
+            global_status.sorted_column = data.ProjectionKeys.indexOf("PCA: 1,2");
+
             updateTable();
+
         };
 
         function updateTable()
@@ -225,7 +229,9 @@
                         }
                     }
 
-                    dataMat = gene_indices.map(function(e,i){
+                    gene_indices.sort();  //So heatmap drawn in same order as data
+
+                    var dataMat = gene_indices.map(function(e,i){
                         return FP_ExpressionMatrix.data[e];
                     });
 
