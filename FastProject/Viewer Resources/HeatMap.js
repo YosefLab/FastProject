@@ -22,14 +22,28 @@ function HeatMap(parent)
     this.labels.append("text")
         .classed("col_label", true)
         .attr("x", 0)
-        .attr("y", 20)
+        .attr("y", offset + 20)
         .attr("font-size", "20px");
         
     this.labels.append("text")
         .classed("row_label", true)
         .attr("x", 0)
-        .attr("y", 40)
+        .attr("y", offset + 40)
         .attr("font-size", "20px");
+
+    this.labels.append("rect")
+        .attr("x", this.width-40)
+        .attr("y", offset)
+        .attr("width", 40)
+        .attr("height", 40)
+        .style("fill", "white");
+
+    this.labels.append("text")
+        .classed("rect_label", true)
+        .attr("text-anchor", "middle")
+        .attr("x", this.width-20)
+        .attr("y", offset+23)
+        .attr("font-size", "10px");
         
     offset += 40;
     offset += 10; //Some margin
@@ -185,6 +199,26 @@ HeatMap.prototype.setHoveredRow = function(hovered_row_indices)
     
 }
 
+//Sets the text and color for the square upper-right indicator
+HeatMap.prototype.setHoveredIndicator = function(data_val)
+{
+    if(data_val !== undefined)
+    {
+        this.labels.select("rect")
+            .style("fill", this.colorScale(data_val));
+        this.labels.select(".rect_label")
+            .text(data_val);
+    }
+    else
+    {
+        this.labels.select("rect")
+            .style("fill", "white");
+        this.labels.select(".rect_label")
+            .text("");
+    }
+
+}
+
 HeatMap.prototype.redraw = function(performTransition) {
     var self = this;
     return function(){
@@ -235,10 +269,10 @@ HeatMap.prototype.redraw = function(performTransition) {
             });
 
         heatmapRects.enter().append("rect")
-            .on("mouseover", function(d){self.setHovered(d.col); self.setHoveredRow(d.row);});
+            .on("mouseover", function(d){self.setHovered(d.col); self.setHoveredRow(d.row); self.setHoveredIndicator(d.value);});
 
         self.svg
-            .on("mouseleave", function(d){self.setHovered(-1); self.setHoveredRow(-1)});
+            .on("mouseleave", function(d){self.setHovered(-1); self.setHoveredRow(-1); self.setHoveredIndicator();});
 
         heatmapRects.style('fill',function(d) {
                 return self.colorScale(d.value);})
