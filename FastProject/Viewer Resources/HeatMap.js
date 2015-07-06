@@ -15,25 +15,53 @@ function HeatMap(parent)
         .attr("width", self.width)
         .attr("height", self.height);
 
-    this.grid = this.svg.append("g");
+    var offset = 0;
+        
+    this.labels = this.svg.append("g");
+    
+    this.labels.append("text")
+        .classed("col_label", true)
+        .attr("x", 0)
+        .attr("y", 20)
+        .attr("font-size", "20px");
+        
+    this.labels.append("text")
+        .classed("row_label", true)
+        .attr("x", 0)
+        .attr("y", 40)
+        .attr("font-size", "20px");
+        
+    offset += 40;
+    offset += 10; //Some margin
+        
+    
     this.cluster_bar = this.svg.append("g");
     this.cluster_bar.on("mouseleave", function(){
         self.setHovered(-1);
     });
+    this.cluster_bar
+        .attr("transform", "translate(0," +
+        (offset)+")");
 
     this.cluster_bar_props = {
         height: 10,
-        margin: 10,
         colors: d3.scale.category10().domain(d3.range(10))
     };
+    
+    offset += this.cluster_bar_props.height;
+    offset += 10; //Some margin
 
+    this.grid = this.svg.append("g");
     this.grid
         .attr("transform", "translate(0," +
-        (self.cluster_bar_props.margin + self.cluster_bar_props.height)+")");
+        (offset)+")");
+    
+    offset += this.height;
+    this.svg.attr("height", offset);
 
     //define a color scale using the min and max expression values
     this.colorScale = d3.scale.linear()
-        .domain([-2, 0, 2])
+        .domain([-3, 0, 3])
         .range(["steelblue", "lightgreen", "lightcoral"]);
 
     this.data = [];
@@ -42,13 +70,16 @@ function HeatMap(parent)
 
     this.hover_cols = -1;
     this.hovered_links = [];
+    
+    this.hover_rows = -1;
 
     this.last_event = 0;
 
     this.col_clusters = null; //Cluster assignment for each column in data matrix
     this.col_order = null;  //Position for each column in data matrix
-
-
+    
+    this.row_labels = [];
+    this.col_labels = [];
 
 }
 
@@ -70,7 +101,13 @@ HeatMap.prototype.cluster_columns = function(assignments)
 
 HeatMap.prototype.setData = function(data, render)
 {
-    this.data = data;
+    formatted_data = data.map(function(row,row_i){
+        return row.map(function(value, col_i){
+            return {"row":row_i, "col":col_i, "value":value};
+        });
+    });
+            
+    this.data = formatted_data;
     N_ROWS = data.length;
     N_COLS = data[0].length;
 
@@ -124,8 +161,29 @@ HeatMap.prototype.setHovered = function(hovered_indices, event_id)
         this.hovered_links.forEach(function (e, i) {
             e.setHovered(hovered_indices, event_id);
         });
+        if(this.hover_cols.length == 1)
+        {
+            var ii = this.hover_cols[0];
+            this.labels.select(".col_label").text(this.col_labels[ii]);
+        }
     }
 };
+
+HeatMap.prototype.setHoveredRow = function(hovered_row_indices)
+{
+    if(typeof(hovered_row_indices) == "number"){
+        hovered_row_indices = [hovered_row_indices];
+    };
+    
+    this.hover_rows = hovered_row_indices;
+    
+    if(this.hover_rows.length == 1)
+    {
+        var ii = this.hover_rows[0];
+        this.labels.select(".row_label").text(this.row_labels[ii]);
+    }
+    
+}
 
 HeatMap.prototype.redraw = function(performTransition) {
     var self = this;
@@ -141,7 +199,7 @@ HeatMap.prototype.redraw = function(performTransition) {
             .append("rect")
             .attr('width', self.w)
             .attr('height', self.cluster_bar_props.height)
-            .attr('y', 0);
+            .attr('y', self.cluster_bar_props.offset);
 
         clusterRects.style('fill',function(d) {
                 return self.cluster_bar_props.colors(d);})
@@ -164,8 +222,8 @@ HeatMap.prototype.redraw = function(performTransition) {
         heatmapRow.enter()
             .append("g");
 
-        heatmapRow.attr("transform", function(d, j){
-                return "translate(0," + (j*self.h)+ ")"});
+        //heatmapRow.attr("transform", function(d, j){
+        //        return "translate(0," + (j*self.h)+ ")"});
                 
         heatmapRow.exit().remove();
 
@@ -177,18 +235,18 @@ HeatMap.prototype.redraw = function(performTransition) {
             });
 
         heatmapRects.enter().append("rect")
-            .attr('y',0)
-            .on("mouseover", function(d,i){self.setHovered(i);});
+            .on("mouseover", function(d){self.setHovered(d.col); self.setHoveredRow(d.row);});
 
         self.svg
-            .on("mouseleave", function(d,i){self.setHovered(-1);});
+            .on("mouseleave", function(d){self.setHovered(-1); self.setHoveredRow(-1)});
 
         heatmapRects.style('fill',function(d) {
-                return self.colorScale(d);})
+                return self.colorScale(d.value);})
             .attr('width',self.w)
             .attr('height',self.h)
-            .attr('x', function(d,i) {
-                return (self.col_order[i] * self.w);});
+            .attr('y',function(d){ return d.row*self.h;})
+            .attr('x', function(d) {
+                return (self.col_order[d.col] * self.w);});
 
         heatmapRects.exit().remove();
 

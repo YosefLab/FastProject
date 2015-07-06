@@ -234,8 +234,14 @@
                     var dataMat = gene_indices.map(function(e,i){
                         return FP_ExpressionMatrix.data[e];
                     });
+                    
+                    var gene_labels = gene_indices.map(function(e,i){
+                        return FP_ExpressionMatrix.gene_labels[e];
+                    });
 
                     global_heatmap.setData(dataMat, false);
+                    global_heatmap.col_labels = FP_ExpressionMatrix.sample_labels;
+                    global_heatmap.row_labels = gene_labels;
                 }
 
             }
@@ -502,18 +508,15 @@
         }
 
         #scatter_div{
-            float: left;
             margin-left: 30px;
         }
 
         #heatmap_div{
-            float: left;
         }
         
         #spacer{
             width: 1030px;
             height: 800px;
-            float: left;
         }
 
         .point-hover{
@@ -573,23 +576,25 @@
         </div>
     </div>
 </div>
-<h1>FastProject Viewer</h1>
-<br>
-<div id="data_options_div">
-    <span>
-        <label for="probability_checkbox">Probability Model?</label>
-        <input id="probability_checkbox" type="checkbox">
-    </span>
-    <span>
-        <label for="pca_checkbox">PCA Before Project?</label>
-        <input id="pca_checkbox" type="checkbox">
-    </span>
+<div style="float: left">
+    <h1>FastProject Viewer</h1>
+    <br>
+    <div id="data_options_div">
+        <span>
+            <label for="probability_checkbox">Probability Model?</label>
+            <input id="probability_checkbox" type="checkbox">
+        </span>
+        <span>
+            <label for="pca_checkbox">PCA Before Project?</label>
+            <input id="pca_checkbox" type="checkbox">
+        </span>
+    </div>
+    <div id="table_div"></div>
+    <div id="spacer"></div>
 </div>
-<div id="table_div"></div>
-<div id="spacer"></div>
-<div id="scatter_div"></div>
-<div id="heatmap_div">
-    <select id="cluster_select" class="form-control" style="width: 200px; margin-bottom:20px"></select>
+<div id="scatter_div"  style="float: left"></div>
+<div id="heatmap_div"  style="float: left">
+    <select id="cluster_select" class="form-control" style="width: 200px; margin-bottom:10px"></select>
 </div>
 <input id="sig_filt_input" type="text" placeholder="Filter Signatures...">
 </body>
