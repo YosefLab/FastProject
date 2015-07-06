@@ -58,8 +58,13 @@
             data = getDataContext();
             global_status.sorted_column = data.ProjectionKeys.indexOf("PCA: 1,2");
 
-            updateTable();
+            //Select top PC 1,2 plot by default
+            var j = data.ProjectionKeys.indexOf("PCA: 1,2")
+            global_status.plotted_projection = j; 
+            s_i = data.SigProjMatrix_p.map(function(e){return e[j];}).argSort();
+            global_status.plotted_signature = s_i[0];
 
+            updateTable();
         };
 
         function updateTable()
@@ -188,6 +193,9 @@
                 sig_key = data.SignatureKeys[i];
                 proj_key = data.ProjectionKeys[j];
 
+                $('#plot_title_div').children().eq(0).text(proj_key);
+                $('#plot_title_div').children().eq(1).text(sig_key);
+
                 proj = data.Projections[proj_key];
                 sig = data.SigScores[sig_key];
 
@@ -202,6 +210,8 @@
             }
             else{
                 points = [];
+                $('#plot_title_div').children().eq(0).text("");
+                $('#plot_title_div').children().eq(1).text("");
             }
 
             global_scatter.setData(points);
@@ -513,6 +523,21 @@
 
         #heatmap_div{
         }
+
+        #plot_title_div{
+            text-align: center;
+            width: 600px;
+            word-wrap: break-word;
+            font-size: 18px;
+        }
+        
+        #plot_title_div div{
+            margin: 5px 0;
+        }
+
+        #plot_title_div div:not(:first-child){
+            font-size: 13px;
+        }
         
         #spacer{
             width: 1030px;
@@ -591,6 +616,10 @@
     </div>
     <div id="table_div"></div>
     <div id="spacer"></div>
+</div>
+<div id="plot_title_div" style="float: left">
+    <div></div>
+    <div></div>
 </div>
 <div id="scatter_div"  style="float: left"></div>
 <div id="heatmap_div"  style="float: left">
