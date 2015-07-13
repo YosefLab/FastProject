@@ -14,6 +14,12 @@ def read_signatures(filename='', match_terms=[]):
     """Calls either read_signatures_txt or read_signatures_gmt when appropriate
     """
 
+    if(filename == ''):
+        from Tkinter import Tk
+        from tkFileDialog import askopenfilename
+        Tk().withdraw();
+        filename = askopenfilename();
+
     if(filename.lower().endswith('.gmt')):
         return read_signatures_gmt(filename, match_terms);
     else:
@@ -142,6 +148,31 @@ def read_signatures_gmt(filename='', match_terms=[]):
         The filtered signature list
     """
 
+    plus_terms = ['plus', 'up'];
+    minus_terms = ['minus', 'dn', 'down'];
+
+    def sig_parts(name):
+        """
+        Returns: The name of the signature with the plus or minus suffix removed.
+                and whether or not the signature is positive or negative
+                    : as a string, either 'plus' or 'minus'
+        """
+        lname = name.lower();
+        sign = 'unsigned';
+        ii = len(lname);
+        for term in plus_terms:
+            if(lname.endswith('_' + term)):
+                ii = lname.rfind('_' + term);
+                sign = 'plus';
+
+        if(sign != 'plus'):
+            for term in minus_terms:
+                if(lname.endswith('_' + term)):
+                    ii = lname.rfind('_' + term);
+                    sign = 'minus';
+
+        return name[0:ii], sign;
+
     if(filename == ''):
         from Tkinter import Tk
         from tkFileDialog import askopenfilename
@@ -155,8 +186,8 @@ def read_signatures_gmt(filename='', match_terms=[]):
 
     with open(filename, 'r') as ff:
         found_signatures = dict();    ## dictionary of signatures
-
         end_of_file = False;
+
         while(not end_of_file):
             line = ff.readline();
             if(line == ""):
@@ -165,50 +196,37 @@ def read_signatures_gmt(filename='', match_terms=[]):
 
             row_data = line.strip().split('\t');
             name = row_data[0];
+            root_name, sign = sig_parts(name);
 
             ## Only add signatures if they match one of the supplied terms
             matched = False if len(match_terms) > 0 else True
-            lname = name.lower().rstrip("_minus").rstrip("_plus");
+            lname = root_name.lower();
             for term in match_terms:
                 if(term in lname):
                     matched = True;
                     break;
             if(not matched): continue;
 
-            if(name.lower().endswith("_plus") or name.lower().endswith("_minus")):
-                #Signature is first of a signed pair
-                row2_data = ff.readline().strip().split('\t');
-                name2 = row2_data[0];
-                if(name.lower().endswith("_plus") and name2.lower().endswith("_minus")):
-                    plus_row = row_data;
-                    minus_row = row2_data;
-                elif(name2.lower().endswith("_plus") and name.lower().endswith("_minus")):
-                    minus_row = row_data;
-                    plus_row = row2_data;
-                else:
-                    raise ValueError("Missing pair for signed signature: " + name);
+            isSigned = sign == 'plus' or sign == 'minus';
 
-                sig_name = plus_row[0];
-                ii = sig_name.lower().rfind("_plus");
-                sig_name = sig_name[:ii]
-                sig = Signature(dict(), True, filename,sig_name)
+            #Check if sig exists, create/insert if not
+            if(found_signatures.has_key(root_name)):
+                sig = found_signatures[root_name];
+            else:
+                sig = Signature(dict(), isSigned, filename, root_name);
+                found_signatures.update({root_name: sig});
 
-                for gene_name in plus_row[2:]:
+            if(sign == 'plus'):
+                for gene_name in row_data[2:]:
                     sig.sig_dict.update({gene_name: 1});
-                for gene_name in minus_row[2:]:
+
+            if(sign == 'minus'):
+                for gene_name in row_data[2:]:
                     sig.sig_dict.update({gene_name: -1});
 
-                found_signatures.update({name: sig});
-
-            else:
-                if(found_signatures.has_key(name)):
-                    raise ValueError("Duplicate Signature name in Signature file: " + name);
-
-                sig = Signature(dict(), False, filename, name);
+            if(sign == 'unsigned'):
                 for gene_name in row_data[2:]:
                     sig.sig_dict.update({gene_name: 0});
-                found_signatures.update({name: sig});
-
 
     return found_signatures.values();  #dict to list
 
