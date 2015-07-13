@@ -122,8 +122,8 @@ def generate_projections(data):
     projections['ISOMap'] = result;
     pbar.update();
     
-    # LLE
-    
+    # PCA with RBF Kernel
+
     model =  KernelPCA(n_components=2, kernel='rbf');
     result = model.fit_transform(proj_data.T);
     
