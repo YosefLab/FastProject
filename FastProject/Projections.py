@@ -5,6 +5,7 @@ Created on Wed Feb 04 13:21:47 2015
 @author: David
 """
 from sklearn.decomposition import PCA
+from sklearn.decomposition import RandomizedPCA
 from sklearn.decomposition import FastICA
 from sklearn.decomposition import KernelPCA
 from sklearn.manifold import TSNE;
@@ -76,7 +77,7 @@ def generate_projections(data):
     
     # PCA
     
-    result = perform_weighted_PCA(data);
+    result = perform_weighted_PCA(data, 3);
     result = result.T; #Now rows are samples, columns are components
 
 
@@ -211,7 +212,7 @@ def perform_PCA(data, N=0, variance_proportion=1.0):
     output = PCData(pca_data, pca.explained_variance_, data);
     return output;
 
-def perform_weighted_PCA(data):
+def perform_weighted_PCA(data, max_components=200):
     """
     Performs Weighted PCA on the data
     Weights are derived from the data object (of a type defined in DataTypes)
@@ -220,6 +221,9 @@ def perform_weighted_PCA(data):
     ----------
     data : (Num_Features x Num_Samples) numpy.ndarray (or subclass)
         Matrix containing data to project into 2 dimensions
+
+    max_components: int
+        Maximum number of components to calculate
 
     Returns
     -------
@@ -244,21 +248,14 @@ def perform_weighted_PCA(data):
     weighted_data_centered = data_centered * weights;
 
     wcov = np.dot(weighted_data_centered, weighted_data_centered.T) / np.dot(weights,weights.T);
+    model = RandomizedPCA(n_components=min(proj_data.shape, max_components));
+    model.fit(wcov);
+    e_vec = model.components_;
 
-    e_val, e_vec = np.linalg.eigh(wcov);
-
-    ii = np.argsort(e_val)[::-1];
-    e_val = e_val[ii];
-    e_vec = e_vec[:,ii];
-
-    wpca_data = np.dot(e_vec.T, data_centered);
-
-    #Remove uninformative principal components
-    N_SAMPLES = wpca_data.shape[1];
-    N_COMPONENTS = wpca_data.shape[0];
-    if(N_COMPONENTS > N_SAMPLES):
-        wpca_data = wpca_data[0:N_SAMPLES,:];
-        e_val = e_val[0:N_SAMPLES];
+    wpca_data = np.dot(e_vec, data_centered);
+    e_val = np.var(wpca_data, axis=1);
+    total_var = np.sum(np.var(proj_data, axis=1));
+    e_val /= total_var;
 
     pcdata = PCData(wpca_data, e_val, data);
 
