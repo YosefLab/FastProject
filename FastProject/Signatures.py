@@ -92,6 +92,7 @@ def read_signatures_txt(filename='', match_terms=[]):
             
             if signed:
                 sig_sign = row_data[1].lower();
+                gene_name = row_data[2].lower();
                 if(sig_sign == 'plus'):
                     sig_val = 1;
                 elif(sig_sign == 'minus'):
@@ -105,13 +106,12 @@ def read_signatures_txt(filename='', match_terms=[]):
                     print("Error on line ", str(i), " Couldn't read signature value.");
                     print("   :", line);
                     continue;
-                    
-                sig_dict[row_data[2]] = sig_val;
-                
+
             else:  #unsigned case
                 sig_val = 0;
-                sig_dict[row_data[1]] = sig_val;
-     
+                gene_name = row_data[1].lower();
+
+            sig_dict[gene_name] = sig_val;
     except:
         raise;
     finally:
@@ -217,16 +217,16 @@ def read_signatures_gmt(filename='', match_terms=[]):
                 found_signatures.update({root_name: sig});
 
             if(sign == 'plus'):
-                for gene_name in row_data[2:]:
-                    sig.sig_dict.update({gene_name: 1});
+                sig_val = 1;
+            elif(sign == 'minus'):
+                sig_val = -1;
+            elif(sign == 'unsigned'):
+                sig_val = 0;
+            else:
+                raise Exception("This should not happen");
 
-            if(sign == 'minus'):
-                for gene_name in row_data[2:]:
-                    sig.sig_dict.update({gene_name: -1});
-
-            if(sign == 'unsigned'):
-                for gene_name in row_data[2:]:
-                    sig.sig_dict.update({gene_name: 0});
+            for gene_name in row_data[2:]:
+                sig.sig_dict.update({gene_name.lower(): sig_val});
 
     return found_signatures.values();  #dict to list
 
@@ -615,8 +615,9 @@ class Signature:
         out = np.zeros((len(genes), 1), dtype=np.float64);
         
         for i, gene in enumerate(genes):
-            if(self.sig_dict.has_key(gene)):
-                val = self.sig_dict[gene];
+            gene_key = gene.lower();
+            if(self.sig_dict.has_key(gene_key)):
+                val = self.sig_dict[gene_key];
                 if(val == 1 or val == 0):
                     out[i] = 1;
                 if(val == -1):
