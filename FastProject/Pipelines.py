@@ -449,6 +449,54 @@ def FullOutput(options, args):
 
     print("Imported ", edata.shape[0], " genes across ", edata.shape[1], " samples");
 
+    #%% Load Signature file
+    sigs = [];
+    while(True):
+
+        if(options.interactive and (not options.signatures)):
+            print();
+            print("Enter name of signature file...")
+            choice = raw_input("File name : ");
+        else:
+            if(options.signatures):
+                choice = options.signatures;
+            else:
+                choice = '';
+
+        if(len(choice) == 0):
+            break;
+
+        elif(os.path.isfile(choice)): #Load signature
+            sigs = Signatures.read_signatures(choice);
+            break;
+        else:
+            print("Error : File not found");
+            continue;
+
+    #Filter Signatures to use
+    if(options.interactive):
+        while(True):
+            ##List signatures
+            print("\n" + str(len(sigs)) + " Signatures Loaded: " + "\n");
+            for i,sig in enumerate(sigs):
+                print(sig.name);
+                if(i == 50):
+                    print("...rest of output suppressed, " + str(len(sigs)-50) + " signatures remaining")
+                    break;
+
+            print();
+            print("Filter signatures using keywords.");
+            print("Signatures containing any word in the list will be retained.");
+            print("Enter a list of keywords (comma separated), or hit enter to continue");
+            keywords = raw_input("Keywords: ");
+
+            if(len(keywords)==0):
+                break;
+            else:
+                #Filter based on keywords
+                keywords = [word.strip() for word in keywords.split(',')];
+                sigs = Signatures.filter_sig_list(sigs, keywords);
+
     #Wrap data in ExpressionData object
     edata = ExpressionData(edata, genes, cells);
 
@@ -573,57 +621,6 @@ def FullOutput(options, args):
     else:
         pc_data = Projections.filter_PCA(pc_data, variance_proportion=0.25, min_components = 30);
         pc_prob = Projections.filter_PCA(pc_prob, variance_proportion=0.25, min_components = 30);
-
-
-
-    #%% Signature file
-    sigs = [];
-    #Use signature?
-    while(True):
-
-        if(options.interactive and (not options.signatures)):
-            print();
-            print("Enter name of signature file...")
-            choice = raw_input("File name : ");
-        else:
-            if(options.signatures):
-                choice = options.signatures;
-            else:
-                choice = '';
-
-        if(len(choice) == 0):
-            break;
-
-        elif(os.path.isfile(choice)): #Load signature
-            sigs = Signatures.read_signatures(choice);
-            break;
-        else:
-            print("Error : File not found");
-            continue;
-
-    #Filter Signatures to use
-    if(options.interactive):
-        while(True):
-            ##List signatures
-            print("\n" + str(len(sigs)) + " Signatures Loaded: " + "\n");
-            for i,sig in enumerate(sigs):
-                print(sig.name);
-                if(i == 50):
-                    print("...rest of output suppressed, " + str(len(sigs)-50) + " signatures remaining")
-                    break;
-
-            print();
-            print("Filter signatures using keywords.");
-            print("Signatures containing any word in the list will be retained.");
-            print("Enter a list of keywords (comma separated), or hit enter to continue");
-            keywords = raw_input("Keywords: ");
-
-            if(len(keywords)==0):
-                break;
-            else:
-                #Filter based on keywords
-                keywords = [word.strip() for word in keywords.split(',')];
-                sigs = Signatures.filter_sig_list(sigs, keywords);
 
 
     data_matrices = [data, prob, pc_data, pc_prob];
