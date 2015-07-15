@@ -226,7 +226,7 @@ def read_signatures_gmt(filename='', match_terms=[]):
                 raise Exception("This should not happen");
 
             for gene_name in row_data[2:]:
-                sig.sig_dict.update({gene_name.lower(): sig_val});
+                sig.sig_dict.update({gene_name.upper(): sig_val});
 
     return found_signatures.values();  #dict to list
 
@@ -615,9 +615,8 @@ class Signature:
         out = np.zeros((len(genes), 1), dtype=np.float64);
         
         for i, gene in enumerate(genes):
-            gene_key = gene.lower();
-            if(self.sig_dict.has_key(gene_key)):
-                val = self.sig_dict[gene_key];
+            if(self.sig_dict.has_key(gene)):
+                val = self.sig_dict[gene];
                 if(val == 1 or val == 0):
                     out[i] = 1;
                 if(val == -1):

@@ -48,7 +48,7 @@ def read_matrix(filename='', delimiter = '\t'):
         row_labels = list();
         for line in ff:
           entries = line.split(delimiter);
-          row_labels.append(entries[0]);
+          row_labels.append(entries[0].upper());
     
 
     #Test for unique row and column labels
