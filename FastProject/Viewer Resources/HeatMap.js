@@ -231,20 +231,21 @@ HeatMap.prototype.redraw = function(performTransition) {
 
         clusterRects.enter()
             .append("rect")
-            .attr('width', self.w)
             .attr('height', self.cluster_bar_props.height)
             .attr('y', self.cluster_bar_props.offset);
 
-        clusterRects.style('fill',function(d) {
+        clusterRects
+            .attr('width', self.w)
+            .style('fill',function(d) {
                 return self.cluster_bar_props.colors(d);})
             .attr('x', function(d,i){
                 return (self.col_order[i] * self.w); })
             .on("mouseover", function(d) {
-            ii = d3.range(self.col_clusters.length);
-            selected_i = ii.filter(function(e,j){
-                return self.col_clusters[j] == d;});
-            self.setHovered(selected_i);
-        });
+                ii = d3.range(self.col_clusters.length);
+                selected_i = ii.filter(function(e,j){
+                    return self.col_clusters[j] == d;});
+                self.setHovered(selected_i);
+                });
 
         clusterRects.exit().remove();
 

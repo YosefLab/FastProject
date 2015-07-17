@@ -13,96 +13,46 @@ from FastProject.Utils import ProgressBar;
 from FastProject import HtmlViewer;
 
 def FullOutput(options, args):
+
     start_time = time.time();
     if(options.housekeeping):
         housekeeping_filename = options.housekeeping;
     else:
-        if(options.interactive):
-            housekeeping_filename = "NOT_SPECIFIED";
-        else:
-            housekeeping_filename = '';  #If not in interactive mode and no -h specified, just use the default list
+        housekeeping_filename = '';  #If not in interactive mode and no -h specified, just use the default list
 
     def get_housekeeping_file():
         fn = housekeeping_filename;
-        if(fn == "NOT_SPECIFIED"):
-            while(True):
-                fn = raw_input("Enter name of housekeeping file, or press ENTER to use default list: ");
-
-                if(fn == '' or os.path.isfile(fn)):
-                    break;
-                else:
-                    print("Error : File not found");
-                    continue;
         return fn;
 
     #%% Read expression data from file
-    while(True):
-        if(options.interactive):
-            filename = raw_input("Enter name of data file: ");
-        else:
-            if(len(args) > 0):
-                filename = args[0];
-                if(not os.path.isfile(filename)):
-                    raise ValueError("Argument Error: data file not found.\nExiting...");
-            else:
-                raise ValueError("Argument Error:  data_file not specified.\nExiting...");
+    if(len(args) > 0):
+        filename = args[0];
+    else:
+        raise ValueError("Argument Error:  data_file not specified.\nExiting...");
 
-        if(os.path.isfile(filename)):
-            (edata, genes, cells) = FileIO.read_matrix(filename);
-            break;
-        else:
-            print("Error : File not found");
-            continue
+    if(not os.path.isfile(filename)):
+        raise ValueError("Argument Error: data file not found.\nExiting...");
+
+    (edata, genes, cells) = FileIO.read_matrix(filename);
 
     print("Imported ", edata.shape[0], " genes across ", edata.shape[1], " samples");
 
     #%% Load Signature file
     sigs = [];
-    while(True):
+    if(options.signatures):
+        sig_file = options.signatures;
+        if(not os.path.isfile(sig_file)):
+            raise ValueError("Option Error: signature file " + sig_file + " not found.\nExiting...");
 
-        if(options.interactive and (not options.signatures)):
-            print();
-            print("Enter name of signature file...")
-            choice = raw_input("File name : ");
-        else:
-            if(options.signatures):
-                choice = options.signatures;
-            else:
-                choice = '';
+        sigs = Signatures.read_signatures(sig_file);
+    if(options.precomputed):
+        precomputed_sig_file = options.precomputed;
+        if(not os.path.isfile(precomputed_sig_file)):
+            raise ValueError("Option Error: precomputed signature file " + precomputed_sig_file + " not found.\nExiting...");
 
-        if(len(choice) == 0):
-            break;
+    if(not options.signatures and not options.precomputed): #Need one or the other here
+        raise ValueError("Option Error: Must specify either a signature file or a pre-computed signature file.\nExiting...");
 
-        elif(os.path.isfile(choice)): #Load signature
-            sigs = Signatures.read_signatures(choice);
-            break;
-        else:
-            print("Error : File not found");
-            continue;
-
-    #Filter Signatures to use
-    if(options.interactive):
-        while(True):
-            ##List signatures
-            print("\n" + str(len(sigs)) + " Signatures Loaded: " + "\n");
-            for i,sig in enumerate(sigs):
-                print(sig.name);
-                if(i == 50):
-                    print("...rest of output suppressed, " + str(len(sigs)-50) + " signatures remaining")
-                    break;
-
-            print();
-            print("Filter signatures using keywords.");
-            print("Signatures containing any word in the list will be retained.");
-            print("Enter a list of keywords (comma separated), or hit enter to continue");
-            keywords = raw_input("Keywords: ");
-
-            if(len(keywords)==0):
-                break;
-            else:
-                #Filter based on keywords
-                keywords = [word.strip() for word in keywords.split(',')];
-                sigs = Signatures.filter_sig_list(sigs, keywords);
 
     #Wrap data in ExpressionData object
     edata = ExpressionData(edata, genes, cells);
@@ -111,142 +61,89 @@ def FullOutput(options, args):
     original_data = edata.copy();
 
     #Create directory for all outputs
-    tt = time.localtime();
-    dot_index = filename.rfind('.');
-    if(dot_index > -1):
-        dir_name = filename[0:dot_index];
+    if(options.output):
+        dir_name = options.output;
     else:
-        dir_name = filename;
-
-    dir_name = dir_name + '_' + str(tt.tm_year) + '{:0>2d}'.format(tt.tm_mon) + '{:0>2d}'.format(tt.tm_mday);
-    dir_name = dir_name + '_' + '{:0>2d}'.format(tt.tm_hour) + '{:0>2d}'.format(tt.tm_min) + '{:0>2d}'.format(tt.tm_sec);
-
-    os.makedirs(dir_name);
-
-    #%% Filtering genes
-    while(True):  #Loop exited with 'break', see below
-
-        original = edata.shape;
-        if(options.interactive):
-            print();
-            print("Filtering Options Available");
-            print();
-            print("\t0.  Continue")
-            print("\t1.  Remove housekeeping genes");
-            print("\t2.  Remove inactive genes");
-            print("\t3.  Filter genes for biomadility using HDT");
-            print("\t4.  Apply Fano-factor filtering.");
-            print();
-
-            choice = raw_input("Make a selection: ");
-
-            try:
-                choice = int(choice);
-            except ValueError:
-                print("Error : Bad value.  Enter a number")
-                continue;
+        default_dir_name = 'FastProject_Output';
+        if(os.path.isdir(default_dir_name)):
+            i = 1;
+            while(True):
+                dir_name = default_dir_name + str(i);
+                if(not os.path.isdir(dir_name)):
+                    break;
+                else:
+                    i = i+1;
         else:
-            if(len(options.filters) == 0):
-                choice = 0;
-            else:
-                choice = options.filters[0];
-                options.filters = options.filters[1:];
-                try:
-                    choice = int(choice);
-                    if(choice > 4):
-                        raise ValueError;
-                except ValueError:
-                    print("Error:  Bad option for -f, --filters.  Exiting");
-                    sys.exit();
-        print();
-        if(choice==0):
-            break;
-        elif(choice==1): #Housekeeping
-            print("Removing housekeeping genes...");
-            housekeeping_filename = get_housekeeping_file();
-            edata = Filters.filter_housekeeping(edata, housekeeping_filename);
-        elif(choice==2): #Threshold of activation
-            print("Removing genes inactive in > 80% samples...");
-            edata = Filters.filter_genes_threshold(edata, 0.2);
-        elif(choice==3): #HDT test
-            print("Removing genes with unimodal distribution across samples using Hartigans DT...");
-            gene_passes = Filters.filter_genes_hdt(edata, 0.05, return_mask=True);
-            edata.projection_mask = np.logical_and(edata.projection_mask, gene_passes);
-        elif(choice==4): #Save to file
-            print("Applying Fano-Filtering...");
-            gene_passes = Filters.filter_genes_fano(edata, 2);
-            edata.projection_mask = np.logical_and(edata.projection_mask, gene_passes);
-        else:
-            print("Error : Invalid Choice\n");
-            continue;
+            dir_name = default_dir_name;
 
-        if(0 < choice < 3):
-            print("Removed ", original[0]-edata.shape[0], " Genes");
-            print(edata.shape[0], " Genes retained");
-        if(2 < choice < 5):
-            print(np.sum(edata.projection_mask), "Genes saved for projection.")
+    if(not os.path.isdir(dir_name)):
+        os.makedirs(dir_name);
 
-    data = edata;  #'data' is used for projections/signatures.  Can be overwritten with the probability data object
+    #Filtering
+    filter_dict = {};
+    if(options.nofilter):
+        filter_dict.update({'None': set()});
+    else:
+        edata = Filters.filter_genes_threshold(edata, 0.2);
+
+        #HDT Filtering
+        print("Removing genes with unimodal distribution across samples using Hartigans DT...");
+        hdt_mask = Filters.filter_genes_hdt(edata, 0.05);
+        #Fano Filtering
+        print("Applying Fano-Filtering...");
+        fano_mask = Filters.filter_genes_fano(edata, 2);
+
+        filter_dict.update({
+            'None': set(edata.row_labels), #None means 'use all genes'. This set only used when outputting filter
+            'HDT': set([edata.row_labels[i] for i,x in enumerate(hdt_mask) if x]),
+            'Fano': set([edata.row_labels[i] for i,x in enumerate(fano_mask) if x])
+        });
+
+    edata.filters = filter_dict;
 
     #%% Probability transform
     housekeeping_filename = get_housekeeping_file();
 
     print()
     print('Fitting expression data to exp/norm mixture model');
-    (prob, mu_h) = Transforms.probability_of_expression(data);
+    (pdata, mu_h) = Transforms.probability_of_expression(edata);
 
 
     print();
     print('Correcting for false-negatives using housekeeping gene levels');
     (fit_func, params) = Transforms.create_false_neg_map(original_data, housekeeping_filename);
-    (prob, fn_prob) = Transforms.correct_for_fn(prob, mu_h, fit_func, params);
-    fn_prob[data > 0] = 0;
+    (pdata, fn_prob) = Transforms.correct_for_fn(pdata, mu_h, fit_func, params);
+    fn_prob[edata > 0] = 0;
 
-    prob = ProbabilityData(prob, data);
+    pdata = ProbabilityData(pdata, edata);
 
-    data.weights = 1-fn_prob;
-    prob.weights = 1-fn_prob;
+    edata.weights = 1-fn_prob;
+    pdata.weights = 1-fn_prob;
 
     sample_passes, sample_scores = Transforms.quality_check(params);
 
     if(options.qc):
-        prob = prob.subset_samples(sample_passes);
-        data = data.subset_samples(sample_passes);
+        pdata = pdata.subset_samples(sample_passes);
+        edata = edata.subset_samples(sample_passes);
         sample_scores = sample_scores[sample_passes];
 
-    Transforms.z_normalize(data);
+    Transforms.z_normalize(edata);
 
-    #Perform PCA on the data, with and without the probability xfrm
-    print("Performing weighted PCA on Expression Data");
-    pc_data = Projections.perform_weighted_PCA(data);
-    print("Performing weighted PCA on Probability Data");
-    pc_prob = Projections.perform_weighted_PCA(prob);
-
-    if(options.pca_filter):
-        pc_data = Projections.filter_PCA(pc_data, scores=sample_scores, variance_proportion=0.25);
-        pc_prob = Projections.filter_PCA(pc_prob, scores=sample_scores, variance_proportion=0.25);
-    else:
-        pc_data = Projections.filter_PCA(pc_data, variance_proportion=0.25, min_components = 30);
-        pc_prob = Projections.filter_PCA(pc_prob, variance_proportion=0.25, min_components = 30);
-
-
-    data_matrices = [data, prob, pc_data, pc_prob];
-    data_labels = ["Expression", "Probability", "ExpressionPC", "ProbabilityPC"];
+    model_names = ['Expression', 'Probability'];
+    model_data = [edata, pdata];
 
     fout_js = open(dir_name + os.sep + "FP_data.jsdata", 'w');
+    js_models = [];
 
-    for label, data in zip(data_labels, data_matrices):
+    for name, data in zip(model_names, model_data):
+        model_dir = os.path.join(dir_name, name);
+        try:
+            os.makedirs(model_dir);
+        except OSError:
+            pass;
+
         print();
-        print("Evaluating: ", label);
-        #%% Dimensional Reduction procedures
-        print();
-        print("Projecting data into 2 dimensions");
-
-        projections = Projections.generate_projections(data);
-
-        #Save data
-        out_file = label + '_Projections.txt'
-        Projections.write_projection_file(dir_name + os.sep + out_file, data.col_labels, projections);
+        print('Model: ', name)
 
         #Evaluate Signatures
         print();
@@ -268,35 +165,113 @@ def FullOutput(options, args):
             sig_scores.update(precomputed_sig_scores);
 
         #Prompt to save data
-        out_file = label + '_SigScores.txt';
-        FileIO.write_signature_scores(dir_name + os.sep + out_file, sig_scores, data.col_labels);
+        out_file = 'SignatureScores.txt';
+        FileIO.write_signature_scores(os.path.join(model_dir, out_file), sig_scores, data.col_labels);
+
+        #Save data to js model as well
+        js_model_dict = {'model': name};
+        js_model_dict.update({'signatureScores': sig_scores})
+        js_model_dict.update({'sampleLabels': data.col_labels});
+        js_model_dict.update({'projectionData': []})
+        js_models.append(js_model_dict);
+
+        for filter_name in filter_dict.keys():
+            if(filter_name == "None"):
+                filter_dir = os.path.join(model_dir, "No_Filter");
+            else:
+                filter_dir = os.path.join(model_dir, filter_name + "_Filter");
+            try:
+                os.makedirs(filter_dir);
+            except OSError:
+                pass;
+
+            print();
+            print("Filter-Level:", filter_name);
+            #%% Dimensional Reduction procedures
+            print();
+            print("Projecting data into 2 dimensions");
+
+            projections, pcdata = Projections.generate_projections(data, filter_name);
+
+            #Evaluate Clusters
+            print("Evaluating Clusters...");
+            clusters = Projections.define_clusters(projections);
+
+            #%% Evaluating signatures against projections
+            sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p = Signatures.sigs_vs_projections_v2(projections, sig_scores);
+
+            #Save Projections
+            FileIO.write_projection_file(os.path.join(filter_dir, 'Projections.txt'), data.col_labels, projections);
+
+            #Save Clusters
+            FileIO.write_cluster_file(os.path.join(filter_dir, 'Clusters.txt'), data.col_labels, clusters)
+
+            #Output matrix of p-values for conformity scores
+            FileIO.write_matrix(os.path.join(filter_dir, "DissimilarityMatrix.txt"),sig_proj_matrix, sp_row_labels, sp_col_labels);
+            FileIO.write_matrix(os.path.join(filter_dir, "PMatrix.txt"),sig_proj_matrix_p, sp_row_labels, sp_col_labels);
+
+            #Output genes used in filter
+            FileIO.write_filter_file(os.path.join(filter_dir, 'ProjectedGenes.txt'), data.filters[filter_name]);
+
+            #Output JS
+            js_filt_dict = dict();
+            js_model_dict['projectionData'].append(js_filt_dict);
+            js_filt_dict.update({'filter': filter_name});
+            js_filt_dict.update({'genes': data.filters[filter_name]});
+            js_filt_dict.update({'pca': False});
+            js_filt_dict.update({'projections': projections});
+            js_filt_dict.update({'sigProjMatrix': sig_proj_matrix});
+            js_filt_dict.update({'sigProjMatrix_p': sig_proj_matrix_p});
+            js_filt_dict.update({'projectionKeys': sp_col_labels});
+            js_filt_dict.update({'signatureKeys': sp_row_labels});
+            js_filt_dict.update({'clusters': clusters});
 
 
 
-        #%% Evaluating signatures against projections
-        sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p = Signatures.sigs_vs_projections_v2(projections, sig_scores);
+            #Now do it all again using the principal component data
+            if(options.pca_filter):
+                pcdata = Projections.filter_PCA(pcdata, scores=sample_scores, variance_proportion=0.25);
+            else:
+                pcdata = Projections.filter_PCA(pcdata, variance_proportion=0.25, min_components = 30);
+
+            #%% Dimensional Reduction procedures
+            print();
+            print("Projecting data into 2 dimensions");
+
+            projections, pcdata2 = Projections.generate_projections(pcdata, filter_name);
+
+            #Evaluate Clusters
+            print("Evaluating Clusters...");
+            clusters = Projections.define_clusters(projections);
+
+            #%% Evaluating signatures against projections
+            sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p = Signatures.sigs_vs_projections_v2(projections, sig_scores);
+
+            #Save Projections
+            FileIO.write_projection_file(os.path.join(filter_dir, 'Projections-PC.txt'), pcdata.col_labels, projections);
+
+            #Save Clusters
+            FileIO.write_cluster_file(os.path.join(filter_dir, 'Clusters-PC.txt'), pcdata.col_labels, clusters)
+
+            #Output matrix of p-values for conformity scores
+            FileIO.write_matrix(os.path.join(filter_dir, "DissimilarityMatrix-PC.txt"),sig_proj_matrix, sp_row_labels, sp_col_labels);
+            FileIO.write_matrix(os.path.join(filter_dir, "PMatrix-PC.txt"),sig_proj_matrix_p, sp_row_labels, sp_col_labels);
+
+            #Output JS
+            js_filt_dict = dict();
+            js_model_dict['projectionData'].append(js_filt_dict);
+            js_filt_dict.update({'filter': filter_name});
+            js_filt_dict.update({'genes': data.filters[filter_name]});
+            js_filt_dict.update({'pca': True});
+            js_filt_dict.update({'projections': projections});
+            js_filt_dict.update({'sigProjMatrix': sig_proj_matrix});
+            js_filt_dict.update({'sigProjMatrix_p': sig_proj_matrix_p});
+            js_filt_dict.update({'projectionKeys': sp_col_labels});
+            js_filt_dict.update({'signatureKeys': sp_row_labels});
+            js_filt_dict.update({'clusters': clusters});
 
 
-        #Evaluate Clusters
-        print("Evaluating Clusters...");
-        clusters = Projections.define_clusters(projections);
-
-        #Output matrix of p-values for conformity scores
-        FileIO.write_matrix(dir_name + os.sep + label + "_DissimilarityMatrix.txt",sig_proj_matrix, sp_row_labels, sp_col_labels);
-        FileIO.write_matrix(dir_name + os.sep + label + "_PMatrix.txt",sig_proj_matrix_p, sp_row_labels, sp_col_labels);
-
-        #Wrap data into an object
-        js_out = dict();
-        js_out.update({'Projections': projections});
-        js_out.update({'SigScores': sig_scores});
-        js_out.update({'SigProjMatrix': sig_proj_matrix});
-        js_out.update({'SigProjMatrix_p': sig_proj_matrix_p});
-        js_out.update({'ProjectionKeys': sp_col_labels});
-        js_out.update({'SignatureKeys': sp_row_labels});
-        js_out.update({'SampleLabels': data.col_labels});
-        js_out.update({'Clusters': clusters});
-
-        fout_js.write(HtmlViewer.toJS_variable("FP_" + label, js_out));
+    fout_js.write(HtmlViewer.toJS_variable("FP_Models", js_models));
 
     #Write signatures to file
     #Assemble signatures into an object, then convert to JSON variable and write
@@ -311,18 +286,17 @@ def FullOutput(options, args):
     fout_js.write(HtmlViewer.toJS_variable("FP_Signatures", sig_dict));
 
     #Write the original data matrix to the javascript file.
-    Transforms.z_normalize(original_data);
     #First, cluster genes
     from scipy.cluster.hierarchy import leaves_list, linkage;
-    linkage_matrix = linkage(original_data);
+    linkage_matrix = linkage(edata);
     leaves_i = leaves_list(linkage_matrix);
-    original_data = original_data[leaves_i, :];
-    original_data.row_labels = [original_data.row_labels[i] for i in leaves_i];
+    edata_clustered = edata[leaves_i, :];
+    edata_clustered.row_labels = [edata.row_labels[i] for i in leaves_i];
 
     data_json = dict({
-        'data': original_data,
-        'gene_labels': original_data.row_labels,
-        'sample_labels': original_data.col_labels,
+        'data': edata_clustered,
+        'gene_labels': edata_clustered.row_labels,
+        'sample_labels': edata_clustered.col_labels,
     });
     fout_js.write(HtmlViewer.toJS_variable("FP_ExpressionMatrix", data_json));
 

@@ -21,37 +21,8 @@ from .DataTypes import PCData;
 
 import numpy as np;
 
-def write_projection_file(filename, sample_labels, projections):
-    """
-    Outputs the coordinates for each projection to a file.
-    
-    Parameters
-    ----------
-    filename : String
-        File to write
-    sample_labels : list(String) len=Num_Samples
-        Labels for each sample
-    projections : dict(string, (2 x Num_Samples) numpy.ndarray)
-        dictionary mapping the projection type (e.g. "tSNE") to an array containing
-        the two-dimensional coordinates for each sample in the projection.
-          
-    """
-    
-    ff = open(filename,'w');
-    
-    for proj in projections.keys():
-        coordinates = projections[proj];
-        for i in range(coordinates.shape[1]):
-            ff.write(proj + '\t');
-            ff.write(sample_labels[i] + '\t');
-            ff.write('{:.5f}'.format(coordinates[0,i]) + '\t');
-            ff.write('{:.5f}'.format(coordinates[1,i]) + '\t');
-            ff.write('\n');
-    
-    ff.close();
-    
 
-def generate_projections(data):
+def generate_projections(data, filter_name = None):
     """
     Projects data into 2 dimensions using a variety of linear and non-linear methods
     
@@ -59,12 +30,18 @@ def generate_projections(data):
     ----------
     data : (Num_Features x Num_Samples) numpy.ndarray 
         Matrix containing data to project into 2 dimensions
+    filter_name : String
+        Filter to apply to the signatures.  Should match a filter in data.filters
+        If not specified, no filtering is applied.
 
     Returns
     -------
     projections : dict(string, (2 x Num_Samples) numpy.ndarray)
         dictionary mapping the projection type (e.g. "tSNE") to an array containing
         the two-dimensional coordinates for each sample in the projection.
+
+    PC_Data : (Num_Components x Num_Samples) numpy.ndarray
+        Weighted PCA of the original data object
           
     """
     
@@ -72,13 +49,19 @@ def generate_projections(data):
     
     projections = dict();
     
-    dist_matrix = data.distance_matrix();
-    proj_data = data.projection_data();
+    dist_matrix = data.distance_matrix(filter_name);
+    proj_data = data.projection_data(filter_name);
+    proj_weights = data.projection_weights(filter_name);
     
     # PCA
-    
-    result = perform_weighted_PCA(data, 3);
-    result = result.T; #Now rows are samples, columns are components
+
+    if(type(data) is not PCData):
+        wpca_data, e_val = perform_weighted_PCA(proj_data, proj_weights);
+        pcdata = PCData(wpca_data, e_val, data);
+    else:
+        pcdata = data;
+
+    result = pcdata.T; #Now rows are samples, columns are components
 
 
     result12 = result[:,[0,1]]
@@ -170,7 +153,7 @@ def generate_projections(data):
     
     pbar.complete();
 
-    return projections; 
+    return projections, pcdata;
 
 def perform_PCA(data, N=0, variance_proportion=1.0):
     """
@@ -212,15 +195,17 @@ def perform_PCA(data, N=0, variance_proportion=1.0):
     output = PCData(pca_data, pca.explained_variance_, data);
     return output;
 
-def perform_weighted_PCA(data, max_components=200):
+def perform_weighted_PCA(data, weights, max_components=200):
     """
     Performs Weighted PCA on the data
-    Weights are derived from the data object (of a type defined in DataTypes)
 
     Parameters
     ----------
     data : (Num_Features x Num_Samples) numpy.ndarray (or subclass)
         Matrix containing data to project into 2 dimensions
+
+    weights : (Num_Features x Num_Samples) numpy.ndarray (or subclass)
+        Matrix containing weights to use for each coordinate in data
 
     max_components: int
         Maximum number of components to calculate
@@ -232,15 +217,9 @@ def perform_weighted_PCA(data, max_components=200):
 
     """
 
-    #If the data has already been transformed with PCA, just spit it back out.
-    if(type(data) is PCData):
-        return data;
-    #Use only rows where data.projection_mask is true
-    #   This is so aggressive filtering applies to projections only.
-    proj_data = data.projection_data();
+    proj_data = data;
 
     #Weighted means
-    weights = proj_data.projection_weights();
     wmean = np.sum(proj_data * weights, axis=1) / np.sum(weights, axis=1);
     wmean = wmean.reshape((wmean.size, 1));
 
@@ -257,9 +236,7 @@ def perform_weighted_PCA(data, max_components=200):
     total_var = np.sum(np.var(proj_data, axis=1));
     e_val /= total_var;
 
-    pcdata = PCData(wpca_data, e_val, data);
-
-    return pcdata;
+    return wpca_data, e_val;
 
 
 def filter_PCA(data, scores=None, N=0, variance_proportion=1.0, min_components = 0):

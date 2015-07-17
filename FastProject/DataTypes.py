@@ -30,8 +30,8 @@ class ExpressionData(np.ndarray):
             obj.col_labels = col_labels;
 
         obj.weights = np.ones(data.shape);
-        obj.projection_mask = np.zeros(data.shape[0]) == 0; #All True to start
-        
+        obj.filters = dict();
+
         return obj;
         
     def __init__(self, data, row_labels=[], col_labels=[]):
@@ -41,14 +41,14 @@ class ExpressionData(np.ndarray):
         if obj is None:
             return;
 
-        self.projection_mask = getattr(obj, 'projection_mask'   , []);
+        self.filters = getattr(obj, 'filters'   , []);
         self.weights    = getattr(obj, 'weights'   , []);
         self.row_labels = getattr(obj, 'row_labels', []);
         self.col_labels = getattr(obj, 'col_labels', []);
         
-    def distance_matrix(self):
+    def distance_matrix(self, filter_name=None):
         
-        dist_vec = distance.pdist(self.projection_data().T, metric='euclidean');
+        dist_vec = distance.pdist(self.projection_data(filter_name).T, metric='euclidean');
         return distance.squareform(dist_vec);
 
     def eval_signature(self, signature):
@@ -90,7 +90,6 @@ class ExpressionData(np.ndarray):
         out = self[indices,:];
         out.weights = out.weights[indices,:];
         out.row_labels = [self.row_labels[i] for i in indices];
-        out.projection_mask = out.projection_mask[indices];
 
         return(out);
     
@@ -104,20 +103,30 @@ class ExpressionData(np.ndarray):
         out.col_labels = [self.col_labels[i] for i in indices];
         return(out);
 
-    def projection_data(self):
+    def projection_data(self, filter_name=None):
         """
-        Returns the data matrix in self filtered by projection_mask
-        :return: A sliced copy of self
+        Returns the data matrix in self filtered by filters[filter_name]
+        :return: A sliced copy of the underlying data matrix
         """
-        return self[self.projection_mask, :];
+        if(filter_name is None or filter_name == 'None'):
+            return self.base;
+        else:
+            filter = self.filters[filter_name];
+            filter_i = [i for i,gene in enumerate(self.row_labels) if gene in filter];
+            return self.base[filter_i,:];
 
-    def projection_weights(self):
+    def projection_weights(self, filter_name=None):
         """
         Returns the weight matrix, filtered by projection_mask
         :return: A sliced copy of the weight matrix
         """
 
-        return self.weights[self.projection_mask, :];
+        if(filter_name is None or filter_name == 'None'):
+            return self.weights;
+        else:
+            filter = self.filters[filter_name];
+            filter_i = [i for i,gene in enumerate(self.row_labels) if gene in filter];
+            return self.weights[filter_i,:];
 
 class ProbabilityData(np.ndarray):
     
@@ -133,23 +142,20 @@ class ProbabilityData(np.ndarray):
 
         obj.weights = expression_data.weights;
 
-        obj.projection_mask = expression_data.projection_mask;
-        
         return obj;
                 
     def __array_finalize__(self, obj):
         if obj is None:
             return;
 
-        self.projection_mask = getattr(obj, 'projection_mask'   , []);
         self.weights    = getattr(obj, 'weights'   , []);
         self.row_labels = getattr(obj, 'row_labels', []);
         self.col_labels = getattr(obj, 'col_labels', []);
         self.expression_data = getattr(obj, 'expression_data', []);
         
-    def distance_matrix(self):
+    def distance_matrix(self, filter_name=None):
 
-        pos_self = self.projection_data()
+        pos_self = self.projection_data(filter_name)
         neg_self = 1-pos_self;
         
         prob_dist = np.dot(neg_self.T, pos_self) + \
@@ -159,6 +165,11 @@ class ProbabilityData(np.ndarray):
         np.fill_diagonal(prob_dist, 0.0);
         
         return prob_dist;
+
+    #All data values in PCData have the same weight
+    @property
+    def filters(self):
+        return self.expression_data.filters;
 
     def eval_signature(self, signature):
         """For a signature, calculate a score against each sample in the data
@@ -200,7 +211,6 @@ class ProbabilityData(np.ndarray):
         out = self[indices,:];
         out.weights = out.weights[indices,:];
         out.row_labels = [self.row_labels[i] for i in indices];
-        out.projection_mask = out.projection_mask[indices];
         out.expression_data = out.expression_data.subset_genes(indices);
         return(out);
     
@@ -215,21 +225,30 @@ class ProbabilityData(np.ndarray):
         out.expression_data = out.expression_data.subset_samples(indices);
         return(out);
 
-    def projection_data(self):
+    def projection_data(self, filter_name=None):
         """
-        Returns the data matrix in self filtered by projection_mask
-        :return: A sliced copy of self
+        Returns the data matrix in self filtered by filters[filter_name]
+        :return: A sliced copy of the underlying data matrix
         """
+        if(filter_name is None or filter_name == 'None'):
+            return self.base;
+        else:
+            filter = self.filters[filter_name];
+            filter_i = [i for i,gene in enumerate(self.row_labels) if gene in filter];
+            return self.base[filter_i,:];
 
-        return self[self.projection_mask, :];
-
-    def projection_weights(self):
+    def projection_weights(self, filter_name=None):
         """
         Returns the weight matrix, filtered by projection_mask
         :return: A sliced copy of the weight matrix
         """
 
-        return self.weights[self.projection_mask, :];
+        if(filter_name is None or filter_name == 'None'):
+            return self.weights;
+        else:
+            filter = self.filters[filter_name];
+            filter_i = [i for i,gene in enumerate(self.row_labels) if gene in filter];
+            return self.weights[filter_i,:];
 
 class PCData(np.ndarray):
     
@@ -261,7 +280,7 @@ class PCData(np.ndarray):
         self.col_labels = getattr(obj, 'col_labels', []);
         self.parent_data = getattr(obj, 'parent_data', []);
         
-    def distance_matrix(self):
+    def distance_matrix(self, filter_name=None):
         
         dist_vec = distance.pdist(self.T, metric='euclidean');
         return distance.squareform(dist_vec);
@@ -306,7 +325,7 @@ class PCData(np.ndarray):
         return(out);
 
 
-    def projection_data(self):
+    def projection_data(self, filter_name=None):
         """
         Returns the data matrix in self filtered by projection_mask
         :return: A sliced copy of self
@@ -314,7 +333,7 @@ class PCData(np.ndarray):
         #PCA Data does not have projection_mask, just return all
         return self;
 
-    def projection_weights(self):
+    def projection_weights(self, filter_name=None):
         """
         Returns the weight matrix, filtered by projection_mask
         :return: A sliced copy of the weight matrix

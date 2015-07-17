@@ -133,3 +133,72 @@ def write_scatter_plot(filename, x_coords, y_coords, colors=[], xlabel='', ylabe
 
     plt.close(ff);
 
+def write_projection_file(filename, sample_labels, projections):
+    """
+    Outputs the coordinates for each projection to a file.
+
+    Parameters
+    ----------
+    filename : String
+        File to write
+    sample_labels : list(String) len=Num_Samples
+        Labels for each sample
+    projections : dict(string, (2 x Num_Samples) numpy.ndarray)
+        dictionary mapping the projection type (e.g. "tSNE") to an array containing
+        the two-dimensional coordinates for each sample in the projection.
+
+    """
+
+    ff = open(filename,'w');
+
+    for proj in projections.keys():
+        coordinates = projections[proj];
+        for i in range(coordinates.shape[1]):
+            ff.write(proj + '\t');
+            ff.write(sample_labels[i] + '\t');
+            ff.write('{:.5f}'.format(coordinates[0,i]) + '\t');
+            ff.write('{:.5f}'.format(coordinates[1,i]) + '\t');
+            ff.write('\n');
+
+    ff.close();
+
+def write_cluster_file(filename, sample_labels, clusters):
+    """
+    Outputs cluster assignments to a file
+
+    :param filename: String
+        File to be written
+    :param sample_labels: list(String)
+        Labels for each sample
+    :param clusters: Dict(projection_name (String) -> Projection Clusters)
+        Projection Clusters: Dict(cluster_name (String) -> Cluster Assignments)
+        Cluster Assignments: numpy.ndarray (len = num_samples)
+            Cluster assignments for each sample
+
+    """
+
+    with open(filename, 'w') as fout:
+        fout.write('\t'.join(sample_labels) + '\n');
+
+        for proj in clusters.keys():
+            proj_clusters = clusters[proj];
+            for cluster in proj_clusters.keys():
+                assignments = proj_clusters[cluster];
+                fout.write(proj + " " + cluster + "\t");
+                fout.write('\t'.join([str(x) for x in assignments]));
+                fout.write('\n');
+
+def write_filter_file(filename, filter):
+    """
+    Outputs cluster assignments to a file
+
+    :param filename: String
+        File to be written
+    :param filter: set(String)
+        Set of gene names included in the filter
+
+    """
+
+    with open(filename, 'w') as fout:
+        fout.write('\t'.join(filter) + '\n');
+

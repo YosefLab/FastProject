@@ -39,18 +39,21 @@ def toJS(obj):
         return str(obj);
     if(issubclass(type(obj),np.ndarray) and obj.ndim < 3):
         return ndarray_to_JS(obj);
-    if(type(obj) is list):
+    if(type(obj) is list or type(obj) is set):
         return '[' + ','.join([toJS(x) for x in obj]) + ']';
+    if(type(obj) is bool):
+        if(obj): return 'true';
+        else: return 'false';
     if(type(obj) is dict):
         pairs = list();
         for key in obj.keys():
             if(type(key) is str or type(key) is int or type(key) is float):
                 pairs.append(toJS(key)+':'+toJS(obj[key]));
             else:
-                raise ValueError("Non-compatible Value Encountered for Object Key");
+                raise ValueError("Non-compatible Value Encountered for Object Key:", type(key));
         return '{' + ','.join(pairs) + '}';
 
-    raise ValueError("Non-convertible Value Encountered");
+    raise ValueError("Non-convertible Value Encountered:", type(obj));
 
 def ndarray_to_JS(np_array, format_str = "{:.3f}"):
     """
