@@ -92,7 +92,7 @@ def read_signatures_txt(filename='', match_terms=[]):
             
             if signed:
                 sig_sign = row_data[1].lower();
-                gene_name = row_data[2].lower();
+                gene_name = row_data[2].upper();
                 if(sig_sign == 'plus'):
                     sig_val = 1;
                 elif(sig_sign == 'minus'):
@@ -109,7 +109,7 @@ def read_signatures_txt(filename='', match_terms=[]):
 
             else:  #unsigned case
                 sig_val = 0;
-                gene_name = row_data[1].lower();
+                gene_name = row_data[1].upper();
 
             sig_dict[gene_name] = sig_val;
     except:
