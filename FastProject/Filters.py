@@ -74,7 +74,18 @@ def filter_genes_threshold(data, threshold):
     keep_indices = np.where((data > 0).sum(axis=1) > cutoff)[0];
     
     return data.subset_genes(keep_indices);
-    
+
+def filter_genes_novar(data):
+    """
+    Filters out genes with 0 variance across samples
+    :param data: ExpressionData or ProbabilityData from DataTypes
+    :return: Subset of data 0-variance rows removed
+    """
+
+    row_var = np.var(data, axis=1);
+    keep_indices = np.where(row_var != 0)[0];
+
+    return data.subset_genes(keep_indices);
 
 def filter_genes_hdt(data, p_val):
     """Filters out genes that pass the Hartigans Dip Test for bimodality

@@ -82,6 +82,8 @@ def FullOutput(options, args):
     #Filtering
     filter_dict = {};
     if(options.nofilter):
+        edata = Filters.filter_genes_novar(edata);
+
         filter_dict.update({'None': set()});
     else:
         edata = Filters.filter_genes_threshold(edata, 0.2);
