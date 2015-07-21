@@ -23,6 +23,7 @@ def parseFPArgs():
     parser.add_option("--nofilter",   action="store_true", default=False, help="Perform filtering on genes.");
     parser.add_option("--pca_filter", action="store_true", default=False, help="Filters PC principal components that correlate with a calculated QC metric for each sample");
     parser.add_option("--qc",         action="store_true", default=False, help="Performs a quality check on samples, filtering samples that do not pass");
+    parser.add_option("--subsample_size", type="int", metavar="N", default=1000, help="Number of samples to use when sub_sampling. Default is 1000");
 
     (options, args) = parser.parse_args();
 

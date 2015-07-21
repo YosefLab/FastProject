@@ -129,6 +129,9 @@ def FullOutput(options, args):
         edata = edata.subset_samples(sample_passes);
         sample_scores = sample_scores[sample_passes];
 
+    if(options.subsample_size > edata.shape[1]):
+        options.subsample_size = None;
+
     Transforms.z_normalize(edata);
 
     model_names = ['Expression', 'Probability'];
@@ -193,14 +196,14 @@ def FullOutput(options, args):
             print();
             print("Projecting data into 2 dimensions");
 
-            projections, pcdata = Projections.generate_projections(data, filter_name);
+            projections, pcdata = Projections.generate_projections(data, filter_name, options.subsample_size);
 
             #Evaluate Clusters
             print("Evaluating Clusters...");
             clusters = Projections.define_clusters(projections);
 
             #%% Evaluating signatures against projections
-            sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p = Signatures.sigs_vs_projections_v2(projections, sig_scores);
+            sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p = Signatures.sigs_vs_projections_v2(projections, sig_scores,subsample_size=options.subsample_size);
 
             #Save Projections
             FileIO.write_projection_file(os.path.join(filter_dir, 'Projections.txt'), data.col_labels, projections);
@@ -240,14 +243,14 @@ def FullOutput(options, args):
             print();
             print("Projecting data into 2 dimensions");
 
-            projections, pcdata2 = Projections.generate_projections(pcdata, filter_name);
+            projections, pcdata2 = Projections.generate_projections(pcdata, filter_name, options.subsample_size);
 
             #Evaluate Clusters
             print("Evaluating Clusters...");
             clusters = Projections.define_clusters(projections);
 
             #%% Evaluating signatures against projections
-            sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p = Signatures.sigs_vs_projections_v2(projections, sig_scores);
+            sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p = Signatures.sigs_vs_projections_v2(projections, sig_scores, subsample_size = options.subsample_size);
 
             #Save Projections
             FileIO.write_projection_file(os.path.join(filter_dir, 'Projections-PC.txt'), pcdata.col_labels, projections);

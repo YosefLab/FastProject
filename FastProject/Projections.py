@@ -14,6 +14,7 @@ from sklearn.manifold import LocallyLinearEmbedding
 from sklearn.manifold import MDS
 from sklearn.manifold import SpectralEmbedding
 from sklearn.cluster import MiniBatchKMeans
+from scipy.spatial.distance import cdist;
 import scipy.stats;
 
 from .Utils import ProgressBar;
@@ -22,7 +23,7 @@ from .DataTypes import PCData;
 import numpy as np;
 
 
-def generate_projections(data, filter_name = None):
+def generate_projections(data, filter_name = None, subsample_size = None):
     """
     Projects data into 2 dimensions using a variety of linear and non-linear methods
     
@@ -45,36 +46,24 @@ def generate_projections(data, filter_name = None):
           
     """
     
-    pbar = ProgressBar(10);
+    pbar = ProgressBar(15);
     
     projections = dict();
     
-    dist_matrix = data.distance_matrix(filter_name);
-    proj_data = data.projection_data(filter_name);
-    proj_weights = data.projection_weights(filter_name);
-    
-    # PCA
 
-    if(type(data) is not PCData):
-        wpca_data, e_val = perform_weighted_PCA(proj_data, proj_weights);
-        pcdata = PCData(wpca_data, e_val, data);
+
+    #Subset samples before other projection methods
+    if(subsample_size):
+        NUM_SAMPLES = data.shape[1];
+        sub_ii = np.random.choice(NUM_SAMPLES, subsample_size, replace=False);
+        sub_data = data.subset_samples(sub_ii);
+        proj_data = sub_data.projection_data(filter_name);
+        proj_weights = sub_data.projection_weights(filter_name);
+        dist_matrix = sub_data.distance_matrix(filter_name);
     else:
-        pcdata = data;
-
-    result = pcdata.T; #Now rows are samples, columns are components
-
-
-    result12 = result[:,[0,1]]
-    projections['PCA: 1,2'] = result12;
-    pbar.update();
-
-    result23 = result[:,[1,2]]
-    projections['PCA: 2,3'] = result23;
-    pbar.update();
-
-    result13 = result[:,[0,2]]
-    projections['PCA: 1,3'] = result13;
-    pbar.update();
+        proj_data = data.projection_data(filter_name);
+        proj_weights = data.projection_weights(filter_name);
+        dist_matrix = data.distance_matrix(filter_name);
 
     # ICA
     
@@ -133,7 +122,59 @@ def generate_projections(data, filter_name = None):
     # Add new projections here!
 
 
-    #Normalize projections 
+    #Add back in the points removed due to sub_sampling
+    if(subsample_size):
+        for key,p in projections.items():
+            not_sub_ii = np.setxor1d(np.arange(NUM_SAMPLES), sub_ii);
+            not_sub_data = data.subset_samples(not_sub_ii);
+            #Compute KNN within the subsampled data
+            K = 10;
+            subsample_dist = cdist(not_sub_data.T,sub_data.T, metric='euclidean')
+            #subsample_dist shape is not_sub_data N_Samples x sub_data N_Samples
+
+            subsample_dist_arg = subsample_dist.argsort(axis=1);
+            subsample_dist_arg = subsample_dist_arg[:, np.arange(K)]; #Take closest K
+
+            x_coords = p[:,0][subsample_dist_arg];
+            y_coords = p[:,1][subsample_dist_arg];
+
+            #New X coordinate is average of nearest neighbors
+            not_sub_x = np.mean(x_coords, axis=1);
+            not_sub_y = np.mean(y_coords, axis=1);
+
+            all_data = np.zeros((NUM_SAMPLES, 2));
+            all_data[not_sub_ii,0] = not_sub_x;
+            all_data[not_sub_ii,1] = not_sub_y;
+            all_data[sub_ii,0] = p[:,0];
+            all_data[sub_ii,1] = p[:,1];
+
+            projections[key] = all_data;
+            pbar.update()
+
+
+    # PCA - Uses subsampling inside perform_weighted_pca
+    proj_data = data.projection_data(filter_name);
+    proj_weights = data.projection_weights(filter_name);
+
+    if(type(data) is not PCData):
+        wpca_data, e_val = perform_weighted_PCA(proj_data, proj_weights, subsample_size);
+        pcdata = PCData(wpca_data, e_val, data);
+    else:
+        pcdata = data;
+
+    result = pcdata.T; #Now rows are samples, columns are components
+
+    result12 = result[:,[0,1]]
+    projections['PCA: 1,2'] = result12;
+
+    result23 = result[:,[1,2]]
+    projections['PCA: 2,3'] = result23;
+
+    result13 = result[:,[0,2]]
+    projections['PCA: 1,3'] = result13;
+    pbar.update();
+
+    #Normalize projections
     #Mean-center X
     #Mean-center Y
     #Scale so that E(R^2) = 1
@@ -195,7 +236,7 @@ def perform_PCA(data, N=0, variance_proportion=1.0):
     output = PCData(pca_data, pca.explained_variance_, data);
     return output;
 
-def perform_weighted_PCA(data, weights, max_components=200):
+def perform_weighted_PCA(data, weights, max_components=200, subsample_size=None):
     """
     Performs Weighted PCA on the data
 
@@ -209,6 +250,9 @@ def perform_weighted_PCA(data, weights, max_components=200):
 
     max_components: int
         Maximum number of components to calculate
+
+    subsample_size: int
+        Number of samples to use if sub_sampling
 
     Returns
     -------
@@ -225,6 +269,11 @@ def perform_weighted_PCA(data, weights, max_components=200):
 
     data_centered = proj_data - wmean;
     weighted_data_centered = data_centered * weights;
+
+    if(subsample_size):
+        NUM_SAMPLES = proj_data.shape[1];
+        ii = np.random.choice(NUM_SAMPLES, subsample_size, replace=False);
+        weighted_data_centered = weighted_data_centered[:, ii];
 
     wcov = np.dot(weighted_data_centered, weighted_data_centered.T) / np.dot(weights,weights.T);
     model = RandomizedPCA(n_components=min(proj_data.shape, max_components));

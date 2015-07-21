@@ -8,7 +8,20 @@ from __future__ import division, print_function;
 
 import numpy as np;
 from sklearn.metrics.pairwise import pairwise_distances;
+from scipy.spatial.distance import cdist;
 from .Utils import ProgressBar;
+
+#This is used to cache the background distribution used when evaluating
+#Signatures vs projections.  No need to regenerate the random indices
+#when the size has not changed.  Saves significant time for large N_SAMPLES
+_bg_dist = np.zeros((0,0));
+def get_bg_dist(N_SAMPLES, NUM_REPLICATES):
+    global _bg_dist;
+    if(_bg_dist.shape[0] != N_SAMPLES or _bg_dist.shape[1] != NUM_REPLICATES):
+        _bg_dist = np.random.rand(N_SAMPLES, NUM_REPLICATES);
+        _bg_dist = np.argsort(_bg_dist, axis=0);
+
+    return _bg_dist;
 
 def read_signatures(filename='', match_terms=[]):
     """Calls either read_signatures_txt or read_signatures_gmt when appropriate
@@ -349,7 +362,7 @@ def sigs_vs_projections(projections, sig_scores, NEIGHBORHOOD_SIZE = 0.1):
 
     return (sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p);
 
-def sigs_vs_projections_v2(projections, sig_scores, NEIGHBORHOOD_SIZE = 0.1):
+def sigs_vs_projections_v2(projections, sig_scores, NEIGHBORHOOD_SIZE = 0.1, subsample_size = None):
     """
     Evaluates the significance of each signature vs each projection
 
@@ -378,6 +391,10 @@ def sigs_vs_projections_v2(projections, sig_scores, NEIGHBORHOOD_SIZE = 0.1):
     for j, sig in enumerate(sp_row_labels):
         sig_score_matrix[:,j] = sig_scores[sig];
 
+    if(subsample_size):
+        ii_sub = np.random.choice(N_SAMPLES, subsample_size, replace=False);
+    else:
+        ii_sub = np.arange(N_SAMPLES);
 
     print();
     print("Evaluating Signatures against Projections");
@@ -385,27 +402,26 @@ def sigs_vs_projections_v2(projections, sig_scores, NEIGHBORHOOD_SIZE = 0.1):
     for i, proj in enumerate(sp_col_labels):
         data_loc = projections[proj];
 
-        distance_matrix = pairwise_distances(data_loc.T, metric='euclidean');
+        distance_matrix = cdist(data_loc[:,ii_sub].T, data_loc.T, metric='euclidean');
 
-        weights = np.exp(-1 * distance_matrix**2 / NEIGHBORHOOD_SIZE);
-        np.fill_diagonal(weights,0); #Don't count self
+        weights = np.exp(-1 * distance_matrix**2 / NEIGHBORHOOD_SIZE**2);
+        weights[np.arange(ii_sub.size), ii_sub] = 0; #Don't count self
         weights /= np.sum(weights, axis=1, keepdims=True);
 
         neighborhood_prediction = np.dot(weights, sig_score_matrix);
 
 
         ##Neighborhood dissimilarity score = |actual - predicted|
-        dissimilarity = np.abs(sig_score_matrix - neighborhood_prediction);
+        dissimilarity = np.abs(sig_score_matrix[ii_sub,:] - neighborhood_prediction);
         med_dissimilarity = np.median(dissimilarity, axis=0);
 
         NUM_REPLICATES = 10000;
-        ordered_sig_vector = np.arange(N_SAMPLES).reshape(N_SAMPLES,1);
-        random_sig_values = np.repeat(ordered_sig_vector, NUM_REPLICATES, axis=1)
-        for j in xrange(random_sig_values.shape[1]):
-            np.random.shuffle(random_sig_values[:,j]);
+
+        #random_sig_values of a given size is cached in this module
+        random_sig_values = get_bg_dist(N_SAMPLES, NUM_REPLICATES);
 
         random_predictions = np.dot(weights, random_sig_values);
-        random_scores = np.median(np.abs(ordered_sig_vector - random_predictions), axis=0);
+        random_scores = np.median(np.abs(random_sig_values[ii_sub,:] - random_predictions), axis=0);
 
         mu = np.mean(random_scores);
         sigma = np.std(random_scores);
