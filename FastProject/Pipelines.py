@@ -123,6 +123,7 @@ def FullOutput(options, args):
     pdata.weights = 1-fn_prob;
 
     sample_passes, sample_scores = Transforms.quality_check(params);
+    FileIO.write_qc_file(os.path.join(dir_name, "QC_Report.html"), sample_passes, sample_scores, edata.col_labels);
 
     if(options.qc):
         pdata = pdata.subset_samples(sample_passes);

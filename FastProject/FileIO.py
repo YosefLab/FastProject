@@ -4,7 +4,11 @@ Created on Sat Jan 03 21:29:39 2015
 
 @author: daved_000
 """
+import os;
 import numpy as np;
+import matplotlib;
+import shutil;
+matplotlib.use("svg")
 import matplotlib.pyplot as plt;
 
 def read_matrix(filename='', delimiter = '\t'):
@@ -112,26 +116,26 @@ def write_signature_scores(filename, sig_scores, col_labels):
     
     write_matrix(filename, data_matrix, row_labels, col_labels);
 
-def write_scatter_plot(filename, x_coords, y_coords, colors=[], xlabel='', ylabel='', title=''):
-    #Add .png extension if filename lacks it
-    if(not filename.endswith(".png")):
-        filename = filename + ".png";
-        
-    plt.ioff();
-    ff = plt.figure();
-    if(len(colors) == len(x_coords)):
-        plt.scatter(x_coords, y_coords, c=colors);
-        plt.colorbar();
-    else:
-        plt.scatter(x_coords, y_coords);
-    
-    plt.xlabel(xlabel);
-    plt.ylabel(ylabel);
-    plt.title(title);
-    
-    plt.savefig(filename, bbox_inches='tight');
-
-    plt.close(ff);
+#def write_scatter_plot(filename, x_coords, y_coords, colors=[], xlabel='', ylabel='', title=''):
+#    #Add .png extension if filename lacks it
+#    if(not filename.endswith(".png")):
+#        filename = filename + ".png";
+#
+#    plt.ioff();
+#    ff = plt.figure();
+#    if(len(colors) == len(x_coords)):
+#        plt.scatter(x_coords, y_coords, c=colors);
+#        plt.colorbar();
+#    else:
+#        plt.scatter(x_coords, y_coords);
+#
+#    plt.xlabel(xlabel);
+#    plt.ylabel(ylabel);
+#    plt.title(title);
+#
+#    plt.savefig(filename, bbox_inches='tight');
+#
+#    plt.close(ff);
 
 def write_projection_file(filename, sample_labels, projections):
     """
@@ -201,4 +205,79 @@ def write_filter_file(filename, filter):
 
     with open(filename, 'w') as fout:
         fout.write('\t'.join(filter) + '\n');
+
+def write_qc_file(filename, sample_passes, sample_scores, sample_labels):
+    """
+    Outputs a file with Quality Report information for the samples
+
+    :param filename: String
+        File to be written
+    :param sample_passes: np.ndarray, dtype=bool, size=NUM_SAMPLES
+        Whether or not the sample passes the quality check
+    :param sample_scores: np.ndarray, dtype=float, size=NUM_SAMPLES
+        A samples quality score
+    :param sample_labels: list(String)
+        Labels for each sample
+    :return: None
+    """
+
+    directory = os.path.dirname(filename);
+
+    #Build SVG
+    svg_file_name = os.path.join(directory, "qc.svg");
+
+    plt.style.use("fivethirtyeight");
+    quantity, boundaries, patches = plt.hist(sample_scores, 30);
+
+    ##Compute MAD
+    med = np.median(sample_scores);
+    mad = np.median(np.abs(sample_scores - med));
+    cutoff = med - 1.6*mad;
+    plt.plot([cutoff, cutoff], [0, np.max(quantity)*1.1], "red");
+
+
+    plt.savefig(svg_file_name);
+
+    #Build html Table
+    ii = np.argsort(sample_scores);
+
+    sample_scores = sample_scores[ii];
+    sample_labels = [sample_labels[i] for i in ii];
+
+    out_table = [];
+    out_table.append("<table>");
+    out_table.append("<tr>");
+    out_table.append("<th>Sample</th>");
+    out_table.append("<th>Score</th>");
+    out_table.append("</tr>");
+
+    for score, label in zip(sample_scores, sample_labels):
+        if(score < cutoff):
+            out_table.append('<tr class="failed_row">');
+        else:
+            out_table.append("<tr>");
+        out_table.append("<td>" + label + "</td>");
+        out_table.append("<td>" + "{:.3f}".format(score) + "</td>");
+        out_table.append("</tr>");
+
+    out_table.append("</table>");
+
+
+    #Output Html File
+    out_html = filename;
+
+    from .HtmlViewer import RESOURCE_DIR;
+    shutil.copy(RESOURCE_DIR + os.sep + "QC_Report.html",out_html);
+
+    with open(out_html, "r") as fin:
+        contents = fin.read();
+
+    contents = contents.replace("<% table %>", "\n".join(out_table));
+
+    with open(out_html, "w") as fout:
+        fout.write(contents);
+
+
+
+
 
