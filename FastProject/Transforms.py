@@ -180,13 +180,16 @@ def quality_check(params):
     int_high = H*high - (H-L)/a * np.log(np.exp(a*(high-x0)) + 1)
     
     int_val = int_high - int_low;
+
+    #Invert integral QC score increases with increasing quality
+    int_val = (H+L)*(high-low) - int_val;
     int_val_med = np.median(int_val);
     
     abs_dev = np.abs(int_val - int_val_med);
     
     MAD = np.median(abs_dev);
     
-    sample_passes = int_val < (int_val_med + 1.6*MAD);
+    sample_passes = int_val > (int_val_med - 1.6*MAD);
 
     sample_score = int_val;
     
