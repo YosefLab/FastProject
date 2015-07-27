@@ -49,6 +49,7 @@ def FullOutput(options, args):
         precomputed_sig_file = options.precomputed;
         if(not os.path.isfile(precomputed_sig_file)):
             raise ValueError("Option Error: precomputed signature file " + precomputed_sig_file + " not found.\nExiting...");
+        _throwaway = Signatures.load_precomputed(options.precomputed, edata.col_labels);
 
     if(not options.signatures and not options.precomputed): #Need one or the other here
         raise ValueError("Option Error: Must specify either a signature file or a pre-computed signature file.\nExiting...");

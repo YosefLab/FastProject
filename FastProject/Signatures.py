@@ -494,7 +494,19 @@ def load_precomputed(filename, sample_labels):
             if(line == ""): continue;
             s_line = line.split("\t");
             sig_name = s_line[0];
-            sig_vals = np.array([float(x) for x in s_line[1:]]);
+            try:
+                sig_vals = np.array([float(x) for x in s_line[1:]]);
+            except ValueError as e:
+                print(e.message);
+                print('Error in precomputed signature:', sig_name);
+                for i,x in enumerate(s_line[1:]):
+                    try:
+                        y = float(x);
+                    except ValueError:
+                        print("Error in column", i);
+                        print("Bad value:", x);
+                raise Exception('Failed to load precomputed signature. Correct file format and re-run.');
+
             sig_vals = sig_vals[translation_indices];
             sig_scores[sig_name] = sig_vals;
 
