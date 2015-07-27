@@ -181,16 +181,17 @@ def generate_projections(data, filter_name = None, subsample_size = None):
     #Normalize projections
     #Mean-center X
     #Mean-center Y
-    #Scale so that E(R^2) = 1
+    #Scale so that the 90th percentile radius = 1
     for p in projections:
         coordinates = projections[p];
         coordinates[:,0] = coordinates[:,0] - np.mean(coordinates[:,0]);
         coordinates[:,1] = coordinates[:,1] - np.mean(coordinates[:,1]);
-        
-        ave_r2 = (coordinates*coordinates).mean(axis=0).sum();
 
-        if(ave_r2 > 0):
-            coordinates = coordinates / np.sqrt(ave_r2);
+        r = np.sum(coordinates**2, axis=1)**(0.5);
+        r90 = np.percentile(r, 90);
+
+        if(r90 > 0):
+            coordinates /= r90;
         
         coordinates = coordinates.T;        
         
