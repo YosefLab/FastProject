@@ -45,8 +45,11 @@ def generate_projections(data, filter_name = None, subsample_size = None):
         Weighted PCA of the original data object
           
     """
-    
-    pbar = ProgressBar(15);
+
+    if(subsample_size):
+        pbar = ProgressBar(15);
+    else:
+        pbar = ProgressBar(8);
     
     projections = dict();
     
@@ -157,7 +160,8 @@ def generate_projections(data, filter_name = None, subsample_size = None):
     proj_weights = data.projection_weights(filter_name);
 
     if(type(data) is not PCData):
-        wpca_data, e_val = perform_weighted_PCA(proj_data, proj_weights, subsample_size);
+        wpca_data, e_val = perform_weighted_PCA(proj_data, proj_weights,
+                                max_components = 200,subsample_size = subsample_size);
         pcdata = PCData(wpca_data, e_val, data);
     else:
         pcdata = data;
@@ -276,7 +280,7 @@ def perform_weighted_PCA(data, weights, max_components=200, subsample_size=None)
         weighted_data_centered = weighted_data_centered[:, ii];
 
     wcov = np.dot(weighted_data_centered, weighted_data_centered.T) / np.dot(weights,weights.T);
-    model = RandomizedPCA(n_components=min(proj_data.shape, max_components));
+    model = RandomizedPCA(n_components=min(proj_data.shape[0], proj_data.shape[1], max_components));
     model.fit(wcov);
     e_vec = model.components_;
 
