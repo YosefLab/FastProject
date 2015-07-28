@@ -4,7 +4,7 @@ Created on Wed Jan 07 15:12:02 2015
 
 @author: David
 """
-from __future__ import print_function;
+from __future__ import division, print_function;
 
 
 from .Utils import em_exp_norm_mixture;
@@ -99,45 +99,63 @@ def create_false_neg_map(data, housekeeping_file=""):
     params = np.zeros((4,gamma.shape[1]));
     x = mu_h.flatten();
     
-    sort_i = np.argsort(x);
-    x_sorted = x[sort_i];
-    
-    initial_guess = [3.5, 1.26, 0, 1];
-    bounds = [(0, np.inf),(0, 2),(0,1), (0,1)];
 
-    if(len(x_sorted) > 30):
-        q_indices = len(x_sorted)//31 * np.arange(31);
-        q_indices = q_indices[1:];
+
+    if(len(x) > 30):
+        q_indices = np.round(len(x)/30 * np.arange(30));
     else:
         q_indices = np.arange(30);
+
+    q_indices = np.append(q_indices, len(x));
     q_indices = q_indices.astype(np.int64);
-    x_quant = x_sorted[q_indices];
-    
-    x_unique, q_i = np.unique(x_quant, return_index=True);
-    q_indices = q_indices[q_i];
+
+    sort_i = np.argsort(x);
+    x_sorted = x[sort_i];
+
+    y = 1-gamma;
+    y_sorted = y[sort_i,:]
+
+    x_quant = np.zeros(len(q_indices)-1);
+    y_quant = np.zeros((len(q_indices)-1, y.shape[1]))
+
+    for i in xrange(len(q_indices)-1):
+        start_i = q_indices[i];
+        end_i = q_indices[i+1];
+
+        x_quant[i] = np.mean(x_sorted[start_i:end_i]);
+        y_quant[i,:] = np.mean(y_sorted[start_i:end_i,:], axis = 0);
 
     from scipy.optimize import minimize;
 
+    #Multiple restarts for better solutions
+    initial_guesses = [[3.5, 1.26, 0, 1],
+                       [3.5, 1, .2, .7],
+                       [5.5, 1, 0, 1],
+                       [5.5, 1, .2, .7],
+                       [1.5, .5, .2, .7],
+                       [5.5, .5, .2, .7],
+                       [3.5, 1.7, .2, .7]];
+
+    bounds = [(0, np.inf),(0, 2),(0,1), (0,1)];
+
     for i in range(gamma.shape[1]):
-        y = 1-gamma[:,i]
-        y_sorted = y[sort_i];
-
-        y_unique = y_sorted[q_indices];
-
-        res = minimize(lambda args: efun(x_unique,y_unique,args), initial_guess, bounds=bounds);
-        param = res.x;         
-        params[:,i] = param;
-    
-    
+        best_eval = 1e99;
+        for initial_guess in initial_guesses:
+            res = minimize(lambda args: efun(x_quant,y_quant[:,i],args), initial_guess, bounds=bounds);
+            if(res.fun < best_eval):
+                best_eval = res.fun;
+                param = res.x;
+                params[:,i] = param;
 
 #        #Uncomment to plot result - useful for debugging
 #        from pylab import figure, scatter, plot, ion;
-#        ion();
-#        figure();
+#        i = 0;
+#        plt.close();
 #        domain = np.linspace(0,10,1000);
-#        scatter(x_unique,1-gamma[sort_i,i][q_indices]);
+#        scatter(x,y[:,i]);
+#        scatter(x_quant, y_quant[:,i], color='red')
 #        plot(domain, func(domain, params[0,i], params[1,i], params[2,i], params[3,i]));
-#        ylabel("P(gene not expressed in " + cells[i] + ")");
+#        ylabel("P(gene not expressed in " + data_hk.col_labels[i] + ")");
 #        xlabel("Gene average in samples expressing gene")
 #        print(params[:,i])
 #        i = i+1;
@@ -230,7 +248,7 @@ def correct_for_fn(prob, mu_h, fit_func, params):
     mu_h : (Num_Genes x 1) numpy.ndarray
         Average expression value of each gene across all samples in which gene is expressed
     fit_func : function (mu_h, params)
-        Function, parameterized by params, that maps each mu_h to a false negative estimate 
+        Function, parameterized by params, that maps each mu_h to a false negative estimate
     params : (4 x Num_Samples) numpy.ndarray 
         Matrix containing parameters for the false-negative fit function (fit_func)
 
