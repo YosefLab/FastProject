@@ -75,7 +75,11 @@ def read_signatures_txt(filename='', match_terms=[]):
     try:    
 
         for i, line in enumerate(ff):
-            row_data = line.strip().split('\t');
+            sline = line.strip();
+            if(sline[0] == '#' or sline[0:2] == '//'):
+                continue;
+
+            row_data = sline.split('\t');
             if(len(row_data) == 2):
                 signed = False;
             elif(len(row_data) == 3):
@@ -202,12 +206,14 @@ def read_signatures_gmt(filename='', match_terms=[]):
         end_of_file = False;
 
         while(not end_of_file):
-            line = ff.readline();
+            line = ff.readline().strip();
+            if(line[0] == '#' or line[0:2] == '//'):
+                continue;
             if(line == ""):
                 end_of_file = True;
                 continue;
 
-            row_data = line.strip().split('\t');
+            row_data = line.split('\t');
             name = row_data[0];
             root_name, sign = sig_parts(name);
 
