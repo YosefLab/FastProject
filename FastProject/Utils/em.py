@@ -11,7 +11,7 @@ from FastProject.Utils import ProgressBar
 #zmat is Genes x Samples
 #cutoff is Genes x 1 - represents the initial cutoff between normal and exponential distributions
 
-def em_exp_norm_mixture(zmat, cutoff, progressbar = True):
+def em_exp_norm_mixture(zmat, cutoff, subsample_size=None, progressbar = True):
     with np.errstate(divide='ignore', invalid='ignore'):  #nans and infs are handled explicitly, don't need warning
         max_iter = 150;
 
@@ -22,7 +22,16 @@ def em_exp_norm_mixture(zmat, cutoff, progressbar = True):
             zmat = zmat.reshape((1, zmat.shape[0]));
             cutoff = np.array([cutoff]);
 
+        #Make sure cutoff is 2d
         cutoff = cutoff.reshape((cutoff.shape[0],1));
+
+        zmat_original = zmat;
+        if(subsample_size):
+            sub_ii = np.random.choice(zmat.shape[1], subsample_size, replace=False);
+            zmat = zmat[:, sub_ii];
+            cutoff = cutoff[sub_ii];
+
+
         cutoffs = np.tile(cutoff, (1,zmat.shape[1]));
         gamma = zmat > cutoffs;
         Pi = np.mean(gamma,axis=1).reshape((zmat.shape[0],1));
@@ -61,6 +70,22 @@ def em_exp_norm_mixture(zmat, cutoff, progressbar = True):
                 if(biggest_change < 0.01):
                     break;
 
+        #Calculate probabilities for everyone now
+        if(subsample_size):
+            zmat = zmat_original;
+
+            p_low = np.exp(-1*zmat/mu_l)/mu_l;
+            p_high = np.exp(-1 * (zmat - mu_h)**2 / (2*st_h**2)) / st_h / np.sqrt(2*np.pi);
+
+            p_low[~np.isfinite(p_low)] = 1e-5;
+            p_low[p_low < 1e-5] = 1e-5;
+
+            p_high[~np.isfinite(p_high)] = 1e-5;
+            p_high[p_high<1e-5]   = 1e-5;
+
+            gamma = (Pi * p_high) / ( ((1-Pi)*p_low) + (Pi*p_high));
+
+
 
             #if niter == 1: print mu_l, mu_h, st_l, st_h
             #print 'Iteration: ', niter, ' L: ', sum(L);
@@ -70,6 +95,7 @@ def em_exp_norm_mixture(zmat, cutoff, progressbar = True):
 
         L = np.sum(gamma * np.log(p_high) + (1-gamma)*np.log(p_low),axis=1);
         st_l=weighted_std(zmat,1-gamma, mu_l);
+
         return (gamma, mu_l, mu_h, st_l, st_h, Pi, L);
 
 #y and gamma same size

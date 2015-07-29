@@ -16,10 +16,10 @@ import os;
 this_directory = os.path.dirname(os.path.abspath(__file__));
 
 
-def probability_of_expression(data):
+def probability_of_expression(data, subsample_size = None):
     cutoffs = np.mean(data,axis=1)/4;  #Empirically found to be good mosy of the time
     
-    (gamma, mu_l, mu_h, st_l, st_h, Pi, L) = em_exp_norm_mixture(data,cutoffs);
+    (gamma, mu_l, mu_h, st_l, st_h, Pi, L) = em_exp_norm_mixture(data,cutoffs,subsample_size);
     
     gamma = make_monotonic(gamma, data);    
     

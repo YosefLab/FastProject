@@ -89,12 +89,18 @@ def FullOutput(options, args):
     else:
         edata = Filters.filter_genes_threshold(edata, 0.2);
 
+        if(options.subsample_size):
+            sub_ii = np.random.choice(edata.shape[1], options.subsample_size, replace=False);
+            fdata = edata.subset_samples(sub_ii);
+        else:
+            fdata = edata;
+
         #HDT Filtering
         print("Removing genes with unimodal distribution across samples using Hartigans DT...");
-        hdt_mask = Filters.filter_genes_hdt(edata, 0.05);
+        hdt_mask = Filters.filter_genes_hdt(fdata, 0.05);
         #Fano Filtering
         print("Applying Fano-Filtering...");
-        fano_mask = Filters.filter_genes_fano(edata, 2);
+        fano_mask = Filters.filter_genes_fano(fdata, 2);
 
         filter_dict.update({
             'None': set(edata.row_labels), #None means 'use all genes'. This set only used when outputting filter
@@ -109,7 +115,7 @@ def FullOutput(options, args):
 
     print()
     print('Fitting expression data to exp/norm mixture model');
-    (pdata, mu_h) = Transforms.probability_of_expression(edata);
+    (pdata, mu_h) = Transforms.probability_of_expression(edata, options.subsample_size);
 
 
     print();
