@@ -9,6 +9,7 @@ from __future__ import division, print_function;
 import numpy as np;
 from sklearn.metrics.pairwise import pairwise_distances;
 from scipy.spatial.distance import cdist;
+from scipy.stats import norm;
 from .Utils import ProgressBar;
 
 #This is used to cache the background distribution used when evaluating
@@ -287,7 +288,7 @@ def filter_sig_list(signatures, match_terms):
     
     return filtered_signatures;
 
-def sigs_vs_projections(projections, sig_scores, NEIGHBORHOOD_SIZE = 0.1):
+def sigs_vs_projections(projections, sig_scores, NEIGHBORHOOD_SIZE = 0.1, subsample_size = None):
     """
     Evaluates the significance of each signature vs each projection
 
@@ -297,105 +298,56 @@ def sigs_vs_projections(projections, sig_scores, NEIGHBORHOOD_SIZE = 0.1):
         Maps signature names to their value at each coordinate
     :return:
     """
-    sp_row_labels = sig_scores.keys();
-    sp_col_labels = projections.keys();
+    sp_row_labels = [];
+    sp_row_labels_factors = [];
 
-    N_SAMPLES = sig_scores[sp_row_labels[0]].shape[0];
-    N_SIGNATURES = len(sp_row_labels);
-    N_PROJECTIONS = len(sp_col_labels);
+    #Remove signatures that are factor signatures
+    for sig_key in sig_scores.keys():
+        if(type(sig_scores[sig_key]) is list): #Then it's a factor
+            sp_row_labels_factors.append(sig_key);
+        elif(type(sig_scores[sig_key]) is np.ndarray):
+            sp_row_labels.append(sig_key);
+        else:
+            raise Exception("Unexpected value in sig_scores dict:", type(sig_scores[sig_key]));
 
-
-    sig_proj_matrix   = np.zeros((N_SIGNATURES,N_PROJECTIONS));
-    sig_proj_matrix_p = np.zeros((N_SIGNATURES,N_PROJECTIONS));
-
-
-    #Build a matrix of all signatures
-    sig_score_matrix = np.zeros((N_SAMPLES, N_SIGNATURES));
-
-    for j, sig in enumerate(sp_row_labels):
-        sig_score_matrix[:,j] = sig_scores[sig];
-
-
-    NUM_RAND_TRIALS_L1 = 500;
-    print();
-    print("Evaluating Signatures against Projections");
-    pp = ProgressBar(N_PROJECTIONS*NUM_RAND_TRIALS_L1);
-    for i, proj in enumerate(sp_col_labels):
-        data_loc = projections[proj];
-
-        distance_matrix = pairwise_distances(data_loc.T, metric='euclidean');
-
-        weights = np.exp(-1 * distance_matrix**2 / NEIGHBORHOOD_SIZE);
-        np.fill_diagonal(weights,0); #Don't count self
-        weights /= np.sum(weights, axis=1, keepdims=True);
-
-        neighborhood_prediction = np.dot(weights, sig_score_matrix);
-
-
-        ##Neighborhood dissimilarity score = |actual - predicted|
-        dissimilarity = np.abs(sig_score_matrix - neighborhood_prediction);
-        med_dissimilarity = np.median(dissimilarity, axis=0);
-
-
-        #Minimum of 100 iterations.  Add in more if needed.
-        random_win_count = np.zeros(N_SIGNATURES);
-
-        for j in range(NUM_RAND_TRIALS_L1):
-            random_sig_values = np.random.permutation(sig_score_matrix); #Shuffles on first index, samples
-
-            neighborhood_prediction = np.dot(weights, random_sig_values);
-
-            med_random_dissimilarity = np.median(
-                np.abs(
-                    random_sig_values - neighborhood_prediction
-                ), axis=0);
-
-            random_win_count[med_random_dissimilarity <= med_dissimilarity] += 1;
-            pp.update();
-
-        p_values = (1 + random_win_count) / (1 + NUM_RAND_TRIALS_L1);
-
-        sig_proj_matrix[:,i] = med_dissimilarity;
-        sig_proj_matrix_p[:,i] = p_values;
-
-
-    pp.complete();
-
-    MAD = np.median(np.abs(sig_score_matrix - np.median(sig_score_matrix, axis=0)), axis=0);
-    MAD[MAD==0] = 1;
-    MAD = MAD.reshape((N_SIGNATURES, 1));
-    sig_proj_matrix /= MAD;
-
-    return (sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p);
-
-def sigs_vs_projections_v2(projections, sig_scores, NEIGHBORHOOD_SIZE = 0.1, subsample_size = None):
-    """
-    Evaluates the significance of each signature vs each projection
-
-    :param projections: dict of (string) => (numpy.ndarray of shape 2xNum_Samples)
-        Maps projections to their spatial coordinates for each sample
-    :param sig_scores: dict of (string) => (numpy.ndarray of shape Num_Samples)
-        Maps signature names to their value at each coordinate
-    :return:
-    """
-    sp_row_labels = sig_scores.keys();
     sp_col_labels = projections.keys();
     sp_col_labels.sort();
 
     N_SAMPLES = sig_scores[sp_row_labels[0]].shape[0];
     N_SIGNATURES = len(sp_row_labels);
+    N_SIGNATURES_FACTORS = len(sp_row_labels_factors);
     N_PROJECTIONS = len(sp_col_labels);
 
 
     sig_proj_matrix   = np.zeros((N_SIGNATURES,N_PROJECTIONS));
     sig_proj_matrix_p = np.zeros((N_SIGNATURES,N_PROJECTIONS));
 
+    factor_sig_proj_matrix   = np.zeros((N_SIGNATURES_FACTORS,N_PROJECTIONS));
+    factor_sig_proj_matrix_p = np.zeros((N_SIGNATURES_FACTORS,N_PROJECTIONS));
 
     #Build a matrix of all signatures
     sig_score_matrix = np.zeros((N_SAMPLES, N_SIGNATURES));
 
     for j, sig in enumerate(sp_row_labels):
         sig_score_matrix[:,j] = sig_scores[sig];
+
+    #Build one-hot matrices for each factor
+    factor_dict = dict();
+    for sig in sp_row_labels_factors:
+        factor_values = sig_scores[sig];
+        factor_levels = list(set(factor_values)); #Makes unique
+        factor_frequencies = np.zeros(len(factor_levels));
+        factor_matrix = np.zeros((N_SAMPLES, 0));
+        for j, fval in enumerate(factor_levels):
+            factor_matrix_row = np.zeros((N_SAMPLES, 1));
+            equal_ii = [i for i,val in enumerate(factor_values) if val == fval];
+            factor_matrix_row[equal_ii] = 1;
+            factor_frequencies[j] = len(equal_ii) / len(factor_values);
+            factor_matrix = np.concatenate((factor_matrix, factor_matrix_row), axis=1);
+        factor_dict[sig] = (factor_levels, factor_frequencies, factor_matrix);
+
+
+
 
     if(subsample_size):
         ii_sub = np.random.choice(N_SAMPLES, subsample_size, replace=False);
@@ -432,17 +384,50 @@ def sigs_vs_projections_v2(projections, sig_scores, NEIGHBORHOOD_SIZE = 0.1, sub
         mu = np.mean(random_scores);
         sigma = np.std(random_scores);
 
-        from scipy.stats import norm;
         p_values = norm.cdf((med_dissimilarity - mu)/sigma);
 
 
         sig_proj_matrix[:,i] = med_dissimilarity;
         sig_proj_matrix_p[:,i] = p_values;
+
+        #Calculate significance for Factor signatures
+        for j,sig in enumerate(sp_row_labels_factors):
+            factor_levels, factor_frequencies, factor_matrix = factor_dict[sig];
+            N_LEVELS = len(factor_levels);
+            factor_predictions = np.dot(weights, factor_matrix);
+
+            if(subsample_size):
+                factor_values = factor_matrix[ii_sub,:];
+
+            dissimilarity = 1 - np.sum(factor_values * factor_predictions, axis=1);
+            med_dissimilarity = np.median(dissimilarity);
+
+            #Now...compute a background?
+            NUM_REPLICATES = 1000;
+            rand_factors = np.random.rand(N_SAMPLES, NUM_REPLICATES);
+            column_assignments = np.random.choice(N_LEVELS, NUM_REPLICATES, p = factor_frequencies);
+            column_assignments = column_assignments.reshape((1,NUM_REPLICATES));
+            rand_factor = (rand_factors > column_assignments).astype('int');
+            rand_med_dissimilarity = np.median(np.dot(weights, rand_factor), axis=0);
+
+            mu = np.mean(rand_med_dissimilarity);
+            sigma = np.std(rand_med_dissimilarity);
+            p_value = norm.cdf((med_dissimilarity - mu)/sigma);
+
+            factor_sig_proj_matrix[j,i] = med_dissimilarity;
+            factor_sig_proj_matrix_p[j,i] = p_value;
+
         pp.update();
+
+    #Concatenate the Factor sig-proj entires back in
+    sig_proj_matrix = np.concatenate((sig_proj_matrix, factor_sig_proj_matrix), axis=0);
+    sig_proj_matrix_p = np.concatenate((sig_proj_matrix_p, factor_sig_proj_matrix_p), axis=0);
+    sp_row_labels = sp_row_labels + sp_row_labels_factors;
 
     sig_proj_matrix_p = p_to_q(sig_proj_matrix_p);
     sig_proj_matrix_p[sig_proj_matrix_p == 0] = 1e-300; #Correct for -inf
     sig_proj_matrix_p = np.log10(sig_proj_matrix_p);
+
 
     pp.complete();
 
@@ -468,8 +453,9 @@ def load_precomputed(filename, sample_labels):
     """
     Reads precomputed signature values form a tab-delimited text file
     First row of the file contains sample labels that the signatures correspond with
-    Each subsequent row contains a signature name in the first column, followed by the signature values,
-        one for each sample label in the file
+    Each subsequent row contains a signature name in the first column,
+         followed by the signature type (either 'numerical' or 'factor')
+         followed by the signature values, one for each sample label in the file
 
     :param filename: signature score file name
     :param sample_labels: labels for which we want the signature scores
@@ -480,7 +466,7 @@ def load_precomputed(filename, sample_labels):
     with open(filename, 'r') as fin:
         line1 = fin.readline().strip().split('\t');
         if(line1[0] == ""): #Remove empty upper-left cell if present
-            line1 = line1[1:];
+            line1 = line1[2:];
 
         #match indices between signatures in file and sample_labels
         #want x such that file_cols[x] == sample labels
@@ -500,18 +486,26 @@ def load_precomputed(filename, sample_labels):
             if(line == ""): continue;
             s_line = line.split("\t");
             sig_name = s_line[0];
-            try:
-                sig_vals = np.array([float(x) for x in s_line[1:]]);
-            except ValueError as e:
-                print(e.message);
-                print('Error in precomputed signature:', sig_name);
-                for i,x in enumerate(s_line[1:]):
-                    try:
-                        y = float(x);
-                    except ValueError:
-                        print("Error in column", i);
-                        print("Bad value:", x);
-                raise Exception('Failed to load precomputed signature. Correct file format and re-run.');
+            sig_type = s_line[1].lower();
+            sig_val_cells = s_line[2:];
+
+            if(sig_type == 'numerical'):
+                try:
+                    sig_vals = np.array([float(x) for x in sig_val_cells]);
+                except ValueError as e:
+                    print(e.message);
+                    print('Error in precomputed signature:', sig_name);
+                    for i,x in enumerate(sig_val_cells):
+                        try:
+                            y = float(x);
+                        except ValueError:
+                            print("Error in column", i);
+                            print("Bad value:", x);
+                    raise Exception('Failed to load precomputed signature. Correct file format and re-run.');
+            elif(sig_type == 'factor'):
+                sig_vals = sig_val_cells;
+            else:
+                raise ValueError('Column 2 of precomputed signature file should specity either "numerica" or "factor"');
 
             sig_vals = sig_vals[translation_indices];
             sig_scores[sig_name] = sig_vals;

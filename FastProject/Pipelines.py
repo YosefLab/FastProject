@@ -1,8 +1,8 @@
 from __future__ import division, print_function;
-import sys;
 import os;
 import numpy as np;
 import time;
+import scipy.stats;
 from FastProject import Filters;
 from FastProject import FileIO;
 from FastProject import Transforms;
@@ -171,13 +171,24 @@ def FullOutput(options, args):
             precomputed_sig_scores = Signatures.load_precomputed(options.precomputed, data.col_labels);
             sig_scores.update(precomputed_sig_scores);
 
+        sig_ranks = dict();
+        for key, val in sig_scores.items():
+            if(type(val) is np.ndarray):
+                sig_ranks[key] = scipy.stats.rankdata(val, method="average");
+            else:
+                sig_ranks[key] = val;
+
         #Prompt to save data
         out_file = 'SignatureScores.txt';
         FileIO.write_signature_scores(os.path.join(model_dir, out_file), sig_scores, data.col_labels);
 
+        out_file = 'SignatureRanks.txt';
+        FileIO.write_signature_scores(os.path.join(model_dir, out_file), sig_ranks, data.col_labels);
+
         #Save data to js model as well
         js_model_dict = {'model': name};
         js_model_dict.update({'signatureScores': sig_scores})
+        js_model_dict.update({'signatureRanks' : sig_ranks})
         js_model_dict.update({'sampleLabels': data.col_labels});
         js_model_dict.update({'projectionData': []})
         js_models.append(js_model_dict);
@@ -205,7 +216,7 @@ def FullOutput(options, args):
             clusters = Projections.define_clusters(projections);
 
             #%% Evaluating signatures against projections
-            sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p = Signatures.sigs_vs_projections_v2(projections, sig_scores,subsample_size=options.subsample_size);
+            sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p = Signatures.sigs_vs_projections(projections, sig_ranks ,subsample_size=options.subsample_size);
 
             #Save Projections
             FileIO.write_projection_file(os.path.join(filter_dir, 'Projections.txt'), data.col_labels, projections);
@@ -252,7 +263,7 @@ def FullOutput(options, args):
             clusters = Projections.define_clusters(projections);
 
             #%% Evaluating signatures against projections
-            sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p = Signatures.sigs_vs_projections_v2(projections, sig_scores, subsample_size = options.subsample_size);
+            sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p = Signatures.sigs_vs_projections(projections, sig_ranks, subsample_size = options.subsample_size);
 
             #Save Projections
             FileIO.write_projection_file(os.path.join(filter_dir, 'Projections-PC.txt'), pcdata.col_labels, projections);

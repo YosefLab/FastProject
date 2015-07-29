@@ -78,8 +78,6 @@ class ExpressionData(np.ndarray):
         sig_scores = pdata.sum(axis=0);
         sig_scores /= np.sum(np.abs(sig_vector)*weights, axis=0); #Only normalize by weights in the signature
 
-        sig_scores = scipy.stats.rankdata(sig_scores, method="average");
-        
         return sig_scores;
         
     def subset_genes(self, indices):
@@ -198,8 +196,6 @@ class ProbabilityData(np.ndarray):
         
         sig_scores = pdata.sum(axis=0);
         sig_scores /= np.sum(np.abs(sig_vector)*weights, axis=0); #Only normalize by weights in the signature
-
-        sig_scores = scipy.stats.rankdata(sig_scores, method="average");
 
         return sig_scores;
         
