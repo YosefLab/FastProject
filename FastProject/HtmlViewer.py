@@ -10,7 +10,7 @@ this_directory = os.path.dirname(os.path.abspath(__file__));
 RESOURCE_DIR = this_directory + os.sep + "Viewer Resources";
 
 def copy_html_files(destination_dir):
-    shutil.copy(RESOURCE_DIR + os.sep + "viewer.html", destination_dir + os.sep + "viewer.html");
+    shutil.copy(RESOURCE_DIR + os.sep + "Results.html", destination_dir + os.sep + "Results.html");
     shutil.copy(RESOURCE_DIR + os.sep + "jquery-2.1.4.min.js", destination_dir + os.sep + "jquery-2.1.4.min.js");
     shutil.copy(RESOURCE_DIR + os.sep + "bootstrap-theme.css", destination_dir + os.sep + "bootstrap-theme.css");
     shutil.copy(RESOURCE_DIR + os.sep + "bootstrap.css", destination_dir + os.sep + "bootstrap.css");
@@ -32,6 +32,13 @@ def toJS(obj):
     :param obj: object to be converted
     :return: string representation of the object in javascript
     """
+
+    try:
+        obj.to_JSON;
+    except AttributeError:
+        pass;
+    else:
+        return obj.to_JSON();
 
     if(type(obj) is str):
         return '"' + obj + '"';

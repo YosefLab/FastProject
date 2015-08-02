@@ -9,8 +9,9 @@ from __future__ import division, print_function;
 import numpy as np;
 from sklearn.metrics.pairwise import pairwise_distances;
 from scipy.spatial.distance import cdist;
-from scipy.stats import norm;
+from scipy.stats import norm, rankdata;
 from .Utils import ProgressBar;
+import HtmlViewer;
 
 #This is used to cache the background distribution used when evaluating
 #Signatures vs projections.  No need to regenerate the random indices
@@ -288,7 +289,7 @@ def filter_sig_list(signatures, match_terms):
     
     return filtered_signatures;
 
-def sigs_vs_projections(projections, sig_scores, NEIGHBORHOOD_SIZE = 0.1, subsample_size = None):
+def sigs_vs_projections(projections, sig_scores_dict, NEIGHBORHOOD_SIZE = 0.1, subsample_size = None):
     """
     Evaluates the significance of each signature vs each projection
 
@@ -302,18 +303,16 @@ def sigs_vs_projections(projections, sig_scores, NEIGHBORHOOD_SIZE = 0.1, subsam
     sp_row_labels_factors = [];
 
     #Remove signatures that are factor signatures
-    for sig_key in sig_scores.keys():
-        if(type(sig_scores[sig_key]) is list): #Then it's a factor
-            sp_row_labels_factors.append(sig_key);
-        elif(type(sig_scores[sig_key]) is np.ndarray):
-            sp_row_labels.append(sig_key);
+    for name, sig_scores in sig_scores_dict.items():
+        if(sig_scores.isFactor):
+            sp_row_labels_factors.append(name);
         else:
-            raise Exception("Unexpected value in sig_scores dict:", type(sig_scores[sig_key]));
+            sp_row_labels.append(name);
 
     sp_col_labels = projections.keys();
     sp_col_labels.sort();
 
-    N_SAMPLES = sig_scores[sp_row_labels[0]].shape[0];
+    N_SAMPLES = len(sig_scores_dict[sp_row_labels[0]].sample_labels);
     N_SIGNATURES = len(sp_row_labels);
     N_SIGNATURES_FACTORS = len(sp_row_labels_factors);
     N_PROJECTIONS = len(sp_col_labels);
@@ -329,12 +328,12 @@ def sigs_vs_projections(projections, sig_scores, NEIGHBORHOOD_SIZE = 0.1, subsam
     sig_score_matrix = np.zeros((N_SAMPLES, N_SIGNATURES));
 
     for j, sig in enumerate(sp_row_labels):
-        sig_score_matrix[:,j] = sig_scores[sig];
+        sig_score_matrix[:,j] = sig_scores_dict[sig].ranks;
 
     #Build one-hot matrices for each factor
     factor_dict = dict();
     for sig in sp_row_labels_factors:
-        factor_values = sig_scores[sig];
+        factor_values = sig_scores_dict[sig].scores;
         factor_levels = list(set(factor_values)); #Makes unique
         factor_frequencies = np.zeros(len(factor_levels));
         factor_matrix = np.zeros((N_SAMPLES, 0));
@@ -398,6 +397,8 @@ def sigs_vs_projections(projections, sig_scores, NEIGHBORHOOD_SIZE = 0.1, subsam
 
             if(subsample_size):
                 factor_values = factor_matrix[ii_sub,:];
+            else:
+                factor_values = factor_matrix;
 
             dissimilarity = 1 - np.sum(factor_values * factor_predictions, axis=1);
             med_dissimilarity = np.median(dissimilarity);
@@ -406,13 +407,17 @@ def sigs_vs_projections(projections, sig_scores, NEIGHBORHOOD_SIZE = 0.1, subsam
             NUM_REPLICATES = 1000;
             rand_factors = np.random.rand(N_SAMPLES, NUM_REPLICATES);
             column_assignments = np.random.choice(N_LEVELS, NUM_REPLICATES, p = factor_frequencies);
+            column_assignments = factor_frequencies[column_assignments];
             column_assignments = column_assignments.reshape((1,NUM_REPLICATES));
-            rand_factor = (rand_factors > column_assignments).astype('int');
-            rand_med_dissimilarity = np.median(np.dot(weights, rand_factor), axis=0);
+            rand_factors = (rand_factors < column_assignments).astype('int');
+            rand_med_dissimilarity = np.median(1-np.dot(weights, rand_factors), axis=0);
 
             mu = np.mean(rand_med_dissimilarity);
             sigma = np.std(rand_med_dissimilarity);
-            p_value = norm.cdf((med_dissimilarity - mu)/sigma);
+            if(sigma == 0):
+                p_value = 1;
+            else:
+                p_value = norm.cdf((med_dissimilarity - mu)/sigma); #Runtime error here possibly?  Divide by zero?
 
             factor_sig_proj_matrix[j,i] = med_dissimilarity;
             factor_sig_proj_matrix_p[j,i] = p_value;
@@ -463,10 +468,20 @@ def load_precomputed(filename, sample_labels):
         Each signature score consists of an array with signatures corresponding, by position,
         with the sample labels in the sample_labels argument.
     """
+
     with open(filename, 'r') as fin:
-        line1 = fin.readline().strip().split('\t');
-        if(line1[0] == ""): #Remove empty upper-left cell if present
+        #Determine column labels to apply
+        line1 = fin.readline().rstrip().split('\t');
+        line2 = fin.readline().rstrip().split('\t');
+
+        if(len(line1) == len(line2)): #First two entries must be empty or column headers
             line1 = line1[2:];
+        elif(len(line1) == len(line2)-2):
+            line1 = line1;
+        else: #Other arrangements signify some unusual formatting
+            raise ValueError("Error in header line of precomputed signature file.\n"
+                 + "First row should contain tab-separated list of samples");
+
 
         #match indices between signatures in file and sample_labels
         #want x such that file_cols[x] == sample labels
@@ -479,6 +494,9 @@ def load_precomputed(filename, sample_labels):
             except ValueError:
                 raise ValueError("Error: Missing value in precomputed signatures for sample " + target_l[i]);
 
+        fin.seek(0);
+        xx = fin.readline();
+
         #Gather signatures
         sig_scores = dict();
         for line in fin:
@@ -490,8 +508,10 @@ def load_precomputed(filename, sample_labels):
             sig_val_cells = s_line[2:];
 
             if(sig_type == 'numerical'):
+                sig_isFactor = False;
                 try:
                     sig_vals = np.array([float(x) for x in sig_val_cells]);
+                    sig_vals = sig_vals[translation_indices];
                 except ValueError as e:
                     print(e.message);
                     print('Error in precomputed signature:', sig_name);
@@ -503,12 +523,12 @@ def load_precomputed(filename, sample_labels):
                             print("Bad value:", x);
                     raise Exception('Failed to load precomputed signature. Correct file format and re-run.');
             elif(sig_type == 'factor'):
-                sig_vals = sig_val_cells;
+                sig_isFactor = True;
+                sig_vals = [sig_val_cells[i] for i in translation_indices];
             else:
                 raise ValueError('Column 2 of precomputed signature file should specity either "numerica" or "factor"');
 
-            sig_vals = sig_vals[translation_indices];
-            sig_scores[sig_name] = sig_vals;
+            sig_scores[sig_name] = SignatureScores(sig_vals, sig_name, sample_labels, sig_isFactor, isPrecomputed=True);
 
         return sig_scores;
 
@@ -556,4 +576,49 @@ class Signature:
                 out[out==-1] = neg_weight*-1;
          
         return out;
-    
+
+class SignatureScores:
+    """
+    Represents a Signature evaluated on a set of samples
+    """
+
+    @property
+    def ranks(self):
+        if(self.isFactor):
+            raise Exception("Factor signature scores have no rank")
+
+        if(self._ranks is None):
+            self._ranks = rankdata(self.scores, method="average");
+
+        return self._ranks;
+
+
+    def __init__(self, scores, name, sample_labels, isFactor, isPrecomputed):
+        self.scores = scores;
+        self.name = name;
+        self.sample_labels = sample_labels;
+        self.isFactor = isFactor;
+        self.isPrecomputed = isPrecomputed;
+        self._ranks = None;
+
+    def to_JSON(self):
+        """
+        Construct a dictionary of certain parameters.
+        Parse that to JSON using HTMLViewer and return
+        :return: String with JSON representation of the SignatureScores instance
+        """
+
+        out = dict({
+            "name": self.name,
+            "scores": self.scores,
+            "isFactor": self.isFactor,
+            "isPrecomputed": self.isPrecomputed,
+        });
+
+        if(not self.isFactor):
+            out.update({"ranks": self.ranks});
+
+        return HtmlViewer.toJS(out);
+
+
+

@@ -58,6 +58,9 @@ def FullOutput(options, args):
     #Wrap data in ExpressionData object
     edata = ExpressionData(edata, genes, cells);
 
+    if(options.subsample_size > edata.shape[1]):
+        options.subsample_size = None;
+
     #Hold on to originals so we don't lose data after filtering in case it's needed later
     original_data = edata.copy();
 
@@ -162,12 +165,12 @@ def FullOutput(options, args):
         print();
         print("Evaluating signature scores on samples...");
 
-        sig_scores = dict();
+        sig_scores_dict = dict();
 
         pbar = ProgressBar(len(sigs));
         for sig in sigs:
             try:
-                sig_scores[sig.name] = data.eval_signature(sig);
+                sig_scores_dict[sig.name] = data.eval_signature(sig);
             except ValueError:  #Only thrown when the signature has no genes in the data
                 pass #Just discard the signature then
             pbar.update();
@@ -175,26 +178,15 @@ def FullOutput(options, args):
 
         if(options.precomputed):
             precomputed_sig_scores = Signatures.load_precomputed(options.precomputed, data.col_labels);
-            sig_scores.update(precomputed_sig_scores);
-
-        sig_ranks = dict();
-        for key, val in sig_scores.items():
-            if(type(val) is np.ndarray):
-                sig_ranks[key] = scipy.stats.rankdata(val, method="average");
-            else:
-                sig_ranks[key] = val;
+            sig_scores_dict.update(precomputed_sig_scores);
 
         #Prompt to save data
         out_file = 'SignatureScores.txt';
-        FileIO.write_signature_scores(os.path.join(model_dir, out_file), sig_scores, data.col_labels);
-
-        out_file = 'SignatureRanks.txt';
-        FileIO.write_signature_scores(os.path.join(model_dir, out_file), sig_ranks, data.col_labels);
+        FileIO.write_signature_scores(os.path.join(model_dir, out_file), sig_scores_dict, data.col_labels);
 
         #Save data to js model as well
         js_model_dict = {'model': name};
-        js_model_dict.update({'signatureScores': sig_scores})
-        js_model_dict.update({'signatureRanks' : sig_ranks})
+        js_model_dict.update({'signatureScores': sig_scores_dict})
         js_model_dict.update({'sampleLabels': data.col_labels});
         js_model_dict.update({'projectionData': []})
         js_models.append(js_model_dict);
@@ -222,7 +214,7 @@ def FullOutput(options, args):
             clusters = Projections.define_clusters(projections);
 
             #%% Evaluating signatures against projections
-            sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p = Signatures.sigs_vs_projections(projections, sig_ranks ,subsample_size=options.subsample_size);
+            sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p = Signatures.sigs_vs_projections(projections, sig_scores_dict ,subsample_size=options.subsample_size);
 
             #Save Projections
             FileIO.write_projection_file(os.path.join(filter_dir, 'Projections.txt'), data.col_labels, projections);
@@ -269,7 +261,7 @@ def FullOutput(options, args):
             clusters = Projections.define_clusters(projections);
 
             #%% Evaluating signatures against projections
-            sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p = Signatures.sigs_vs_projections(projections, sig_ranks, subsample_size = options.subsample_size);
+            sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p = Signatures.sigs_vs_projections(projections, sig_scores_dict, subsample_size = options.subsample_size);
 
             #Save Projections
             FileIO.write_projection_file(os.path.join(filter_dir, 'Projections-PC.txt'), pcdata.col_labels, projections);

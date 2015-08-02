@@ -108,13 +108,20 @@ def read_matrix_nolabels(filename = '', delimiter = '\t'):
     
     return (data, row_labels, col_labels);
     
-def write_signature_scores(filename, sig_scores, col_labels):
-    row_labels = sig_scores.keys();
-    data_matrix = np.zeros((len(row_labels), len(col_labels)));
-    for i, row in enumerate(row_labels):
-        data_matrix[i,:] = sig_scores[row];
-    
-    write_matrix(filename, data_matrix, row_labels, col_labels);
+def write_signature_scores(filename, sig_scores_dict, col_labels):
+    with open(filename, 'w') as ff:
+        #Write column headers to first row
+        ff.write('\t' + '\t'.join(col_labels) + '\n');
+
+        #Iterate over signatures and write scores
+        for name, sig_scores in sig_scores_dict.items():
+            if(sig_scores.isFactor):
+                row = [name] + sig_scores.scores;
+            else:
+                row = [name] + ["{:.5f}".format(num).rstrip('0').rstrip('.') for num in sig_scores.scores];
+
+            ff.write('\t'.join(row) + '\n');
+
 
 #def write_scatter_plot(filename, x_coords, y_coords, colors=[], xlabel='', ylabel='', title=''):
 #    #Add .png extension if filename lacks it
