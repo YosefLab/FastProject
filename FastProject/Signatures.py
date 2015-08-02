@@ -289,7 +289,7 @@ def filter_sig_list(signatures, match_terms):
     
     return filtered_signatures;
 
-def sigs_vs_projections(projections, sig_scores_dict, NEIGHBORHOOD_SIZE = 0.1, subsample_size = None):
+def sigs_vs_projections(projections, sig_scores_dict, NEIGHBORHOOD_SIZE = 0.33, subsample_size = None):
     """
     Evaluates the significance of each signature vs each projection
 
