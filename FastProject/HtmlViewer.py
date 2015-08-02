@@ -8,16 +8,24 @@ import numpy as np;
 
 this_directory = os.path.dirname(os.path.abspath(__file__));
 RESOURCE_DIR = this_directory + os.sep + "Viewer Resources";
+OUTPUT_RESOURCE_DIRECTORY = "_resources";
+
+def get_output_js_handle(destination_dir):
+    fout_js = open(os.path.join(destination_dir,OUTPUT_RESOURCE_DIRECTORY,"FP_data.jsdata"), 'w');
+    return fout_js;
 
 def copy_html_files(destination_dir):
     shutil.copy(RESOURCE_DIR + os.sep + "Results.html", destination_dir + os.sep + "Results.html");
-    shutil.copy(RESOURCE_DIR + os.sep + "jquery-2.1.4.min.js", destination_dir + os.sep + "jquery-2.1.4.min.js");
-    shutil.copy(RESOURCE_DIR + os.sep + "bootstrap-theme.css", destination_dir + os.sep + "bootstrap-theme.css");
-    shutil.copy(RESOURCE_DIR + os.sep + "bootstrap.css", destination_dir + os.sep + "bootstrap.css");
-    shutil.copy(RESOURCE_DIR + os.sep + "bootstrap.min.js", destination_dir + os.sep + "bootstrap.min.js");
-    shutil.copy(RESOURCE_DIR + os.sep + "d3.min.js", destination_dir + os.sep + "d3.min.js");
-    shutil.copy(RESOURCE_DIR + os.sep + "ColorScatter.js", destination_dir + os.sep + "ColorScatter.js");
-    shutil.copy(RESOURCE_DIR + os.sep + "HeatMap.js", destination_dir + os.sep + "HeatMap.js");
+
+    html_sub_directory = os.path.join(destination_dir,OUTPUT_RESOURCE_DIRECTORY)
+
+    shutil.copy(RESOURCE_DIR + os.sep + "jquery-2.1.4.min.js", html_sub_directory + os.sep + "jquery-2.1.4.min.js");
+    shutil.copy(RESOURCE_DIR + os.sep + "bootstrap-theme.css", html_sub_directory + os.sep + "bootstrap-theme.css");
+    shutil.copy(RESOURCE_DIR + os.sep + "bootstrap.css", html_sub_directory + os.sep + "bootstrap.css");
+    shutil.copy(RESOURCE_DIR + os.sep + "bootstrap.min.js", html_sub_directory + os.sep + "bootstrap.min.js");
+    shutil.copy(RESOURCE_DIR + os.sep + "d3.min.js", html_sub_directory + os.sep + "d3.min.js");
+    shutil.copy(RESOURCE_DIR + os.sep + "ColorScatter.js", html_sub_directory + os.sep + "ColorScatter.js");
+    shutil.copy(RESOURCE_DIR + os.sep + "HeatMap.js", html_sub_directory + os.sep + "HeatMap.js");
 
 def toJS_variable(variable_name, obj):
     return "var " + variable_name + " = " + toJS(obj) + ";\n";

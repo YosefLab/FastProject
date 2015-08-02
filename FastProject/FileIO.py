@@ -10,6 +10,26 @@ import matplotlib;
 import shutil;
 matplotlib.use("svg")
 import matplotlib.pyplot as plt;
+from . import HtmlViewer;
+
+def make_dirs(root_directory):
+    """
+    Creates relevant directories that will be needed for output files.
+
+    :param root_directory: Root directory for FastProject output.
+    :return: None
+    """
+
+    try:
+        os.makedirs(root_directory);
+    except OSError:
+        pass;
+
+    html_sub_directory = os.path.join(root_directory, HtmlViewer.OUTPUT_RESOURCE_DIRECTORY);
+    try:
+        os.makedirs(html_sub_directory);
+    except OSError:
+        pass;
 
 def read_matrix(filename='', delimiter = '\t'):
     """Reads data in matrix format from <filename>  Returns data_matrix, 
@@ -213,12 +233,12 @@ def write_filter_file(filename, filter):
     with open(filename, 'w') as fout:
         fout.write('\t'.join(filter) + '\n');
 
-def write_qc_file(filename, sample_passes, sample_scores, sample_labels):
+def write_qc_file(directory, sample_passes, sample_scores, sample_labels):
     """
     Outputs a file with Quality Report information for the samples
 
-    :param filename: String
-        File to be written
+    :param directory: String
+        Output directory to use
     :param sample_passes: np.ndarray, dtype=bool, size=NUM_SAMPLES
         Whether or not the sample passes the quality check
     :param sample_scores: np.ndarray, dtype=float, size=NUM_SAMPLES
@@ -228,10 +248,8 @@ def write_qc_file(filename, sample_passes, sample_scores, sample_labels):
     :return: None
     """
 
-    directory = os.path.dirname(filename);
-
     #Build SVG
-    svg_file_name = os.path.join(directory, "qc.svg");
+    svg_file_name = os.path.join(directory, HtmlViewer.OUTPUT_RESOURCE_DIRECTORY, "qc.svg");
 
     plt.style.use("fivethirtyeight");
     quantity, boundaries, patches = plt.hist(sample_scores, 30);
@@ -271,10 +289,9 @@ def write_qc_file(filename, sample_passes, sample_scores, sample_labels):
 
 
     #Output Html File
-    out_html = filename;
+    out_html = os.path.join(directory,"QC_Report.html");
 
-    from .HtmlViewer import RESOURCE_DIR;
-    shutil.copy(RESOURCE_DIR + os.sep + "QC_Report.html",out_html);
+    shutil.copy(HtmlViewer.RESOURCE_DIR + os.sep + "QC_Report.html",out_html);
 
     with open(out_html, "r") as fin:
         contents = fin.read();

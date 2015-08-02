@@ -80,8 +80,7 @@ def FullOutput(options, args):
         else:
             dir_name = default_dir_name;
 
-    if(not os.path.isdir(dir_name)):
-        os.makedirs(dir_name);
+    FileIO.make_dirs(dir_name);
 
     #Filtering
     filter_dict = {};
@@ -133,7 +132,7 @@ def FullOutput(options, args):
     pdata.weights = 1-fn_prob;
 
     sample_passes, sample_scores = Transforms.quality_check(params);
-    FileIO.write_qc_file(os.path.join(dir_name, "QC_Report.html"), sample_passes, sample_scores, edata.col_labels);
+    FileIO.write_qc_file(dir_name, sample_passes, sample_scores, edata.col_labels);
 
     if(options.qc):
         pdata = pdata.subset_samples(sample_passes);
@@ -148,7 +147,7 @@ def FullOutput(options, args):
     model_names = ['Expression', 'Probability'];
     model_data = [edata, pdata];
 
-    fout_js = open(dir_name + os.sep + "FP_data.jsdata", 'w');
+    fout_js = HtmlViewer.get_output_js_handle(dir_name);
     js_models = [];
 
     for name, data in zip(model_names, model_data):
