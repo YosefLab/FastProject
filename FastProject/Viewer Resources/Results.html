@@ -240,13 +240,17 @@
 
                 var proj = data.Projections[proj_key];
                 var sig = data.SigScores[sig_key];
+                var sig_scores;
+
+                if(sig.isFactor) { sig_scores = sig.scores;}
+                else { sig_scores = sig.ranks;}
 
                 var xcoords = proj[0];
                 var ycoords = proj[1];
                 //Zip up the data into a new points object
                 for(i = 0; i<xcoords.length; i++)
                 {
-                    points.push([xcoords[i], ycoords[i], sig[i]]);
+                    points.push([xcoords[i], ycoords[i], sig_scores[i]]);
                 }
             }
             else{
@@ -254,7 +258,7 @@
                 $('#plot_title_div').children().eq(1).text("");
             }
 
-            global_scatter.setData(points);
+            global_scatter.setData(points, sig.isFactor);
         }
 
         function drawHeat(){

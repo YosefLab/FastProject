@@ -73,18 +73,30 @@ function ColorScatter(parent)
     this.last_event = -1;
 }
 
-ColorScatter.prototype.setData = function(points)
+ColorScatter.prototype.setData = function(points, isFactor)
 {
     this.points = points;
-
     cvals = points.map(function(e){return e[2];}); //extract 3rd column
-    low = d3.min(cvals);
-    high = d3.max(cvals);
-    mid = (low+high)/2;
 
-    this.colorScale = d3.scale.linear()
-        .domain([low, mid, high])
-        .range(["blue", "green", "red"]);
+    if(isFactor)
+    {
+        //Find unique values
+        unique = d3.set(cvals).values();
+        if(unique.length <= 10) { this.colorScale = d3.scale.category10();}
+        else { this.colorScale = d3.scale.category20();}
+
+        this.colorScale.domain(unique);
+    }
+    else
+    {
+        low = d3.min(cvals);
+        high = d3.max(cvals);
+        mid = (low+high)/2;
+
+        this.colorScale = d3.scale.linear()
+            .domain([low, mid, high])
+            .range(["blue", "green", "red"]);
+    }
 
     this.redraw(true)();
 };
