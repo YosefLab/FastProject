@@ -42,12 +42,18 @@ function ColorScatter(parent)
         .domain([0,.5,1])
         .range(["blue", "green", "red"]);
 
+    this.tip = d3.tip()
+        .attr('class', 'd3-tip')
+        .offset([-10, 0])
+        .html(function(d){ return d[2]; });
+
     this.svg = d3.select(parent).append("svg")
         .attr("width", self.width + self.margin.left + self.margin.right)
         .attr("height", self.height + self.margin.top + self.margin.bottom)
         .append("g")
         .attr("transform", "translate(" + self.margin.left + "," + self.margin.top + ")")
-        .call(self.zoom);
+        .call(self.zoom)
+        .call(self.tip);
 
     this.svg.append("rect")
         .attr("width", self.width)
@@ -153,8 +159,8 @@ ColorScatter.prototype.redraw = function(performTransition) {
     circles.enter().append("circle").attr("r",4.5);
     circles.style("fill", function(d){return self.colorScale(d[2]);})
         .on("click", function(d,i){self.setSelected(i)})
-        .on("mouseover", function(d,i){self.setHovered(i);})
-        .on("mouseout", function(d,i){self.setHovered(-1);})
+        .on("mouseover", function(d,i){self.tip.show(d,i); self.setHovered(i);})
+        .on("mouseout", function(d,i){self.tip.hide(d,i); self.setHovered(-1);})
         .classed("point-selected", function(d, i){return i == self.selected});
 
     if(performTransition !== undefined && performTransition == true)
