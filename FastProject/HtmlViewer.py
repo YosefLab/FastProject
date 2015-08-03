@@ -27,6 +27,7 @@ def copy_html_files(destination_dir):
     shutil.copy(RESOURCE_DIR + os.sep + "d3tip.js", html_sub_directory + os.sep + "d3tip.js"); #Extension For tooltips
     shutil.copy(RESOURCE_DIR + os.sep + "ColorScatter.js", html_sub_directory + os.sep + "ColorScatter.js");
     shutil.copy(RESOURCE_DIR + os.sep + "HeatMap.js", html_sub_directory + os.sep + "HeatMap.js");
+    shutil.copy(RESOURCE_DIR + os.sep + "Clustered_HeatMap.js", html_sub_directory + os.sep + "Clustered_HeatMap.js");
 
 def toJS_variable(variable_name, obj):
     return "var " + variable_name + " = " + toJS(obj) + ";\n";

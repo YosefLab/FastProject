@@ -7,7 +7,7 @@
     <script type="text/javascript" src="_resources/d3.min.js"></script>
     <script type="text/javascript" src="_resources/FP_data.jsdata"></script>
     <script type="text/javascript" src="_resources/ColorScatter.js"></script>
-    <script type="text/javascript" src="_resources/HeatMap.js"></script>
+    <script type="text/javascript" src="_resources/Clustered_HeatMap.js"></script>
     <script type="text/javascript" src="_resources/d3tip.js"></script>
 
     <!-- Bootstrap Stuff -->
@@ -64,12 +64,7 @@
             
             //Define cluster dropdown's change function
             $('#cluster_select').change(function(){
-                var data = getDataContext();
-                var j = global_status.plotted_projection;
-                var proj_key = data.ProjectionKeys[j];
-                var choice = $(this).val();
-                var assignments = data.Clusters[proj_key][choice];
-                global_heatmap.cluster_columns(assignments);
+                drawHeat();
             });
 
             //Sort the data initially by PC 1,2
@@ -94,7 +89,23 @@
             $('#sig_filt_input').change();
             sortByColumn();
             drawChart();
+            populateClusterDropdown();
             drawHeat();
+        }
+
+        function populateClusterDropdown()
+        {
+            var j = global_status.plotted_projection;
+            var data = getDataContext();
+            var proj_key = data.ProjectionKeys[j];
+            var clusters = data.Clusters[proj_key];
+            var clust_dropdown = $('#cluster_select');
+            var old_i = clust_dropdown.prop('selectedIndex');
+            if(old_i == -1){old_i = 0;}
+            clust_dropdown.empty();
+            $.each(clusters, function(name, value){
+                clust_dropdown.append($("<option />").val(name).text(name));
+            });
         }
 
         function getDataContext()
@@ -294,7 +305,12 @@
                         return FP_ExpressionMatrix.gene_labels[e];
                     });
 
-                    global_heatmap.setData(dataMat, false);
+                    var j = global_status.plotted_projection;
+                    var proj_key = data.ProjectionKeys[j];
+                    var choice = $('#cluster_select').val();
+                    var assignments = data.Clusters[proj_key][choice];
+
+                    global_heatmap.setData(dataMat, assignments);
                     global_heatmap.col_labels = FP_ExpressionMatrix.sample_labels;
                     global_heatmap.row_labels = gene_labels;
                 }
@@ -306,20 +322,6 @@
                 }
 
             }
-
-
-            var j = global_status.plotted_projection;
-            var proj_key = data.ProjectionKeys[j];
-            var clusters = data.Clusters[proj_key];
-            var clust_dropdown = $('#cluster_select');
-            var old_i = clust_dropdown.prop('selectedIndex');
-            if(old_i == -1){old_i = 0;}
-            clust_dropdown.empty();
-            $.each(clusters, function(name, value){
-                clust_dropdown.append($("<option />").val(name).text(name));
-            });
-
-            clust_dropdown.prop('selectedIndex', old_i).change();
 
         }
 
