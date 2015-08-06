@@ -3,6 +3,7 @@ import os;
 import numpy as np;
 import time;
 import scipy.stats;
+import logging;
 from FastProject import Filters;
 from FastProject import FileIO;
 from FastProject import Transforms;
@@ -12,7 +13,18 @@ from FastProject.DataTypes import ExpressionData, ProbabilityData, PCData;
 from FastProject.Utils import ProgressBar;
 from FastProject import HtmlViewer;
 
+def FP_Output(*args):
+    """
+    Used to have finer control over outputs.
+    """
+    print(*args);
+    logmessage = ' '.join([str(a) for a in args]);
+    logging.info(logmessage);
+
 def FullOutput(options, args):
+
+    logging.basicConfig(format='%(asctime)s %(message)s', filename="FP.log", level=logging.INFO);
+    logging.info("Running FastProject Analysis");
 
     start_time = time.time();
     if(options.housekeeping):
@@ -35,7 +47,7 @@ def FullOutput(options, args):
 
     (edata, genes, cells) = FileIO.read_matrix(filename);
 
-    print("Imported ", edata.shape[0], " genes across ", edata.shape[1], " samples");
+    FP_Output("Imported ", edata.shape[0], " genes across ", edata.shape[1], " samples");
 
     #%% Load Signature file
     sigs = [];
@@ -82,6 +94,7 @@ def FullOutput(options, args):
 
     FileIO.make_dirs(dir_name);
 
+
     #Filtering
     filter_dict = {};
     if(options.nofilter):
@@ -98,10 +111,10 @@ def FullOutput(options, args):
             fdata = edata;
 
         #HDT Filtering
-        print("Removing genes with unimodal distribution across samples using Hartigans DT...");
+        FP_Output("Removing genes with unimodal distribution across samples using Hartigans DT...");
         hdt_mask = Filters.filter_genes_hdt(fdata, 0.05);
         #Fano Filtering
-        print("Applying Fano-Filtering...");
+        FP_Output("Applying Fano-Filtering...");
         fano_mask = Filters.filter_genes_fano(fdata, 2);
 
         filter_dict.update({
@@ -115,13 +128,11 @@ def FullOutput(options, args):
     #%% Probability transform
     housekeeping_filename = get_housekeeping_file();
 
-    print()
-    print('Fitting expression data to exp/norm mixture model');
+    FP_Output('\nFitting expression data to exp/norm mixture model');
     (pdata, mu_h) = Transforms.probability_of_expression(edata, options.subsample_size);
 
 
-    print();
-    print('Correcting for false-negatives using housekeeping gene levels');
+    FP_Output('\nCorrecting for false-negatives using housekeeping gene levels');
     (fit_func, params) = Transforms.create_false_neg_map(original_data, housekeeping_filename);
     (pdata, fn_prob) = Transforms.correct_for_fn(pdata, mu_h, fit_func, params);
     fn_prob[edata > 0] = 0;
@@ -157,12 +168,10 @@ def FullOutput(options, args):
         except OSError:
             pass;
 
-        print();
-        print('Model: ', name)
+        FP_Output('\nModel: ', name)
 
         #Evaluate Signatures
-        print();
-        print("Evaluating signature scores on samples...");
+        FP_Output("\nEvaluating signature scores on samples...");
 
         sig_scores_dict = dict();
 
@@ -200,16 +209,14 @@ def FullOutput(options, args):
             except OSError:
                 pass;
 
-            print();
-            print("Filter-Level:", filter_name);
+            FP_Output("\nFilter-Level:", filter_name);
             #%% Dimensional Reduction procedures
-            print();
-            print("Projecting data into 2 dimensions");
+            FP_Output("\nProjecting data into 2 dimensions");
 
             projections, pcdata = Projections.generate_projections(data, filter_name, options.subsample_size);
 
             #Evaluate Clusters
-            print("Evaluating Clusters...");
+            FP_Output("Evaluating Clusters...");
             clusters = Projections.define_clusters(projections);
 
             #%% Evaluating signatures against projections
@@ -250,13 +257,12 @@ def FullOutput(options, args):
                 pcdata = Projections.filter_PCA(pcdata, variance_proportion=0.25, min_components = 30);
 
             #%% Dimensional Reduction procedures
-            print();
-            print("Projecting data into 2 dimensions");
+            FP_Output("Projecting data into 2 dimensions");
 
             projections, pcdata2 = Projections.generate_projections(pcdata, filter_name, options.subsample_size);
 
             #Evaluate Clusters
-            print("Evaluating Clusters...");
+            FP_Output("Evaluating Clusters...");
             clusters = Projections.define_clusters(projections);
 
             #%% Evaluating signatures against projections
@@ -317,7 +323,6 @@ def FullOutput(options, args):
 
     fout_js.close();
     HtmlViewer.copy_html_files(dir_name);
-    print();
-    print("FastProject Analysis Complete")
+    FP_Output("\nFastProject Analysis Complete")
     elapsed_time = time.time() - start_time;
-    print("Elapsed Time {:.2f} seconds".format(elapsed_time));
+    FP_Output("Elapsed Time {:.2f} seconds".format(elapsed_time));
