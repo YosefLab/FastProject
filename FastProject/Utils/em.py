@@ -29,7 +29,6 @@ def em_exp_norm_mixture(zmat, cutoff, subsample_size=None, progressbar = True):
         if(subsample_size):
             sub_ii = np.random.choice(zmat.shape[1], subsample_size, replace=False);
             zmat = zmat[:, sub_ii];
-            cutoff = cutoff[sub_ii];
 
 
         cutoffs = np.tile(cutoff, (1,zmat.shape[1]));

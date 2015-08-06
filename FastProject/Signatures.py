@@ -209,10 +209,10 @@ def read_signatures_gmt(filename='', match_terms=[]):
 
         while(not end_of_file):
             line = ff.readline().strip();
-            if(line[0] == '#' or line[0:2] == '//'):
-                continue;
             if(line == ""):
                 end_of_file = True;
+                continue;
+            if(line[0] == '#' or line[0:2] == '//'):
                 continue;
 
             row_data = line.split('\t');
