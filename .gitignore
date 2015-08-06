@@ -55,5 +55,9 @@ target/
 
 # Distrubtion
 dist/
+build/
 *.egg-info/
 setuptools*.egg
+
+#Vim swap files
+*.swp
