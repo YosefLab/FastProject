@@ -526,7 +526,7 @@ def load_precomputed(filename, sample_labels):
                 sig_isFactor = True;
                 sig_vals = [sig_val_cells[i] for i in translation_indices];
             else:
-                raise ValueError('Column 2 of precomputed signature file should specity either "numerica" or "factor"');
+                raise ValueError('Column 2 of precomputed signature file should specify either "numerical" or "factor"');
 
             sig_scores[sig_name] = SignatureScores(sig_vals, sig_name, sample_labels, sig_isFactor, isPrecomputed=True);
 
