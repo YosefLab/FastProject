@@ -22,6 +22,7 @@ def FP_Output(*args):
     logging.info(logmessage);
 
 def FullOutput(options, args):
+    np.random.seed(0); #Set seed so outputs are repeatable
 
     #Create directory for all outputs
     if(options.output):
