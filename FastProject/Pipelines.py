@@ -23,7 +23,24 @@ def FP_Output(*args):
 
 def FullOutput(options, args):
 
-    logging.basicConfig(format='%(asctime)s %(message)s', filename="FP.log", level=logging.INFO);
+    #Create directory for all outputs
+    if(options.output):
+        dir_name = options.output;
+    else:
+        default_dir_name = 'FastProject_Output';
+        if(os.path.isdir(default_dir_name)):
+            i = 1;
+            while(True):
+                dir_name = default_dir_name + str(i);
+                if(not os.path.isdir(dir_name)):
+                    break;
+                else:
+                    i = i+1;
+        else:
+            dir_name = default_dir_name;
+
+    FileIO.make_dirs(dir_name);
+    logging.basicConfig(format='%(asctime)s %(message)s', filename=os.path.join(dir_name, 'fastproject.log'), level=logging.INFO);
     logging.info("Running FastProject Analysis");
 
     start_time = time.time();
@@ -75,25 +92,6 @@ def FullOutput(options, args):
 
     #Hold on to originals so we don't lose data after filtering in case it's needed later
     original_data = edata.copy();
-
-    #Create directory for all outputs
-    if(options.output):
-        dir_name = options.output;
-    else:
-        default_dir_name = 'FastProject_Output';
-        if(os.path.isdir(default_dir_name)):
-            i = 1;
-            while(True):
-                dir_name = default_dir_name + str(i);
-                if(not os.path.isdir(dir_name)):
-                    break;
-                else:
-                    i = i+1;
-        else:
-            dir_name = default_dir_name;
-
-    FileIO.make_dirs(dir_name);
-
 
     #Filtering
     filter_dict = {};
