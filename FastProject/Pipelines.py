@@ -91,6 +91,9 @@ def FullOutput(options, args):
     if(options.subsample_size > edata.shape[1]):
         options.subsample_size = None;
 
+    if(edata.shape[1] > 2000):
+        options.num_signatures = 200;
+
     #Hold on to originals so we don't lose data after filtering in case it's needed later
     original_data = edata.copy();
 
@@ -289,6 +292,45 @@ def FullOutput(options, args):
             js_filt_dict.update({'projectionKeys': sp_col_labels});
             js_filt_dict.update({'signatureKeys': sp_row_labels});
             js_filt_dict.update({'clusters': clusters});
+
+    #Filter output signatures
+    for js_model in js_models:
+        signatureScores = js_model["signatureScores"];
+        signatures = signatureScores.keys()
+        signature_significance = np.zeros(len(signatures));
+        for js_filt in js_models['projectionData']:
+            sp = js_filt['sigProjMatrix_p'].min(axis=1);
+            signature_significance = np.min(np.vstack((sp, signature_significance)), axis=0);
+
+        #Determine a threshold of significance
+        if(options.num_signatures):
+            aa = np.argsort(signature_significance);
+            threshold = signature_significance[aa[options.num_signatures]];
+        else:
+            threshold = -1.301;
+
+        #Iterate back through and prune signatures worse than threshold
+        #Create a dictionary of sigs to keep
+        keep_sig = dict();
+        for i,sig in enumerate(signatures):
+            if(signature_significance[i] > threshold):
+                keep_sig.update({sig: False});
+            else:
+                keep_sig.update({sig: True});
+
+        #Remove values in the model's signatureScores dict
+        for sig in signatures:
+            if(keep_sig[sig] == False):
+                signatureScores.pop(sig);
+
+        #Remove values in each filters sigProjMatrix and the sigProjMatrix keys
+        for js_filt in js_models['projectionData']:
+            js_filt_keep_sig = [keep_sig[sig] for sig in js_filt["signatureKeys"]];
+            js_filt["sigProjMatrix"] = js_filt["sigProjMatrix"][js_filt_keep_sig,:];
+            js_filt["sigProjMatrix_p"] = js_filt["sigProjMatrix_p"][js_filt_keep_sig,:];
+            js_filt["signatureKeys"] = [x for x in js_filt["signatureKeys"] if keep_sig[x]];
+
+
 
 
     fout_js.write(HtmlViewer.toJS_variable("FP_Models", js_models));
