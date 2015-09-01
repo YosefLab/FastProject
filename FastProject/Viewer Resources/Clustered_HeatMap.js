@@ -4,10 +4,10 @@
 
 function HeatMap(parent)
 {
-    self = this;
+    var self = this;
     this.h = 1;  //height of row
 
-    this.width = 600;
+    this.width = 500;
     this.height = 450;
 
     this.svg = d3.select(parent).append("svg")
@@ -74,6 +74,8 @@ function HeatMap(parent)
     this.row_labels = [];
     this.col_labels = [];
 
+    this.cluster_assignments = []; //Used in hoverCol.  Denotes which cluster each sample is assigned to
+
 }
 
 
@@ -82,6 +84,7 @@ HeatMap.prototype.setData = function(data, cluster_assignments)
     //Data is an array of rows, each containing an array of values for each col
     //cluster_assignments is an array of numbers indicating assignment
 
+    this.cluster_assignments = cluster_assignments;
     var dataT = d3.transpose(data);
     var TOTAL_SAMPLES = cluster_assignments.length;
     var clusters = {};
@@ -119,10 +122,10 @@ HeatMap.prototype.setData = function(data, cluster_assignments)
     for (var j = 0; j < cluster_list.length; j++)
     {
         var clust = cluster_list[j];
-        var width = clust['weight'] / TOTAL_SAMPLES * self.width;
+        var width = clust['weight'] / TOTAL_SAMPLES * this.width;
         
         clust.data = clust.data.map(function(e,i){
-            return {"value":e, "x":x_offset, "width":width};
+            return {"value":e, "x":x_offset, "width":width, "index": clust['index']};
         });
 
         x_offset = x_offset + width;
@@ -156,30 +159,23 @@ HeatMap.prototype.setSelected = function(selected_index, event_id)
 
 HeatMap.prototype.setHovered = function(hovered_indices, event_id)
 {
-    if(event_id === undefined){
-        event_id = Math.random();
-    }
 
-    //test for single index, and wrap in list
-    if(typeof(hovered_indices) == "number"){hovered_indices = [hovered_indices];}
+};
 
-    //Needed to prevent infinite loops with linked hover and select events
-    if(this.last_event != event_id) {
-        this.last_event = event_id;
-        this.hover_cols = hovered_indices;
-        this.grid.selectAll("g").selectAll("rect")
-            .classed("heatmap-hover", function (d, i) {
-                return hovered_indices.indexOf(i) > -1;
-            });
-        this.hovered_links.forEach(function (e, i) {
-            e.setHovered(hovered_indices, event_id);
-        });
-        if(this.hover_cols.length == 1)
-        {
-            var ii = this.hover_cols[0];
-            this.labels.select(".col_label").text(this.col_labels[ii]);
+HeatMap.prototype.setHoveredCol = function(hovered_col_index)
+{
+    hovered_indices = [];
+    if(hovered_col_index !== undefined) {
+        for (var i = 0; i < this.cluster_assignments.length; i++) {
+            if (this.cluster_assignments[i] == hovered_col_index) {
+                hovered_indices.push(i);
+            }
         }
     }
+
+    this.hovered_links.forEach(function (e, i) {
+        e.setHovered(hovered_indices);
+    });
 };
 
 HeatMap.prototype.setHoveredRow = function(hovered_row_indices)
@@ -239,11 +235,11 @@ HeatMap.prototype.redraw = function() {
             });
 
         heatmapRects.enter().append("rect")
-            .on("mouseover", function(d,i){ self.setHoveredRow(i); self.setHoveredIndicator(d.value);});
+            .on("mouseover", function(d,i){ self.setHoveredRow(i); self.setHoveredCol(d.index); self.setHoveredIndicator(d.value);});
         //    .on("mouseover", function(d){self.setHovered(d.col); self.setHoveredRow(d.row); self.setHoveredIndicator(d.value);});
 
         self.svg
-            .on("mouseleave", function(d){ self.setHoveredRow(-1); self.setHoveredIndicator();});
+            .on("mouseleave", function(d){ self.setHoveredRow(-1); self.setHoveredCol(); self.setHoveredIndicator();});
         //    .on("mouseleave", function(d){self.setHovered(-1); self.setHoveredRow(-1); self.setHoveredIndicator();});
 
         heatmapRects.style('fill',function(d) {
