@@ -10,10 +10,9 @@ from sklearn.decomposition import FastICA
 from sklearn.decomposition import KernelPCA
 from sklearn.manifold import TSNE;
 from sklearn.manifold import Isomap
-from sklearn.manifold import LocallyLinearEmbedding
 from sklearn.manifold import MDS
 from sklearn.manifold import SpectralEmbedding
-from sklearn.cluster import MiniBatchKMeans
+from sklearn.cluster import MiniBatchKMeans, DBSCAN
 from scipy.spatial.distance import cdist;
 import scipy.stats;
 
@@ -366,7 +365,7 @@ def define_clusters(projections):
         (dict of string (cluster technique) => np.ndarray of size N_Samples (cluster assignments))
     """
 
-    pbar = ProgressBar(4*len(projections));
+    pbar = ProgressBar(5*len(projections));
 
     out_clusters = dict();
 
@@ -383,6 +382,10 @@ def define_clusters(projections):
             proj_clusters.update({clust_name: clust_assignments});
             pbar.update();
 
+        dbscan = DBSCAN();
+        clust_assignments = dbscan.fit_predict(proj_data.T);
+        proj_clusters.update(({"DBSCAN": clust_assignments}));
+        pbar.update();
 
         out_clusters.update({key: proj_clusters});
 
