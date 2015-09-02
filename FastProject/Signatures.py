@@ -464,9 +464,7 @@ def load_precomputed(filename, sample_labels):
 
     :param filename: signature score file name
     :param sample_labels: labels for which we want the signature scores
-    :return: a dictionary mapping signature names (string) to signature scores (np.ndarray)
-        Each signature score consists of an array with signatures corresponding, by position,
-        with the sample labels in the sample_labels argument.
+    :return: Dictionary of Signature Name (String) -> Signature (SignatureScores)
     """
 
     with open(filename, 'r') as fin:
@@ -504,7 +502,7 @@ def load_precomputed(filename, sample_labels):
             if(line == ""): continue;
             s_line = line.split("\t");
             sig_name = s_line[0];
-            sig_type = s_line[1].lower();
+            sig_type = s_line[1].strip().lower();
             sig_val_cells = s_line[2:];
 
             if(sig_type == 'numerical'):
