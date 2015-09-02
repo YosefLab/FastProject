@@ -106,8 +106,7 @@
 
         function updateTable()
         {
-            var data = getDataContext();
-            createTableFromData(data.SigProjMatrix_p, data.ProjectionKeys, data.SignatureKeys);
+            createTableFromData();
             drawChart();
             populateClusterDropdown();
             drawHeat();
@@ -189,8 +188,7 @@
         function sortByColumn(col_num)
         {
             global_status.sorted_column = col_num;
-            var data = getDataContext();
-            createTableFromData(data.SigProjMatrix_p, data.ProjectionKeys, data.SignatureKeys);
+            createTableFromData();
         }
 
         function tableClickFunction(row_num, col_num)
@@ -291,8 +289,12 @@
 
         }
 
-        function createTableFromData(data_matrix, col_labels, row_labels)
+        function createTableFromData()
         {
+            var data = getDataContext();
+            data_matrix = data.SigProjMatrix_p;
+            col_labels = data.ProjectionKeys;
+            row_labels = data.SignatureKeys;
 
             var colorScale = d3.scale.linear()
                 .domain([0,-1,-3])
@@ -322,7 +324,13 @@
             var sort_col = global_status.sorted_column;
             if(sort_col > -1){
                 sortFun = function(a,b){
-                    return a[1][sort_col].val - b[1][sort_col].val;
+                    a_precomp = data.SigScores[a[0]].isPrecomputed;
+                    b_precomp = data.SigScores[b[0]].isPrecomputed;
+                    if(a_precomp && b_precomp || !a_precomp && !b_precomp){
+                        return a[1][sort_col].val - b[1][sort_col].val;
+                    }
+                    else if (a_precomp) { return -1;}
+                    else {return 1;}
                 };
                 formatted_data_w_row_labels.sort(sortFun);
             }
