@@ -190,6 +190,9 @@ def FullOutput(options, args):
             precomputed_sig_scores = Signatures.load_precomputed(options.precomputed, data.col_labels);
             sig_scores_dict.update(precomputed_sig_scores);
 
+        #Adds in quality score as a pre-computed signature
+        sig_scores_dict["FP_Quality"] = Signatures.SignatureScores(sample_scores,"FP_Quality",data.col_labels,isFactor=False, isPrecomputed=True);
+
         #Prompt to save data
         out_file = 'SignatureScores.txt';
         FileIO.write_signature_scores(os.path.join(model_dir, out_file), sig_scores_dict, data.col_labels);
