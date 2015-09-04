@@ -20,7 +20,8 @@ def parseFPArgs():
                       help="Loads precomputed signature scores from FILE.");
 
     parser.add_option("-o", "--output", metavar="DIRECTORY", help="Name of output directory.  Otherwise, output directory is auto-generated");
-    parser.add_option("--nofilter",   action="store_true", default=False, help="Perform filtering on genes.");
+    parser.add_option("--nofilter",   action="store_true", default=False, help="Project using all genes.");
+    parser.add_option("--nomodel",   action="store_true", default=False, help="No estimation of expression probability or false negative probability");
     parser.add_option("--pca_filter", action="store_true", default=False, help="Filters PC principal components that correlate with a calculated QC metric for each sample");
     parser.add_option("--qc",         action="store_true", default=False, help="Performs a quality check on samples, filtering samples that do not pass");
     parser.add_option("--subsample_size", type="int", metavar="N", default=1000, help="Number of samples to use when sub_sampling. Default is 1000");
