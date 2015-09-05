@@ -20,7 +20,6 @@ def copy_html_files(destination_dir):
     html_sub_directory = os.path.join(destination_dir,OUTPUT_RESOURCE_DIRECTORY)
 
     shutil.copy(RESOURCE_DIR + os.sep + "jquery-2.1.4.min.js", html_sub_directory + os.sep + "jquery-2.1.4.min.js");
-    shutil.copy(RESOURCE_DIR + os.sep + "bootstrap-theme.css", html_sub_directory + os.sep + "bootstrap-theme.css");
     shutil.copy(RESOURCE_DIR + os.sep + "bootstrap.css", html_sub_directory + os.sep + "bootstrap.css");
     shutil.copy(RESOURCE_DIR + os.sep + "bootstrap.min.js", html_sub_directory + os.sep + "bootstrap.min.js");
     shutil.copy(RESOURCE_DIR + os.sep + "d3.min.js", html_sub_directory + os.sep + "d3.min.js");

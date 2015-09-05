@@ -12,7 +12,6 @@
 
     <!-- Bootstrap Stuff -->
     <link rel="stylesheet" href="_resources/bootstrap.css">
-    <link rel="stylesheet" href="_resources/bootstrap-theme.css">
     <script src="_resources/bootstrap.min.js"></script>
 
     <script type="text/javascript">
@@ -22,6 +21,7 @@
         global_status.plotted_signature = -1;
         global_status.sorted_column = -1;
         global_status.signature_filter = "";
+        global_status.scatterColorOption = "rank";
 
         var global_options = {};
         var global_scatter = {};
@@ -89,6 +89,13 @@
             //Define cluster dropdown's change function
             $('#cluster_select').change(function(){
                 drawHeat();
+            });
+
+            //Define color option (for scatter) change function
+            $('input[name=scatterColorButtons]').change(function(){
+                var val = $('input[name=scatterColorButtons]:checked').val();
+                global_status.scatterColorOption = val;
+                drawChart();
             });
 
             //Sort the data initially by PC 1,2
@@ -219,7 +226,10 @@
                 var sig_scores;
 
                 if(sig.isFactor) { sig_scores = sig.scores;}
-                else { sig_scores = sig.ranks;}
+                else { 
+                    if(global_status.scatterColorOption == "rank") {sig_scores = sig.ranks;}
+                    if(global_status.scatterColorOption == "value") {sig_scores = sig.scores;}
+                }
 
                 var xcoords = proj[0];
                 var ycoords = proj[1];
@@ -291,6 +301,10 @@
 
         function createTableFromData()
         {
+            //Detach filter sig box for later
+            var filterSig = $('#sig_filt_input');
+            filterSig.detach();
+
             var data = getDataContext();
             data_matrix = data.SigProjMatrix_p;
             col_labels = data.ProjectionKeys;
@@ -361,8 +375,6 @@
                 .on("click", function(d){createSigModal(d)});
                 
             //Create filter signature box
-            var filterSig = $('#sig_filt_input');
-            filterSig.detach();
             var th = $('#table_div').children('table').children('thead').children('tr').children('th:first-child');
             $(th).append(filterSig);
             filterSig.trigger('input');
@@ -500,7 +512,7 @@
             padding-top: 20px;
             overflow: auto;
             position: absolute;
-            top: 110px;
+            top: 130px;
             bottom: 0px;
         }
 
@@ -537,12 +549,24 @@
             margin-top: 30px;
         }
         
-        #plot_title_div div{
+        #plot_title_div .subtitle, #plot_title_div .title{
             margin: 5px 0;
         }
 
-        #plot_title_div div:not(:first-child){
+        #plot_title_div .subtitle{
             font-size: 13px;
+        }
+
+        #plot_title_div .colorOptions{
+            font-size: 13px;
+        }
+
+        #plot_title_div .colorOptions label{
+            padding: 0 6px;
+        }
+
+        #plot_title_div .colorOptions .btn-group{
+            vertical-align: bottom;
         }
         
         #spacer{
@@ -717,7 +741,7 @@
             </select>
         </span>
         <span>
-        <button class="btn btn-default" onclick=createGeneModal()>
+        <button type="button" class="btn btn-default" onclick=createGeneModal()>
             +Show Genes
         </button>
         </span>
@@ -730,13 +754,26 @@
     </div>
     <div id="spacer"></div>
 </div>
-<div id="plot_title_div" style="float: left">
-    <div></div>
-    <div></div>
-</div>
-<div id="scatter_div"  style="float: left"></div>
-<div id="heatmap_div"  style="float: left">
-    <select id="cluster_select" class="form-control" style="width: 200px; margin-bottom:10px"></select>
+<div style="float: left">
+    <div id="plot_title_div">
+        <div class="title"></div>
+        <div class="subtitle"></div>
+        <div class="colorOptions">
+            Signature Score Colors:
+            <div class="btn-group" data-toggle="buttons">
+                <label class="btn btn-default">
+                    <input type="radio" name="scatterColorButtons" id="valueoption" value="value" autocomplete="off"> Value
+                </label>
+                <label class="btn btn-default active">
+                    <input type="radio" name="scatterColorButtons" id="rankoption" value="rank" autocomplete="off" checked> Rank
+                </label>
+            </div>
+        </div>
+    </div>
+    <div id="scatter_div"></div>
+    <div id="heatmap_div">
+        <select id="cluster_select" class="form-control" style="width: 200px; margin-bottom:10px"></select>
+    </div>
 </div>
 <input id="sig_filt_input" type="text" placeholder="Filter Signatures...">
 </body>
