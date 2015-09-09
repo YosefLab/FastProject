@@ -14,7 +14,10 @@ class ProgressBar:
     
     def __init__(self, max_i):
         self.max_i = max_i;
-        self.i = 0;      
+        self.i = 0;
+
+        if(self.max_i == 0):
+            self.max_i = 1;
         
         sys.stdout.write(self.build_str());
         sys.stdout.flush();
