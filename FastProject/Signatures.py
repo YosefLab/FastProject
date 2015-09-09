@@ -382,6 +382,8 @@ def sigs_vs_projections(projections, sig_scores_dict, NEIGHBORHOOD_SIZE = 0.33, 
 
         mu = np.mean(random_scores);
         sigma = np.std(random_scores);
+        if(sigma == 0):
+            sigma = 1e-3;
 
         p_values = norm.cdf((med_dissimilarity - mu)/sigma);
 
