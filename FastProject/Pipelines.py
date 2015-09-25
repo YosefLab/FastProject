@@ -12,17 +12,10 @@ from FastProject import Projections;
 from FastProject.DataTypes import ExpressionData, ProbabilityData, PCData;
 from FastProject.Utils import ProgressBar;
 from FastProject import HtmlViewer;
+from .Global import options, args, FP_Output;
 
-def FP_Output(*args):
-    """
-    Used to have finer control over outputs.
-    """
-    print(*args);
-    logmessage = ' '.join([str(a) for a in args]);
-    logging.info(logmessage);
 
-def FullOutput(options, args):
-    np.random.seed(0); #Set seed so outputs are repeatable
+def FullOutput():
 
     #Create directory for all outputs
     if(options.output):
