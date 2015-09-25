@@ -128,6 +128,40 @@ class ExpressionData(np.ndarray):
             filter_i = [i for i,gene in enumerate(self.row_labels) if gene in filter];
             return self.weights[filter_i,:];
 
+    def merge_data(self, other):
+        """
+        Merges columns of self and other
+        :param other: Instance of Expression Data with same rows as self
+        :return: New Expression Data Instance combining self and other
+        """
+
+        #Ensure row labels match
+        if(len(self.row_labels) != len(other.row_labels)):
+            raise ValueError("Cant merge ExpressionData objects with different row labels");
+
+        for x,y in zip(self.row_labels, other.row_labels):
+            if(x != y):
+                raise ValueError("Cant merge ExpressionData objects with different row labels");
+
+        row_labels_merge = self.row_labels; #Could be either, they are ensured to be identical at this point
+
+        data_merge = np.concatenate((self.base, other.base), axis=1);
+
+        #For Filters, combine sets preferring self over other
+        filters_merge = self.filters.copy();
+        for key,value in other.filters.items():
+            if(not filters_merge.has_key(key)):
+                filters_merge.update({key: value});
+
+        weights_merge = np.concatenate((self.weights, other.weights), axis=1);
+        col_labels_merge = self.col_labels + other.col_labels;
+
+        merge_data = ExpressionData(data_merge, row_labels_merge, col_labels_merge);
+        merge_data.weights = weights_merge;
+        merge_data.filters = filters_merge;
+        return merge_data;
+
+
 class ProbabilityData(np.ndarray):
     
     def __new__(subtype, data, expression_data):
@@ -249,6 +283,30 @@ class ProbabilityData(np.ndarray):
             filter = self.filters[filter_name];
             filter_i = [i for i,gene in enumerate(self.row_labels) if gene in filter];
             return self.weights[filter_i,:];
+
+    def merge_data(self, other):
+        """
+        Merges columns of self and other
+        :param other: Instance of ProbabilityData with same rows as self
+        :return: New ProbabilityData Instance combining self and other
+        """
+
+        #Ensure row labels match
+        if(len(self.row_labels) != len(other.row_labels)):
+            raise ValueError("Cant merge ProbabilityData objects with different row labels");
+
+        for x,y in zip(self.row_labels, other.row_labels):
+            if(x != y):
+                raise ValueError("Cant merge ProbabilityData objects with different row labels");
+
+        expression_data_merge = self.expression_data.merge_data(other.expression_data);
+
+        data_merge = np.concatenate((self.base, other.base), axis=1);
+        weights_merge = np.concatenate((self.weights, other.weights), axis=1);
+
+        merge_data = ProbabilityData(data_merge, expression_data_merge);
+        merge_data.weights = weights_merge;
+        return merge_data;
 
 class PCData(np.ndarray):
     

@@ -289,7 +289,7 @@ def filter_sig_list(signatures, match_terms):
     
     return filtered_signatures;
 
-def sigs_vs_projections(projections, sig_scores_dict, NEIGHBORHOOD_SIZE = 0.33, subsample_size = None):
+def sigs_vs_projections(projections, sig_scores_dict, NEIGHBORHOOD_SIZE = 0.33):
     """
     Evaluates the significance of each signature vs each projection
 
@@ -346,30 +346,23 @@ def sigs_vs_projections(projections, sig_scores_dict, NEIGHBORHOOD_SIZE = 0.33, 
         factor_dict[sig] = (factor_levels, factor_frequencies, factor_matrix);
 
 
-
-
-    if(subsample_size):
-        ii_sub = np.random.choice(N_SAMPLES, subsample_size, replace=False);
-    else:
-        ii_sub = np.arange(N_SAMPLES);
-
     print();
     print("Evaluating Signatures against Projections");
     pp = ProgressBar(N_PROJECTIONS);
     for i, proj in enumerate(sp_col_labels):
         data_loc = projections[proj];
 
-        distance_matrix = cdist(data_loc[:,ii_sub].T, data_loc.T, metric='euclidean');
+        distance_matrix = cdist(data_loc.T, data_loc.T, metric='euclidean');
 
         weights = np.exp(-1 * distance_matrix**2 / NEIGHBORHOOD_SIZE**2);
-        weights[np.arange(ii_sub.size), ii_sub] = 0; #Don't count self
+        weights[np.arange(N_SAMPLES), np.arange(N_SAMPLES)] = 0; #Don't count self
         weights /= np.sum(weights, axis=1, keepdims=True);
 
         neighborhood_prediction = np.dot(weights, sig_score_matrix);
 
 
         ##Neighborhood dissimilarity score = |actual - predicted|
-        dissimilarity = np.abs(sig_score_matrix[ii_sub,:] - neighborhood_prediction);
+        dissimilarity = np.abs(sig_score_matrix - neighborhood_prediction);
         med_dissimilarity = np.median(dissimilarity, axis=0);
 
         NUM_REPLICATES = 10000;
@@ -378,7 +371,7 @@ def sigs_vs_projections(projections, sig_scores_dict, NEIGHBORHOOD_SIZE = 0.33, 
         random_sig_values = get_bg_dist(N_SAMPLES, NUM_REPLICATES);
 
         random_predictions = np.dot(weights, random_sig_values);
-        random_scores = np.median(np.abs(random_sig_values[ii_sub,:] - random_predictions), axis=0);
+        random_scores = np.median(np.abs(random_sig_values - random_predictions), axis=0);
 
         mu = np.mean(random_scores);
         sigma = np.std(random_scores);
@@ -393,16 +386,13 @@ def sigs_vs_projections(projections, sig_scores_dict, NEIGHBORHOOD_SIZE = 0.33, 
 
         #Calculate significance for Factor signatures
         for j,sig in enumerate(sp_row_labels_factors):
+            import pdb;
+            if(proj == 'tSNE30'): pdb.set_trace();
             factor_levels, factor_frequencies, factor_matrix = factor_dict[sig];
             N_LEVELS = len(factor_levels);
             factor_predictions = np.dot(weights, factor_matrix);
 
-            if(subsample_size):
-                factor_values = factor_matrix[ii_sub,:];
-            else:
-                factor_values = factor_matrix;
-
-            dissimilarity = 1 - np.sum(factor_values * factor_predictions, axis=1);
+            dissimilarity = 1 - np.sum(factor_matrix * factor_predictions, axis=1);
             med_dissimilarity = np.median(dissimilarity);
 
             #Now...compute a background?

@@ -87,12 +87,32 @@ def read_matrix(filename='', delimiter = '\t'):
 
     if(len(set(col_labels)) != len(col_labels)):
         #Find duplicates
-        for col_label in set(col_labels):
-            col_labels.remove(col_label);
-
-        raise ValueError("Column labels (sample names) are not unique.\n" + ", ".join(col_labels) + "\nExiting.");
+        print("WARNING: Column labels (sample names) are not unique.\n Made unique by adding a suffix.")
+        _uniquify(col_labels);
 
     return (data, row_labels, col_labels);
+
+def _uniquify(labels):
+    """
+    Takes a list of strings, and makes it unique by appending _1, _2, etc to duplicates
+    In-Place
+
+    :param labels: Input list of strings
+    :return: None, modification is in-place
+    """
+
+    count_dict = dict();
+    for label in labels:
+        if(not count_dict.has_key(label)):
+            count_dict.update({label: 0});
+
+        count_dict[label] = count_dict[label] + 1;
+
+    for i in range(len(labels))[::-1]:
+        if(count_dict[label] > 1):
+            labels[i] = labels[i] + "_" + str(count_dict[label]);
+            count_dict[label] = count_dict[label] - 1;
+
 
 def write_matrix(filename, data, row_labels, col_labels):
     ff = open(filename, 'w');
@@ -232,6 +252,61 @@ def write_filter_file(filename, filter):
 
     with open(filename, 'w') as fout:
         fout.write('\t'.join(filter) + '\n');
+
+def write_models(directory, Models):
+    """
+    Writes the resulting Models to the output directory tree
+
+    :param directory: Root directory for FP output
+    :param Models: Nested dictionary structure containing all output data
+    :return:
+    """
+
+    for name, model in Models:
+        model_dir = os.path.join(directory, name);
+
+        #Sig Scores
+        out_file = 'SignatureScores.txt';
+        write_signature_scores(os.path.join(model_dir, out_file), model["signatureScores"], model["sampleLabels"]);
+
+        for projData in model["projectionData"]:
+            if(projData["filter"] == "No_Filter"):
+                filter_dir = os.path.join(model_dir, "No_Filter");
+            else:
+                filter_dir = os.path.join(model_dir, projData["filter"] + "_Filter");
+
+            if(projData["pca"]):
+                filter_dir = filter_dir + "_PCA";
+
+            try:
+                os.makedirs(filter_dir);
+            except OSError:
+                pass;
+
+            #Save Projections
+            write_projection_file(os.path.join(filter_dir, 'Projections.txt'),
+                                 model["sampleLabels"],
+                                  model["projections"]);
+
+            #Save Clusters
+            write_cluster_file(os.path.join(filter_dir, 'Clusters.txt'),
+                               model["sampleLabels"],
+                               model["clusters"])
+
+            #Output matrix of p-values for conformity scores
+            write_matrix(os.path.join(filter_dir, "DissimilarityMatrix.txt"),
+                         model["sigProjMatrix"],
+                         model["signatureKeys"],
+                         model["projectionKeys"]);
+            write_matrix(os.path.join(filter_dir, "PMatrix.txt"),
+                        model["sigProjMatrix_p"],
+                        model["signatureKeys"],
+                        model["projectionKeys"]);
+
+            #Output genes used in filter
+            write_filter_file(os.path.join(filter_dir, 'ProjectedGenes.txt'),
+                              model["genes"]);
+
 
 def write_qc_file(directory, sample_passes, sample_scores, sample_labels):
     """

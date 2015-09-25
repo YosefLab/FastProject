@@ -11,7 +11,7 @@ import Global;
 def parseFPArgs():
     parser = OptionParser(usage = 'usage: FastProject [options] data_file');
 
-    parser.add_option("-k", "--housekeeping", metavar="FILE",
+    parser.add_option("-k", "--housekeeping", metavar="FILE", default="",
                       help="Read list of housekeeping genes from FILE.  Uses default list if not specified");
 
     parser.add_option("-s", "--signatures", metavar="FILE",

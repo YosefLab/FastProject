@@ -9,6 +9,7 @@ from FastProject import FileIO;
 from FastProject import Transforms;
 from FastProject import Signatures;
 from FastProject import Projections;
+from FastProject import SubSample;
 from FastProject.DataTypes import ExpressionData, ProbabilityData, PCData;
 from FastProject.Utils import ProgressBar;
 from FastProject import HtmlViewer;
@@ -41,14 +42,8 @@ def FullOutput():
         logging.info(key + ": " + str(options.__dict__[key]));
 
     start_time = time.time();
-    if(options.housekeeping):
-        housekeeping_filename = options.housekeeping;
-    else:
-        housekeeping_filename = '';  #If not in interactive mode and no -h specified, just use the default list
+    housekeeping_filename = options.housekeeping;
 
-    def get_housekeeping_file():
-        fn = housekeeping_filename;
-        return fn;
 
     #%% Read expression data from file
     if(len(args) > 0):
@@ -82,10 +77,16 @@ def FullOutput():
 
 
     #Wrap data in ExpressionData object, add as a Model
+    full_matrix = ExpressionData(edata, genes, cells);
     edata = ExpressionData(edata, genes, cells);
 
     if(options.subsample_size > edata.shape[1]):
         options.subsample_size = None;
+
+    holdouts = None;
+    if(options.subsample_size):
+        holdouts, edata = SubSample.split_samples(edata, options.subsample_size);
+
 
     #Hold on to originals so we don't lose data after filtering in case it's needed later
     original_data = edata.copy();
@@ -95,25 +96,19 @@ def FullOutput():
     if(options.nofilter):
         edata = Filters.filter_genes_novar(edata);
 
-        filter_dict.update({'All': set(edata.row_labels)});
+        filter_dict.update({'No_Filter': set(edata.row_labels)});
     else:
         edata = Filters.filter_genes_threshold(edata, 0.2);
 
-        if(options.subsample_size):
-            sub_ii = np.random.choice(edata.shape[1], options.subsample_size, replace=False);
-            fdata = edata.subset_samples(sub_ii);
-        else:
-            fdata = edata;
-
         #HDT Filtering
         FP_Output("Removing genes with unimodal distribution across samples using Hartigans DT...");
-        hdt_mask = Filters.filter_genes_hdt(fdata, 0.05);
+        hdt_mask = Filters.filter_genes_hdt(edata, 0.05);
         #Fano Filtering
         FP_Output("Applying Fano-Filtering...");
-        fano_mask = Filters.filter_genes_fano(fdata, 2);
+        fano_mask = Filters.filter_genes_fano(edata, 2);
 
         filter_dict.update({
-            'All': set(edata.row_labels), #None means 'use all genes'. This set only used when outputting filter
+            'Threshold': set(edata.row_labels), #None means 'use all genes'. This set only used when outputting filter
             'HDT': set([edata.row_labels[i] for i,x in enumerate(hdt_mask) if x]),
             'Fano': set([edata.row_labels[i] for i,x in enumerate(fano_mask) if x])
         });
@@ -121,14 +116,15 @@ def FullOutput():
     edata.filters = filter_dict;
 
     Models = dict();
-    Models.update({"Expression": edata});
+    emodel = dict({"Data": edata});
+    Models.update({"Expression": emodel});
 
     #%% Probability transform
     if(not options.nomodel):
-        housekeeping_filename = get_housekeeping_file();
 
         FP_Output('\nFitting expression data to exp/norm mixture model');
-        (pdata, mu_h) = Transforms.probability_of_expression(edata, options.subsample_size);
+        (pdata, mu_h, mu_l, st_h, Pi) = Transforms.probability_of_expression(edata);
+        prob_params = (mu_h, mu_l, st_h, Pi);
 
 
         FP_Output('\nCorrecting for false-negatives using housekeeping gene levels');
@@ -137,7 +133,8 @@ def FullOutput():
         fn_prob[edata > 0] = 0;
 
         pdata = ProbabilityData(pdata, edata);
-        Models.update({"Probability": pdata});
+        pmodel = dict({"Data": pdata});
+        Models.update({"Probability": pmodel});
 
         edata.weights = 1-fn_prob;
         pdata.weights = 1-fn_prob;
@@ -153,17 +150,17 @@ def FullOutput():
             sample_qc_scores = sample_qc_scores[sample_passes_qc];
     else:
         sample_qc_scores = None;
+        prob_params = None;
 
-    if(options.subsample_size > edata.shape[1]):
-        options.subsample_size = None;
 
     Transforms.z_normalize(edata);
 
     fout_js = HtmlViewer.get_output_js_handle(dir_name);
     js_models = [];
 
-    for name, data in Models.items():
+    for name, model in Models.items():
         model_dir = os.path.join(dir_name, name);
+        data = model["Data"];
         try:
             os.makedirs(model_dir);
         except OSError:
@@ -193,9 +190,9 @@ def FullOutput():
         if(sample_qc_scores is not None): #Might be None if --nomodel option is selected
             sig_scores_dict["FP_Quality"] = Signatures.SignatureScores(sample_qc_scores,"FP_Quality",data.col_labels,isFactor=False, isPrecomputed=True);
 
-        #Prompt to save data
-        out_file = 'SignatureScores.txt';
-        FileIO.write_signature_scores(os.path.join(model_dir, out_file), sig_scores_dict, data.col_labels);
+        model["signatureScores"] = sig_scores_dict;
+        model["projectionData"] = [];
+        model["sampleLabels"] = data.col_labels;
 
         #Save data to js model as well
         js_model_dict = {'model': name};
@@ -205,14 +202,7 @@ def FullOutput():
         js_models.append(js_model_dict);
 
         for filter_name in filter_dict.keys():
-            if(filter_name == "All"):
-                filter_dir = os.path.join(model_dir, "No_Filter");
-            else:
-                filter_dir = os.path.join(model_dir, filter_name + "_Filter");
-            try:
-                os.makedirs(filter_dir);
-            except OSError:
-                pass;
+            projData = dict();
 
             FP_Output("\nFilter-Level:", filter_name);
             #%% Dimensional Reduction procedures
@@ -227,32 +217,17 @@ def FullOutput():
             #%% Evaluating signatures against projections
             sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p = Signatures.sigs_vs_projections(projections, sig_scores_dict ,subsample_size=options.subsample_size);
 
-            #Save Projections
-            FileIO.write_projection_file(os.path.join(filter_dir, 'Projections.txt'), data.col_labels, projections);
-
-            #Save Clusters
-            FileIO.write_cluster_file(os.path.join(filter_dir, 'Clusters.txt'), data.col_labels, clusters)
-
-            #Output matrix of p-values for conformity scores
-            FileIO.write_matrix(os.path.join(filter_dir, "DissimilarityMatrix.txt"),sig_proj_matrix, sp_row_labels, sp_col_labels);
-            FileIO.write_matrix(os.path.join(filter_dir, "PMatrix.txt"),sig_proj_matrix_p, sp_row_labels, sp_col_labels);
-
-            #Output genes used in filter
-            FileIO.write_filter_file(os.path.join(filter_dir, 'ProjectedGenes.txt'), data.filters[filter_name]);
-
-            #Output JS
-            js_filt_dict = dict();
-            js_model_dict['projectionData'].append(js_filt_dict);
-            js_filt_dict.update({'filter': filter_name});
-            js_filt_dict.update({'genes': data.filters[filter_name]});
-            js_filt_dict.update({'pca': False});
-            js_filt_dict.update({'projections': projections});
-            js_filt_dict.update({'sigProjMatrix': sig_proj_matrix});
-            js_filt_dict.update({'sigProjMatrix_p': sig_proj_matrix_p});
-            js_filt_dict.update({'projectionKeys': sp_col_labels});
-            js_filt_dict.update({'signatureKeys': sp_row_labels});
-            js_filt_dict.update({'clusters': clusters});
-
+            #Store in projData
+            projData["filter"] = filter_name;
+            projData["genes"] = data.filters[filter_name];
+            projData["pca"] = False;
+            projData["projections"] = projections;
+            projData["sigProjMatrix"] = sig_proj_matrix;
+            projData["sigProjMatrix_p"] = sig_proj_matrix_p;
+            projData["projectionKeys"] = sp_col_labels;
+            projData["signatureKeys"] = sp_row_labels;
+            projData["clusters"] = clusters;
+            model["projectionData"].append(projData);
 
 
             #Now do it all again using the principal component data
@@ -262,7 +237,7 @@ def FullOutput():
                 pcdata = Projections.filter_PCA(pcdata, variance_proportion=0.25, min_components = 30);
 
             #%% Dimensional Reduction procedures
-            FP_Output("Projecting data into 2 dimensions");
+            FP_Output("Projecting PC data into 2 dimensions");
 
             projections, pcdata2 = Projections.generate_projections(pcdata, filter_name, options.subsample_size);
 
@@ -270,45 +245,31 @@ def FullOutput():
             FP_Output("Evaluating Clusters...");
             clusters = Projections.define_clusters(projections);
 
-            #%% Evaluating signatures against projections
-            sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p = Signatures.sigs_vs_projections(projections, sig_scores_dict, subsample_size = options.subsample_size);
-
-            #Save Projections
-            FileIO.write_projection_file(os.path.join(filter_dir, 'Projections-PC.txt'), pcdata.col_labels, projections);
-
-            #Save Clusters
-            FileIO.write_cluster_file(os.path.join(filter_dir, 'Clusters-PC.txt'), pcdata.col_labels, clusters)
-
-            #Output matrix of p-values for conformity scores
-            FileIO.write_matrix(os.path.join(filter_dir, "DissimilarityMatrix-PC.txt"),sig_proj_matrix, sp_row_labels, sp_col_labels);
-            FileIO.write_matrix(os.path.join(filter_dir, "PMatrix-PC.txt"),sig_proj_matrix_p, sp_row_labels, sp_col_labels);
-
-            #Output JS
-            js_filt_dict = dict();
-            js_model_dict['projectionData'].append(js_filt_dict);
-            js_filt_dict.update({'filter': filter_name});
-            js_filt_dict.update({'genes': data.filters[filter_name]});
-            js_filt_dict.update({'pca': True});
-            js_filt_dict.update({'projections': projections});
-            js_filt_dict.update({'sigProjMatrix': sig_proj_matrix});
-            js_filt_dict.update({'sigProjMatrix_p': sig_proj_matrix_p});
-            js_filt_dict.update({'projectionKeys': sp_col_labels});
-            js_filt_dict.update({'signatureKeys': sp_row_labels});
-            js_filt_dict.update({'clusters': clusters});
+            projData = dict();
+            projData["filter"] = filter_name;
+            projData["genes"] = data.filters[filter_name];
+            projData["pca"] = True;
+            projData["projections"] = projections;
+            projData["sigProjMatrix"] = sig_proj_matrix;
+            projData["sigProjMatrix_p"] = sig_proj_matrix_p;
+            projData["projectionKeys"] = sp_col_labels;
+            projData["signatureKeys"] = sp_row_labels;
+            projData["clusters"] = clusters;
+            model["projectionData"].append(projData);
 
     #Filter output signatures
-    for js_model in js_models:
-        signatureScores = js_model["signatureScores"];
+    for model in Models:
+        signatureScores = model["signatureScores"];
         signatures = signatureScores.keys()
         signature_significance = np.zeros(len(signatures));
-        for js_filt in js_model['projectionData']:
-            sp = js_filt['sigProjMatrix_p'].min(axis=1);
+        for projData in model['projectionData']:
+            sp = projData['sigProjMatrix_p'].min(axis=1);
             signature_significance = np.min(np.vstack((sp, signature_significance)), axis=0);
 
         #Determine a threshold of significance
         #If too many samples, hard limit the number of output signatures to conserve file size
         OUTPUT_SIGNATURE_LIMIT = 200;
-        if(Models["Expression"].shape[1] > 2000 and len(signatures) > OUTPUT_SIGNATURE_LIMIT):
+        if(model["Data"].shape[1] > 2000 and len(signatures) > OUTPUT_SIGNATURE_LIMIT):
             aa = np.argsort(signature_significance);
             threshold = signature_significance[aa[OUTPUT_SIGNATURE_LIMIT]];
         else:
@@ -329,16 +290,28 @@ def FullOutput():
                 signatureScores.pop(sig);
 
         #Remove values in each filters sigProjMatrix and the sigProjMatrix keys
-        for js_filt in js_model['projectionData']:
-            js_filt_keep_sig = np.array([keep_sig[sig] for sig in js_filt["signatureKeys"]]);
-            js_filt["sigProjMatrix"] = js_filt["sigProjMatrix"][js_filt_keep_sig,:];
-            js_filt["sigProjMatrix_p"] = js_filt["sigProjMatrix_p"][js_filt_keep_sig,:];
-            js_filt["signatureKeys"] = [x for x in js_filt["signatureKeys"] if keep_sig[x]];
+        for projData in model['projectionData']:
+            projData_keep_sig = np.array([keep_sig[sig] for sig in projData["signatureKeys"]]);
+            projData["sigProjMatrix"] = projData["sigProjMatrix"][projData_keep_sig,:];
+            projData["sigProjMatrix_p"] = projData["sigProjMatrix_p"][projData_keep_sig,:];
+            projData["signatureKeys"] = [x for x in projData["signatureKeys"] if keep_sig[x]];
 
 
+    #Write the original data matrix to the javascript file.
+    #First, cluster genes
+    from scipy.cluster.hierarchy import leaves_list, linkage;
+    edata = Models["Expression"]["Data"];
+    linkage_matrix = linkage(edata);
+    leaves_i = leaves_list(linkage_matrix);
+    edata_clustered = edata[leaves_i, :];
+    edata_clustered.row_labels = [edata.row_labels[i] for i in leaves_i];
 
-
-    fout_js.write(HtmlViewer.toJS_variable("FP_Models", js_models));
+    data_json = dict({
+        'data': edata_clustered,
+        'gene_labels': edata_clustered.row_labels,
+        'sample_labels': edata_clustered.col_labels,
+    });
+    fout_js.write(HtmlViewer.toJS_variable("FP_ExpressionMatrix", data_json));
 
     #Write signatures to file
     #Assemble signatures into an object, then convert to JSON variable and write
@@ -352,21 +325,14 @@ def FullOutput():
         sig_dict.update({sig.name: {'Genes':sig_genes, 'Signs':sig_values}});
     fout_js.write(HtmlViewer.toJS_variable("FP_Signatures", sig_dict));
 
-    #Write the original data matrix to the javascript file.
-    #First, cluster genes
-    from scipy.cluster.hierarchy import leaves_list, linkage;
-    edata = Models["Expression"];
-    linkage_matrix = linkage(edata);
-    leaves_i = leaves_list(linkage_matrix);
-    edata_clustered = edata[leaves_i, :];
-    edata_clustered.row_labels = [edata.row_labels[i] for i in leaves_i];
+    #Merge all the holdouts back into the model
+    FP_Output("Merging held-out samples back in")
+    if(options.subsample_size is not None):
+         Models = SubSample.merge_samples(holdouts, Models);
 
-    data_json = dict({
-        'data': edata_clustered,
-        'gene_labels': edata_clustered.row_labels,
-        'sample_labels': edata_clustered.col_labels,
-    });
-    fout_js.write(HtmlViewer.toJS_variable("FP_ExpressionMatrix", data_json));
+
+    FileIO.write_models(dir_name, Models);
+    fout_js.write(HtmlViewer.toJS_variable("FP_Models", Models));
 
     fout_js.close();
     HtmlViewer.copy_html_files(dir_name);

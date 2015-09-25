@@ -16,14 +16,14 @@ import os;
 this_directory = os.path.dirname(os.path.abspath(__file__));
 
 
-def probability_of_expression(data, subsample_size = None):
+def probability_of_expression(data):
     cutoffs = np.mean(data,axis=1)/4;  #Empirically found to be good mosy of the time
     
-    (gamma, mu_l, mu_h, st_l, st_h, Pi, L) = em_exp_norm_mixture(data,cutoffs,subsample_size);
+    (gamma, mu_l, mu_h, st_l, st_h, Pi, L) = em_exp_norm_mixture(data,cutoffs);
     
     gamma = make_monotonic(gamma, data);    
     
-    return (gamma, mu_h);
+    return (gamma, mu_h, mu_l, st_h, Pi);
 
 def make_monotonic(gamma, data):
     """For each row in gamma, finds the first corresponding value in data
