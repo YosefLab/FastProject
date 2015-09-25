@@ -43,6 +43,9 @@ def FullOutput(options, args):
     FileIO.make_dirs(dir_name);
     logging.basicConfig(format='%(asctime)s %(message)s', filename=os.path.join(dir_name, 'fastproject.log'), level=logging.INFO);
     logging.info("Running FastProject Analysis");
+    logging.info("Data File: " + args[0]);
+    for key in options.__dict__:
+        logging.info(key + ": " + str(options.__dict__[key]));
 
     start_time = time.time();
     if(options.housekeeping):
