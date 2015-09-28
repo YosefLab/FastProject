@@ -1,6 +1,7 @@
 from __future__ import division, print_function;
 import os;
 import numpy as np;
+import pandas as pd;
 import time;
 import scipy.stats;
 import logging;
@@ -77,7 +78,7 @@ def FullOutput():
 
 
     #Wrap data in ExpressionData object, add as a Model
-    full_matrix = ExpressionData(edata, genes, cells);
+    all_data = ExpressionData(edata, genes, cells); #TODO: Does this need to be copied?
     edata = ExpressionData(edata, genes, cells);
 
     if(options.subsample_size > edata.shape[1]):
@@ -208,14 +209,14 @@ def FullOutput():
             #%% Dimensional Reduction procedures
             FP_Output("\nProjecting data into 2 dimensions");
 
-            projections, pcdata = Projections.generate_projections(data, filter_name, options.subsample_size);
+            projections, pcdata = Projections.generate_projections(data, filter_name);
 
             #Evaluate Clusters
             FP_Output("Evaluating Clusters...");
             clusters = Projections.define_clusters(projections);
 
             #%% Evaluating signatures against projections
-            sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p = Signatures.sigs_vs_projections(projections, sig_scores_dict ,subsample_size=options.subsample_size);
+            sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p = Signatures.sigs_vs_projections(projections, sig_scores_dict);
 
             #Store in projData
             projData["filter"] = filter_name;
@@ -239,7 +240,7 @@ def FullOutput():
             #%% Dimensional Reduction procedures
             FP_Output("Projecting PC data into 2 dimensions");
 
-            projections, pcdata2 = Projections.generate_projections(pcdata, filter_name, options.subsample_size);
+            projections, pcdata2 = Projections.generate_projections(pcdata, filter_name);
 
             #Evaluate Clusters
             FP_Output("Evaluating Clusters...");
@@ -258,18 +259,20 @@ def FullOutput():
             model["projectionData"].append(projData);
 
     #Filter output signatures
-    for model in Models:
+    for name, model in Models.items():
         signatureScores = model["signatureScores"];
-        signatures = signatureScores.keys()
-        signature_significance = np.zeros(len(signatures));
+
+        signature_significance = pd.DataFrame();
         for projData in model['projectionData']:
-            sp = projData['sigProjMatrix_p'].min(axis=1);
-            signature_significance = np.min(np.vstack((sp, signature_significance)), axis=0);
+            sp = pd.DataFrame(projData['sigProjMatrix_p'], index=projData['signatureKeys']).min(axis=1);
+            signature_significance = pd.concat((signature_significance, sp), axis=1);
+
+        signature_significance = signature_significance.min(axis=1);
 
         #Determine a threshold of significance
         #If too many samples, hard limit the number of output signatures to conserve file size
         OUTPUT_SIGNATURE_LIMIT = 200;
-        if(model["Data"].shape[1] > 2000 and len(signatures) > OUTPUT_SIGNATURE_LIMIT):
+        if(model["Data"].shape[1] > 2000 and len(signatureScores) > OUTPUT_SIGNATURE_LIMIT):
             aa = np.argsort(signature_significance);
             threshold = signature_significance[aa[OUTPUT_SIGNATURE_LIMIT]];
         else:
@@ -278,16 +281,16 @@ def FullOutput():
         #Iterate back through and prune signatures worse than threshold
         #Create a dictionary of sigs to keep
         keep_sig = dict();
-        for i,sig in enumerate(signatures):
-            if(signature_significance[i] > threshold):
-                keep_sig.update({sig: False});
+        for name, sig_score in signatureScores.items():
+            if(not sig_score.isPrecomputed and signature_significance[name] > threshold):
+                keep_sig.update({name: False});
             else:
-                keep_sig.update({sig: True});
+                keep_sig.update({name: True});
 
         #Remove values in the model's signatureScores dict
-        for sig in signatures:
-            if(keep_sig[sig] == False):
-                signatureScores.pop(sig);
+        for name, sig_score in signatureScores.items():
+            if(keep_sig[name] == False):
+                signatureScores.pop(name);
 
         #Remove values in each filters sigProjMatrix and the sigProjMatrix keys
         for projData in model['projectionData']:
@@ -296,6 +299,24 @@ def FullOutput():
             projData["sigProjMatrix_p"] = projData["sigProjMatrix_p"][projData_keep_sig,:];
             projData["signatureKeys"] = [x for x in projData["signatureKeys"] if keep_sig[x]];
 
+
+
+    #Write signatures to file
+    #Assemble signatures into an object, then convert to JSON variable and write
+    sig_dict = {};
+    for sig in sigs:
+        sig_genes = sig.sig_dict.keys();
+        sig_values = sig.sig_dict.values();
+        sort_i = np.array(sig_values).argsort()[::-1];#Put positive signatures first
+        sig_genes = [sig_genes[i] for i in sort_i];
+        sig_values = [sig_values[i] for i in sort_i];
+        sig_dict.update({sig.name: {'Genes':sig_genes, 'Signs':sig_values}});
+    fout_js.write(HtmlViewer.toJS_variable("FP_Signatures", sig_dict));
+
+    #Merge all the holdouts back into the model
+    FP_Output("Merging held-out samples back in")
+    if(options.subsample_size is not None):
+         SubSample.merge_samples(all_data, Models, sigs, prob_params);
 
     #Write the original data matrix to the javascript file.
     #First, cluster genes
@@ -313,25 +334,13 @@ def FullOutput():
     });
     fout_js.write(HtmlViewer.toJS_variable("FP_ExpressionMatrix", data_json));
 
-    #Write signatures to file
-    #Assemble signatures into an object, then convert to JSON variable and write
-    sig_dict = {};
-    for sig in sigs:
-        sig_genes = sig.sig_dict.keys();
-        sig_values = sig.sig_dict.values();
-        sort_i = np.array(sig_values).argsort()[::-1];#Put positive signatures first
-        sig_genes = [sig_genes[i] for i in sort_i];
-        sig_values = [sig_values[i] for i in sort_i];
-        sig_dict.update({sig.name: {'Genes':sig_genes, 'Signs':sig_values}});
-    fout_js.write(HtmlViewer.toJS_variable("FP_Signatures", sig_dict));
-
-    #Merge all the holdouts back into the model
-    FP_Output("Merging held-out samples back in")
-    if(options.subsample_size is not None):
-         Models = SubSample.merge_samples(holdouts, Models);
-
-
     FileIO.write_models(dir_name, Models);
+
+    #Remove model["Data"] since only the expression data is written for JS
+    #  and it's already written above in FP_ExpressionMatrix
+    for name, model in Models.items():
+        model.pop("Data");
+
     fout_js.write(HtmlViewer.toJS_variable("FP_Models", Models));
 
     fout_js.close();

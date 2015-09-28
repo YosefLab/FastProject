@@ -69,9 +69,9 @@
             
             //Populate select dropdown
             var filter_options = {};
-            for(var i = 0; i < FP_Models.length; i++)
+            for(model_name in FP_Models)
             {
-                var modelPD = FP_Models[i].projectionData;
+                var modelPD = FP_Models[model_name].projectionData;
                 for(var j = 0; j < modelPD.length; j++)
                 {
                     var fname = modelPD[j].filter;
@@ -142,11 +142,11 @@
             
             //Find right model
             var model;
-            for (var i = 0; i < FP_Models.length; i++)
+            for (name in FP_Models)
             {
-                if(FP_Models[i].model.toUpperCase() === model_name.toUpperCase())
+                if(name.toUpperCase() === model_name.toUpperCase())
                 {
-                    model = FP_Models[i];
+                    model = FP_Models[name];
                     break;
                 }
             }

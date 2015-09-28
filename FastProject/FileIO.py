@@ -262,7 +262,7 @@ def write_models(directory, Models):
     :return:
     """
 
-    for name, model in Models:
+    for name, model in Models.items():
         model_dir = os.path.join(directory, name);
 
         #Sig Scores
@@ -286,26 +286,26 @@ def write_models(directory, Models):
             #Save Projections
             write_projection_file(os.path.join(filter_dir, 'Projections.txt'),
                                  model["sampleLabels"],
-                                  model["projections"]);
+                                  projData["projections"]);
 
             #Save Clusters
             write_cluster_file(os.path.join(filter_dir, 'Clusters.txt'),
                                model["sampleLabels"],
-                               model["clusters"])
+                               projData["clusters"])
 
             #Output matrix of p-values for conformity scores
             write_matrix(os.path.join(filter_dir, "DissimilarityMatrix.txt"),
-                         model["sigProjMatrix"],
-                         model["signatureKeys"],
-                         model["projectionKeys"]);
+                         projData["sigProjMatrix"],
+                         projData["signatureKeys"],
+                         projData["projectionKeys"]);
             write_matrix(os.path.join(filter_dir, "PMatrix.txt"),
-                        model["sigProjMatrix_p"],
-                        model["signatureKeys"],
-                        model["projectionKeys"]);
+                        projData["sigProjMatrix_p"],
+                        projData["signatureKeys"],
+                        projData["projectionKeys"]);
 
             #Output genes used in filter
             write_filter_file(os.path.join(filter_dir, 'ProjectedGenes.txt'),
-                              model["genes"]);
+                              projData["genes"]);
 
 
 def write_qc_file(directory, sample_passes, sample_scores, sample_labels):

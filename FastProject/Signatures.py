@@ -386,8 +386,6 @@ def sigs_vs_projections(projections, sig_scores_dict, NEIGHBORHOOD_SIZE = 0.33):
 
         #Calculate significance for Factor signatures
         for j,sig in enumerate(sp_row_labels_factors):
-            import pdb;
-            if(proj == 'tSNE30'): pdb.set_trace();
             factor_levels, factor_frequencies, factor_matrix = factor_dict[sig];
             N_LEVELS = len(factor_levels);
             factor_predictions = np.dot(weights, factor_matrix);

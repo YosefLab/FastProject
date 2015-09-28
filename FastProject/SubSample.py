@@ -7,7 +7,7 @@ from . import Signatures;
 from . import Projections;
 from . import Transforms;
 from .DataTypes import ProbabilityData, ExpressionData;
-from .Global import options;
+from .Global import options, FP_Output;
 from scipy.spatial.distance import cdist;
 import numpy as np;
 
@@ -26,7 +26,7 @@ def merge_samples(all_data, Models, sigs, prob_params):
 
     edata = Models["Expression"]["Data"];
     keep_genes = set(edata.row_labels);
-    keep_genes_i = [i for i,gene in all_data.row_labels if gene in keep_genes];
+    keep_genes_i = [i for i,gene in enumerate(all_data.row_labels) if gene in keep_genes];
     edata_all = all_data.subset_genes(keep_genes_i);
     edata_all.filters = edata.filters;
 
@@ -34,6 +34,7 @@ def merge_samples(all_data, Models, sigs, prob_params):
     #TODO:  Ensure order of genes is the same as the ordering in mu, st, etc
     #M Step of EM Algorithm
     if(not options.nomodel):
+        FP_Output("Extending probability model to holdouts");
         (mu_h, mu_l, st_h, Pi) = prob_params;
         zmat = edata_all.base;
         p_low = np.exp(-1*zmat/mu_l)/mu_l;
@@ -82,23 +83,26 @@ def merge_samples(all_data, Models, sigs, prob_params):
     holdout_data = all_data.subset_samples(holdout_indices);
     model["Holdout_Data"] = holdout_data;
 
-    model = Models["Probability"];
-    sub_data = model["Data"];
-    all_data = pdata_all;
+    if(not options.nomodel):
+        model = Models["Probability"];
+        sub_data = model["Data"];
+        all_data = pdata_all;
 
-    sub_data_cols = set(sub_data.col_labels);
-    all_cols = set(all_data.col_labels);
-    holdout_cols = all_cols.difference(sub_data_cols);
-    holdout_indices = [i for i,x in enumerate(all_data.col_labels) if x in holdout_cols];
+        sub_data_cols = set(sub_data.col_labels);
+        all_cols = set(all_data.col_labels);
+        holdout_cols = all_cols.difference(sub_data_cols);
+        holdout_indices = [i for i,x in enumerate(all_data.col_labels) if x in holdout_cols];
 
-    holdout_data = all_data.subset_samples(holdout_indices);
-    model["Holdout_Data"] = holdout_data;
+        holdout_data = all_data.subset_samples(holdout_indices);
+        model["Holdout_Data"] = holdout_data;
 
     #Merge in projections
     #Re calculate clusters
-    for model in Models:
+    for name, model in Models.items():
         sub_data = model["Data"];
         holdout_data = model["Holdout_Data"];
+
+        FP_Output("Calculating projection coordinates and cluster assignments for Holdouts -", name);
 
         for projData in model["projectionData"]:
             #Merge projection back in
@@ -110,34 +114,43 @@ def merge_samples(all_data, Models, sigs, prob_params):
 
 
     #Then merge back in data
-    model = Models["Probability"];
-    merge_pdata = model["Data"].merge_data(model["Holdout_Data"]);
-    merge_edata = merge_pdata.expression_data;
-    Models["Expression"]["Data"] = merge_edata;
-    Models["Probability"]["Data"] = merge_pdata;
+    FP_Output("Merging holdout data matrices back into sub-sample");
+    if(not options.nomodel):
+        model = Models["Probability"];
+        merge_pdata = model["Data"].merge_data(model["Holdout_Data"]);
+        merge_edata = merge_pdata.expression_data;
+        Models["Expression"]["Data"] = merge_edata;
+        Models["Probability"]["Data"] = merge_pdata;
+    else:
+        model = Models["Expression"];
+        merge_edata = model["Data"].merge_data(model["Holdout_Data"]);
+        Models["Expression"]["Data"] = merge_edata;
+
 
     #Some cleanup and fix the labels
-    for model in Models:
+    for name, model in Models.items():
         model.pop("Holdout_Data");
         model["sampleLabels"] = model["Data"].col_labels;
 
 
     #Merge sig scores back in by re-calculating them
-    for model in Models:
+    for name, model in Models.items():
         data = model["Data"];
 
         #Evaluate Signatures
-        print("Calculating Signature Scores for Holdouts");
+        FP_Output("Calculating Signature Scores for Holdouts -", name);
 
         sig_scores_dict = dict();
+        old_sig_scores_dict = model["signatureScores"];
 
-        pbar = ProgressBar(len(sigs));
+        pbar = ProgressBar(len(old_sig_scores_dict));
         for sig in sigs:
-            try:
-                sig_scores_dict[sig.name] = data.eval_signature(sig);
-            except ValueError:  #Only thrown when the signature has no genes in the data
-                pass #Just discard the signature then
-            pbar.update();
+            if(old_sig_scores_dict.has_key(sig.name)):
+                try:
+                    sig_scores_dict[sig.name] = data.eval_signature(sig);
+                except ValueError:  #Only thrown when the signature has no genes in the data
+                    pass #Just discard the signature then
+                pbar.update();
         pbar.complete();
 
         if(options.precomputed):
@@ -172,19 +185,19 @@ def merge_projections(sub_projections, sub_data, holdout_data):
         subsample_dist_arg = subsample_dist.argsort(axis=1);
         subsample_dist_arg = subsample_dist_arg[:, np.arange(K)]; #Take closest K
 
-        x_coords = p[:,0][subsample_dist_arg];
-        y_coords = p[:,1][subsample_dist_arg];
+        x_coords = p[0,:][subsample_dist_arg];
+        y_coords = p[1,:][subsample_dist_arg];
 
         #New X,Y coordinate is average of nearest neighbors
         holdout_x = np.mean(x_coords, axis=1);
         holdout_y = np.mean(y_coords, axis=1);
 
         NUM_SAMPLES = sub_data.shape[1] + holdout_data.shape[1];
-        all_data = np.zeros((NUM_SAMPLES,2));
-        all_data[:sub_data.shape[1],0] = p[:,0];
-        all_data[:sub_data.shape[1],1] = p[:,1];
-        all_data[sub_data.shape[1]:,0] = holdout_x;
-        all_data[sub_data.shape[1]:,1] = holdout_y;
+        all_data = np.zeros((2,NUM_SAMPLES));
+        all_data[0,:sub_data.shape[1]] = p[0,:];
+        all_data[1,:sub_data.shape[1]] = p[1,:];
+        all_data[0,sub_data.shape[1]:] = holdout_x;
+        all_data[1,sub_data.shape[1]:] = holdout_y;
         all_projections[key] = all_data;
 
     return all_projections;
