@@ -45,7 +45,7 @@ function ColorScatter(parent)
     this.tip = d3.tip()
         .attr('class', 'd3-tip')
         .offset([-10, 0])
-        .html(function(d){ return d[2]; });
+        .html(function(d){ return d[3]+": "+d[2]; });
 
     this.svg = d3.select(parent).append("svg")
         .attr("width", self.width + self.margin.left + self.margin.right)

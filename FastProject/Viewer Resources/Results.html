@@ -233,10 +233,11 @@
 
                 var xcoords = proj[0];
                 var ycoords = proj[1];
+                var sample_labels = FP_ExpressionMatrix.sample_labels;
                 //Zip up the data into a new points object
                 for(i = 0; i<xcoords.length; i++)
                 {
-                    points.push([xcoords[i], ycoords[i], sig_scores[i]]);
+                    points.push([xcoords[i], ycoords[i], sig_scores[i], sample_labels[i]]);
                 }
             }
             else{
