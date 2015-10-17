@@ -84,6 +84,13 @@ def read_matrix(filename='', delimiter = '\t'):
 
         #Warning for duplicate genes
         print("WARNING: Row labels (gene identifiers) are not unique.\n" + ", ".join(row_labels_copy));
+        print("Removing these genes...");
+
+        row_labels_copy = set(row_labels_copy);
+        to_remove_i = [i for i,x in enumerate(row_labels) if x in row_labels_copy];
+        to_keep_i = np.setxor1d(np.arange(len(row_labels)), to_remove_i);
+        data = data[to_keep_i,:];
+        row_labels = [row_labels[i] for i in to_keep_i];
 
     if(len(set(col_labels)) != len(col_labels)):
         #Find duplicates

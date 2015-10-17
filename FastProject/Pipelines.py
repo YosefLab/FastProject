@@ -272,7 +272,7 @@ def FullOutput():
         #Determine a threshold of significance
         #If too many samples, hard limit the number of output signatures to conserve file size
         OUTPUT_SIGNATURE_LIMIT = 200;
-        if(model["Data"].shape[1] > 2000 and len(signatureScores) > OUTPUT_SIGNATURE_LIMIT):
+        if(all_data.shape[1] > 2000 and len(signatureScores) > OUTPUT_SIGNATURE_LIMIT):
             aa = np.argsort(signature_significance);
             threshold = signature_significance[aa[OUTPUT_SIGNATURE_LIMIT]];
         else:
