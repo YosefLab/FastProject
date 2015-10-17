@@ -314,9 +314,9 @@ def FullOutput():
     fout_js.write(HtmlViewer.toJS_variable("FP_Signatures", sig_dict));
 
     #Merge all the holdouts back into the model
-    FP_Output("Merging held-out samples back in")
     if(options.subsample_size is not None):
-         SubSample.merge_samples(all_data, Models, sigs, prob_params);
+        FP_Output("Merging held-out samples back in")
+        SubSample.merge_samples(all_data, Models, sigs, prob_params);
 
     #Write the original data matrix to the javascript file.
     #First, cluster genes
