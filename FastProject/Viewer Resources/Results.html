@@ -20,8 +20,8 @@
     <script type="text/javascript">
 
         var global_status = {};
-        global_status.plotted_projection = -1;
-        global_status.plotted_signature = -1;
+        global_status.plotted_projection = "";
+        global_status.plotted_signature = "";
         global_status.sorted_column = -1;
         global_status.signature_filter = "";
         global_status.scatterColorOption = "rank";
@@ -59,26 +59,12 @@
             function doneTyping()
             {
                 var val = global_status.signature_filter.toLowerCase();
-                var vals = val.split(",");
-                vals = vals.map(function(str){return str.trim();});
-
                 var table = $('#table_div table');
                 table.find('tr').removeClass('hidden')
                         .filter(function(i, element){
-                            if(i == 0){return false;} // Don't filter out the header row
-                            if(vals.length == 1 && vals[0].length == 0)
-                            {
-                                return false;
-                            }
+                            if(i == 0){return false;}
                             var sig_text = $(element).children('td').first().html().toLowerCase();
-                            for(var j = 0; j < vals.length; j++)
-                            {
-                                if(vals[j].length > 0 && sig_text.indexOf(vals[j]) > -1)
-                                {
-                                    return false;
-                                }
-                            }
-                            return true;
+                            return sig_text.indexOf(val) == -1;
                         }).addClass('hidden');
                 table.find('tr').removeClass('altRow')
                         .not('.hidden').filter(':odd').addClass('altRow');
@@ -121,9 +107,9 @@
 
             //Select top PC 1,2 plot by default
             var j = data.ProjectionKeys.indexOf("PCA: 1,2");
-            global_status.plotted_projection = j; 
+            global_status.plotted_projection = "PCA: 1,2";
             var s_i = data.SigProjMatrix_p.map(function(e){return e[j];}).argSort();
-            global_status.plotted_signature = s_i[0];
+            global_status.plotted_signature = data.SignatureKeys[s_i[0]];
 
             updateTable();
         };
@@ -138,9 +124,8 @@
 
         function populateClusterDropdown()
         {
-            var j = global_status.plotted_projection;
             var data = getDataContext();
-            var proj_key = data.ProjectionKeys[j];
+            var proj_key = global_status.plotted_projection;
             var clusters = data.Clusters[proj_key];
             var clust_dropdown = $('#cluster_select');
             var old_i = clust_dropdown.prop('selectedIndex');
@@ -215,25 +200,22 @@
             createTableFromData();
         }
 
-        function tableClickFunction(row_num, col_num)
+        function tableClickFunction(row_key, col_key)
         {
-            global_status.plotted_signature  = row_num;
-            global_status.plotted_projection = col_num;
+            global_status.plotted_signature  = row_key;
+            global_status.plotted_projection = col_key;
             drawChart();
             drawHeat();
         }
 
         function drawChart() {
-            var i = global_status.plotted_signature;
-            var j = global_status.plotted_projection;
+            var sig_key = global_status.plotted_signature;
+            var proj_key = global_status.plotted_projection;
             
             var points = [];
             
-            if(i > -1 && j > -1){
+            if(sig_key.length > 0 && proj_key.length > 0){
                 var data = getDataContext();
-
-                var sig_key = data.SignatureKeys[i];
-                var proj_key = data.ProjectionKeys[j];
 
                 $('#plot_title_div').children().eq(0).text(proj_key);
                 $('#plot_title_div').children().eq(1).text(sig_key);
@@ -266,11 +248,10 @@
         }
 
         function drawHeat(){
-            var i = global_status.plotted_signature;
+            var sig_key = global_status.plotted_signature;
             var data = getDataContext();
-            if( i > -1)
+            if(sig_key.length > 0)
             {
-                var sig_key = data.SignatureKeys[i];
                 var sig = FP_Signatures[sig_key];
                 if(sig !== undefined){  //undefined sig if it's precomputed
                     var genes = sig.Genes;
@@ -297,8 +278,7 @@
                         return FP_ExpressionMatrix.gene_labels[e];
                     });
 
-                    var j = global_status.plotted_projection;
-                    var proj_key = data.ProjectionKeys[j];
+                    var proj_key = global_status.plotted_projection;
                     var choice = $('#cluster_select').val();
                     var assignments = data.Clusters[proj_key][choice];
 
@@ -385,7 +365,7 @@
                         if(d.val > -50){return d.val.toPrecision(2);}
                         else{return "< -50";}})
                 .style('background-color', function(d){return colorScale(d.val);})
-                .on("click", function(d){tableClickFunction(d.row, d.col)});
+                .on("click", function(d){tableClickFunction(row_labels[d.row], col_labels[d.col])});
 
             //Make signature names click-able
             content_row.filter(function(d,i) { return i == 0;})
