@@ -133,21 +133,21 @@ body {
 }
 
 .point-faded{
-    fill-opacity: 0.3;
+    fill-opacity: 0.3 !important;
 }
 
 .point-hover{
-    fill-opacity: 1.0;
+    fill-opacity: 1.0 !important;
 }
 
 .point-selected{
-    stroke: yellow;
-    stroke-width: 2px;
+    stroke: yellow !important;
+    stroke-width: 2px !important;
 }
 
 /* Style for hovered heatmap rows */
 .heatmap-hover {
-    fill-opacity: .7;
+    fill-opacity: .7 !important;
 }
 
 /*For bootstrap modal header*/
