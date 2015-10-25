@@ -157,7 +157,6 @@ def FullOutput():
     Transforms.z_normalize(edata);
 
     fout_js = HtmlViewer.get_output_js_handle(dir_name);
-    js_models = [];
 
     for name, model in Models.items():
         model_dir = os.path.join(dir_name, name);
@@ -194,13 +193,6 @@ def FullOutput():
         model["signatureScores"] = sig_scores_dict;
         model["projectionData"] = [];
         model["sampleLabels"] = data.col_labels;
-
-        #Save data to js model as well
-        js_model_dict = {'model': name};
-        js_model_dict.update({'signatureScores': sig_scores_dict})
-        js_model_dict.update({'sampleLabels': data.col_labels});
-        js_model_dict.update({'projectionData': []})
-        js_models.append(js_model_dict);
 
         for filter_name in filter_dict.keys():
             projData = dict();
