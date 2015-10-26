@@ -356,7 +356,9 @@ def sigs_vs_projections(projections, sig_scores_dict, NEIGHBORHOOD_SIZE = 0.33):
 
         weights = np.exp(-1 * distance_matrix**2 / NEIGHBORHOOD_SIZE**2);
         weights[np.arange(N_SAMPLES), np.arange(N_SAMPLES)] = 0; #Don't count self
-        weights /= np.sum(weights, axis=1, keepdims=True);
+        weights_norm_factor = np.sum(weights, axis=1, keepdims=True);
+        weights_norm_factor[weights_norm_factor == 0] = 1.0;
+        weights /= weights_norm_factor;
 
         neighborhood_prediction = np.dot(weights, sig_score_matrix);
 
@@ -379,7 +381,6 @@ def sigs_vs_projections(projections, sig_scores_dict, NEIGHBORHOOD_SIZE = 0.33):
             sigma = 1e-3;
 
         p_values = norm.cdf((med_dissimilarity - mu)/sigma);
-
 
         sig_proj_matrix[:,i] = med_dissimilarity;
         sig_proj_matrix_p[:,i] = p_values;
