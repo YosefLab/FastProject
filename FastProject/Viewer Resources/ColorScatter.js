@@ -4,7 +4,7 @@
 */
 function ColorScatter(parent)
 {
-    self = this;
+    var self = this;
     var xdomain = [-2, 2];
     var ydomain = [-2, 2];
 
@@ -34,12 +34,12 @@ function ColorScatter(parent)
     this.zoom = d3.behavior.zoom()
         .x(self.x)
         .y(self.y)
-        .scaleExtent([.2, 32])
+        .scaleExtent([0.2, 32])
         .on("zoom", self.redraw());
 
     //This gets overwritten when you set data
     this.colorScale = d3.scale.linear()
-        .domain([0,.5,1])
+        .domain([0,0.5,1])
         .range(["blue", "green", "red"]);
 
     this.tip = d3.tip()
@@ -82,12 +82,12 @@ function ColorScatter(parent)
 ColorScatter.prototype.setData = function(points, isFactor)
 {
     this.points = points;
-    cvals = points.map(function(e){return e[2];}); //extract 3rd column
+    var cvals = points.map(function(e){return e[2];}); //extract 3rd column
 
     if(isFactor)
     {
         //Find unique values
-        unique = d3.set(cvals).values();
+        var unique = d3.set(cvals).values();
         if(unique.length <= 10) { this.colorScale = d3.scale.category10();}
         else { this.colorScale = d3.scale.category20();}
 
@@ -95,9 +95,9 @@ ColorScatter.prototype.setData = function(points, isFactor)
     }
     else
     {
-        low = d3.min(cvals);
-        high = d3.max(cvals);
-        mid = (low+high)/2;
+        var low = d3.min(cvals);
+        var high = d3.max(cvals);
+        var mid = (low+high)/2;
 
         this.colorScale = d3.scale.linear()
             .domain([low, mid, high])
@@ -114,11 +114,11 @@ ColorScatter.prototype.setSelected = function(selected_index, event_id)
     }
 
     //Needed to prevent infinite loops with linked hover and select events
-    if(this.last_event != event_id) {
+    if(this.last_event !== event_id) {
         this.last_event = event_id;
         this.selected = selected_index;
         this.redraw()();
-        this.selected_links.forEach(function (e, i) {
+        this.selected_links.forEach(function (e) {
             e.setSelected(selected_index, event_id);
         });
     }
@@ -131,14 +131,14 @@ ColorScatter.prototype.setHovered = function(hovered_indices, event_id)
     }
 
     //test for single index, and wrap in list
-    if(typeof(hovered_indices) == "number"){hovered_indices = [hovered_indices];}
-    if(hovered_indices.length == 0){hovered_indices = [-1];}
+    if(typeof(hovered_indices) === "number"){hovered_indices = [hovered_indices];}
+    if(hovered_indices.length === 0){hovered_indices = [-1];}
 
     //Needed to prevent infinite loops with linked hover and select events
-    if(this.last_event != event_id) {
+    if(this.last_event !== event_id) {
         this.last_event = event_id;
         this.hover_col = hovered_indices;
-        if(hovered_indices != -1){
+        if(hovered_indices !== -1){
             this.svg.selectAll("circle")
                 .classed("point-faded", true)
                 .classed("point-hover", function (d, i) {
@@ -148,10 +148,10 @@ ColorScatter.prototype.setHovered = function(hovered_indices, event_id)
         else{ //Clear the hover
             this.svg.selectAll("circle")
                 .classed("point-faded", false)
-                .classed("point-hover", false)
+                .classed("point-hover", false);
         }
 
-        this.hovered_links.forEach(function (e, i) {
+        this.hovered_links.forEach(function (e) {
             e.setHovered(hovered_indices, event_id);
         });
     }
@@ -167,12 +167,12 @@ ColorScatter.prototype.redraw = function(performTransition) {
 
     circles.enter().append("circle").attr("r",4.5);
     circles.style("fill", function(d){return self.colorScale(d[2]);})
-        .on("click", function(d,i){self.setSelected(i)})
+        .on("click", function(d,i){self.setSelected(i);})
         .on("mouseover", function(d,i){self.tip.show(d,i); self.setHovered(i);})
         .on("mouseout", function(d,i){self.tip.hide(d,i); self.setHovered(-1);})
-        .classed("point-selected", function(d, i){return i == self.selected});
+        .classed("point-selected", function(d, i){return i === self.selected;});
 
-    if(performTransition !== undefined && performTransition == true)
+    if(performTransition !== undefined && performTransition === true)
     {
         circles
             .transition()
@@ -184,9 +184,9 @@ ColorScatter.prototype.redraw = function(performTransition) {
     {
         circles
             .attr("cx", function(d){return self.x(d[0]);})
-            .attr("cy", function(d){return self.y(d[1]);})
+            .attr("cy", function(d){return self.y(d[1]);});
     }
 
     circles.exit().remove();
-    }
+    };
 };

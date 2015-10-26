@@ -86,9 +86,9 @@ function exportSigProj()
         var context = canvas.getContext("2d");
         context.drawImage(image, 0,0);
 
-        canvasdata = canvas.toDataURL("image/png");
+        var canvasdata = canvas.toDataURL("image/png");
         //Strip off the data URI portion
-        scatter_png = canvasdata.substring(canvasdata.indexOf(",")+1);
+        var scatter_png = canvasdata.substring(canvasdata.indexOf(",")+1);
         
         //Take the result and stick it into a zip
         
@@ -149,8 +149,8 @@ function apply_styles(original_node, unstyled_node)
         //For some reason, if height or width is set explicitly as an attribute, the computed style is "auto"
         //If we then add width:auto to the elements style string, we override the attribute
         //This prevents that from happening
-        if(key == "height" && original_node.hasAttribute(key)){continue;}
-        if(key == "width" && original_node.hasAttribute(key)){continue;}
+        if(key === "height" && original_node.hasAttribute(key)){continue;}
+        if(key === "width" && original_node.hasAttribute(key)){continue;}
 
         if (value !== unstyledStyles.getPropertyValue(key))
         {

@@ -57,7 +57,7 @@ function HeatMap(parent)
 
     //define a color scale using the min and max expression values
     this.colorScale = d3.scale.linear()
-        .domain([-.6, 0, .6])
+        .domain([-0.6, 0, 0.6])
         .range(["steelblue", "white", "lightcoral"]);
 
     this.data = [];
@@ -109,11 +109,11 @@ HeatMap.prototype.setData = function(data, cluster_assignments)
     //Now, each clusters data is just a length N_genes array of values for that cluster.
 
     //Convert to a list for easier d3 binding
-    cluster_list = [];
+    var cluster_list = [];
     for (var clust_i in clusters)
     {
         var clust = clusters[clust_i];
-        clust['index'] = clust_i;
+        clust.index = clust_i;
         cluster_list.push(clust);
     }
 
@@ -122,20 +122,20 @@ HeatMap.prototype.setData = function(data, cluster_assignments)
     for (var j = 0; j < cluster_list.length; j++)
     {
         var clust = cluster_list[j];
-        var width = clust['weight'] / TOTAL_SAMPLES * this.width;
+        var width = clust.weight / TOTAL_SAMPLES * this.width;
         
-        clust.data = clust.data.map(function(e,i){
-            return {"value":e, "x":x_offset, "width":width, "index": clust['index']};
+        clust.data = clust.data.map(function(e){
+            return {"value":e, "x":x_offset, "width":width, "index": clust.index};
         });
 
         x_offset = x_offset + width;
     }
 
     this.data = cluster_list;
-    N_ROWS = this.data[0].data.length;
+    var N_ROWS = this.data[0].data.length;
 
     this.h = Math.floor(this.height/N_ROWS);
-    if(this.h == 0) {this.h = 1;}
+    if(this.h === 0) {this.h = 1;}
 
     this.redraw()();
 };
@@ -147,11 +147,11 @@ HeatMap.prototype.setSelected = function(selected_index, event_id)
     }
 
     //Needed to prevent infinite loops with linked hover and select events
-    if(this.last_event != event_id) {
+    if(this.last_event !== event_id) {
         this.last_event = event_id;
         this.selected = selected_index;
         this.redraw()();
-        this.selected_links.forEach(function (e, i) {
+        this.selected_links.forEach(function (e) {
             e.setSelected(selected_index, event_id);
         });
     }
@@ -164,35 +164,35 @@ HeatMap.prototype.setHovered = function(hovered_indices, event_id)
 
 HeatMap.prototype.setHoveredCol = function(hovered_col_index)
 {
-    hovered_indices = [];
+    var hovered_indices = [];
     if(hovered_col_index !== undefined) {
         for (var i = 0; i < this.cluster_assignments.length; i++) {
-            if (this.cluster_assignments[i] == hovered_col_index) {
+            if (this.cluster_assignments[i] === hovered_col_index) {
                 hovered_indices.push(i);
             }
         }
     }
 
-    this.hovered_links.forEach(function (e, i) {
+    this.hovered_links.forEach(function (e) {
         e.setHovered(hovered_indices);
     });
 };
 
 HeatMap.prototype.setHoveredRow = function(hovered_row_indices)
 {
-    if(typeof(hovered_row_indices) == "number"){
+    if(typeof(hovered_row_indices) === "number"){
         hovered_row_indices = [hovered_row_indices];
-    };
+    }
     
     this.hover_rows = hovered_row_indices;
     
-    if(this.hover_rows.length == 1)
+    if(this.hover_rows.length === 1)
     {
         var ii = this.hover_rows[0];
         this.labels.select(".row_label").text(this.row_labels[ii]);
     }
     
-}
+};
 
 //Sets the text and color for the square upper-right indicator
 HeatMap.prototype.setHoveredIndicator = function(data_val)
@@ -212,7 +212,7 @@ HeatMap.prototype.setHoveredIndicator = function(data_val)
             .text("");
     }
 
-}
+};
 
 HeatMap.prototype.redraw = function() {
     var self = this;
@@ -251,5 +251,5 @@ HeatMap.prototype.redraw = function() {
                 return d.x;});
 
         heatmapRects.exit().remove();
-    }
+    };
 };
