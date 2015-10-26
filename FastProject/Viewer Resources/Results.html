@@ -59,12 +59,26 @@
             function doneTyping()
             {
                 var val = global_status.signature_filter.toLowerCase();
+                var vals = val.split(",");
+                vals = vals.map(function(str){return str.trim();});
+
                 var table = $('#table_div table');
                 table.find('tr').removeClass('hidden')
                         .filter(function(i, element){
-                            if(i == 0){return false;}
+                            if(i == 0){return false;} // Don't filter out the header row
+                            if(vals.length == 1 && vals[0].length == 0)
+                            {
+                                return false;
+                            }
                             var sig_text = $(element).children('td').first().html().toLowerCase();
-                            return sig_text.indexOf(val) == -1;
+                            for(var j = 0; j < vals.length; j++)
+                            {
+                                if(vals[j].length > 0 && sig_text.indexOf(vals[j]) > -1)
+                                {
+                                    return false;
+                                }
+                            }
+                            return true;
                         }).addClass('hidden');
                 table.find('tr').removeClass('altRow')
                         .not('.hidden').filter(':odd').addClass('altRow');
