@@ -18,11 +18,8 @@ function exportSigProj()
     var data = getDataContext();
 
     var choice = $('#cluster_select').val();
-    var i = global_status.plotted_signature;
-    var j = global_status.plotted_projection;
-
-    var sig_key = data.SignatureKeys[i];
-    var proj_key = data.ProjectionKeys[j];
+    var sig_key = global_status.plotted_signature;
+    var proj_key = global_status.plotted_projection;
 
     //Convert the data that's in the scatter plot to a tab-delimited table
 
@@ -30,10 +27,11 @@ function exportSigProj()
     var sig = data.SigScores[sig_key];
     var cluster_assignments = data.Clusters[proj_key][choice];
     
+    var table;
     if(sig.isFactor){ 
-        var table = [proj[0], proj[1], sig.scores, cluster_assignments];}
+        table = [proj[0], proj[1], sig.scores, cluster_assignments];}
     else{
-        var table = [proj[0], proj[1], sig.scores, sig.ranks, cluster_assignments];}
+        table = [proj[0], proj[1], sig.scores, sig.ranks, cluster_assignments];}
 
 
     table = d3.transpose(table);
@@ -52,7 +50,7 @@ function exportSigProj()
         var heat_data = global_heatmap.data;
         var header_row = ["Gene"];
         var heat_table = [];
-        for(i = 0; i<heat_data.length; i++)
+        for(var i = 0; i<heat_data.length; i++)
         {
             header_row.push("Cluster " + heat_data[i].index);
             heat_table.push(heat_data[i].data.map(function(x){return x.value;}));
@@ -79,7 +77,7 @@ function exportSigProj()
 
     var imgsrc = "data:image/svg+xml;base64," + btoa(html_data);
 
-    var image = new Image;
+    var image = new Image();
     image.onload = function()
     {
         var canvas = document.createElement("canvas");
