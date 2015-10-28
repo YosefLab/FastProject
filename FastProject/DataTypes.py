@@ -51,6 +51,14 @@ class ExpressionData(np.ndarray):
         dist_vec = distance.pdist(self.projection_data(filter_name).T, metric='euclidean');
         return distance.squareform(dist_vec);
 
+    def weighted_distance_matrix(self, filter_name=None):
+        data = self.projection_data(filter_name).T;
+        weights = self.projection_weights(filter_name).T;
+        from .Utils.distance_metrics import modeled_distance;
+
+        return modeled_distance(data, weights);
+
+
     def eval_signature(self, signature):
         """For a signature, calculate a score against each sample in the data
         
@@ -200,6 +208,9 @@ class ProbabilityData(np.ndarray):
         
         return prob_dist;
 
+    def weighted_distance_matrix(self, filter_name=None):
+        return self.distance_matrix(filter_name);
+
     #All data values in PCData have the same weight
     @property
     def filters(self):
@@ -342,6 +353,10 @@ class PCData(np.ndarray):
         
         dist_vec = distance.pdist(self.T, metric='euclidean');
         return distance.squareform(dist_vec);
+
+    def weighted_distance_matrix(self, filter_name=None):
+        
+        return self.distance_matrix(filter_name)
 
     def eval_signature(self, signature):
         """For a signature, calculate a score against each sample in the data

@@ -53,7 +53,7 @@ def generate_projections(data, filter_name = None):
 
     proj_data = data.projection_data(filter_name);
     proj_weights = data.projection_weights(filter_name);
-    dist_matrix = data.distance_matrix(filter_name);
+    dist_matrix = data.weighted_distance_matrix(filter_name);
 
     # PCA - Uses subsampling inside perform_weighted_pca
     proj_data = data.projection_data(filter_name);
