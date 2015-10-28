@@ -113,7 +113,7 @@ HeatMap.prototype.setData = function(data, cluster_assignments)
     for (var clust_i in clusters)
     {
         var clust = clusters[clust_i];
-        clust.index = clust_i;
+        clust.index = parseInt(clust_i);
         cluster_list.push(clust);
     }
 

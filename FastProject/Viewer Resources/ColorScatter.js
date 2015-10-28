@@ -138,17 +138,18 @@ ColorScatter.prototype.setHovered = function(hovered_indices, event_id)
     if(this.last_event !== event_id) {
         this.last_event = event_id;
         this.hover_col = hovered_indices;
-        if(hovered_indices !== -1){
+        if(hovered_indices.length === 1 && hovered_indices[0] === -1){
+             //Clear the hover
+            this.svg.selectAll("circle")
+                .classed("point-faded", false)
+                .classed("point-hover", false);
+        }
+        else{
             this.svg.selectAll("circle")
                 .classed("point-faded", true)
                 .classed("point-hover", function (d, i) {
                     return hovered_indices.indexOf(i) > -1;
                 });
-        }
-        else{ //Clear the hover
-            this.svg.selectAll("circle")
-                .classed("point-faded", false)
-                .classed("point-hover", false);
         }
 
         this.hovered_links.forEach(function (e) {
