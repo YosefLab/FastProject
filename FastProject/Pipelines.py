@@ -14,14 +14,14 @@ from FastProject import SubSample;
 from FastProject.DataTypes import ExpressionData, ProbabilityData, PCData;
 from FastProject.Utils import ProgressBar;
 from FastProject import HtmlViewer;
-from .Global import options, args, FP_Output;
+from .Global import args, FP_Output;
 
 
 def FullOutput():
 
     #Create directory for all outputs
-    if(options.output):
-        dir_name = options.output;
+    if(args.output):
+        dir_name = args.output;
     else:
         default_dir_name = 'FastProject_Output';
         if(os.path.isdir(default_dir_name)):
@@ -38,19 +38,15 @@ def FullOutput():
     FileIO.make_dirs(dir_name);
     logging.basicConfig(format='%(asctime)s %(message)s', filename=os.path.join(dir_name, 'fastproject.log'), level=logging.INFO);
     logging.info("Running FastProject Analysis");
-    logging.info("Data File: " + args[0]);
-    for key in options.__dict__:
-        logging.info(key + ": " + str(options.__dict__[key]));
+    for key in args.__dict__:
+        logging.info(key + ": " + str(args.__dict__[key]));
 
     start_time = time.time();
-    housekeeping_filename = options.housekeeping;
+    housekeeping_filename = args.housekeeping;
 
 
     #%% Read expression data from file
-    if(len(args) > 0):
-        filename = args[0];
-    else:
-        raise ValueError("Argument Error:  data_file not specified.\nExiting...");
+    filename = args.data_file;
 
     if(not os.path.isfile(filename)):
         raise ValueError("Argument Error: data file not found.\nExiting...");
@@ -61,19 +57,20 @@ def FullOutput():
 
     #%% Load Signature file
     sigs = [];
-    if(options.signatures):
-        sig_file = options.signatures;
-        if(not os.path.isfile(sig_file)):
-            raise ValueError("Option Error: signature file " + sig_file + " not found.\nExiting...");
+    if(args.signatures):
+        for sig_file in args.signatures:
+            if(not os.path.isfile(sig_file)):
+                raise ValueError("Option Error: signature file " + sig_file + " not found.\nExiting...");
 
-        sigs = Signatures.read_signatures(sig_file);
-    if(options.precomputed):
-        precomputed_sig_file = options.precomputed;
-        if(not os.path.isfile(precomputed_sig_file)):
-            raise ValueError("Option Error: precomputed signature file " + precomputed_sig_file + " not found.\nExiting...");
-        _throwaway = Signatures.load_precomputed(options.precomputed, cells);
+            sigs += Signatures.read_signatures(sig_file);
 
-    if(not options.signatures and not options.precomputed): #Need one or the other here
+    if(args.precomputed):
+        for precomputed_sig_file in args.precomputed:
+            if(not os.path.isfile(precomputed_sig_file)):
+                raise ValueError("Option Error: precomputed signature file " + precomputed_sig_file + " not found.\nExiting...");
+            _throwaway = Signatures.load_precomputed(precomputed_sig_file, cells);
+
+    if(not args.signatures and not args.precomputed): #Need one or the other here
         raise ValueError("Option Error: Must specify either a signature file or a pre-computed signature file.\nExiting...");
 
 
@@ -81,12 +78,12 @@ def FullOutput():
     all_data = ExpressionData(edata, genes, cells); #TODO: Does this need to be copied?
     edata = ExpressionData(edata, genes, cells);
 
-    if(options.subsample_size > edata.shape[1]):
-        options.subsample_size = None;
+    if(args.subsample_size > edata.shape[1]):
+        args.subsample_size = None;
 
     holdouts = None;
-    if(options.subsample_size):
-        holdouts, edata = SubSample.split_samples(edata, options.subsample_size);
+    if(args.subsample_size):
+        holdouts, edata = SubSample.split_samples(edata, args.subsample_size);
 
 
     #Hold on to originals so we don't lose data after filtering in case it's needed later
@@ -94,7 +91,7 @@ def FullOutput():
 
     #Filtering
     filter_dict = {};
-    if(options.nofilter):
+    if(args.nofilter):
         edata = Filters.filter_genes_novar(edata);
 
         filter_dict.update({'No_Filter': set(edata.row_labels)});
@@ -121,7 +118,7 @@ def FullOutput():
     Models.update({"Expression": emodel});
 
     #%% Probability transform
-    if(not options.nomodel):
+    if(not args.nomodel):
 
         FP_Output('\nFitting expression data to exp/norm mixture model');
         (pdata, mu_h, mu_l, st_h, Pi) = Transforms.probability_of_expression(edata);
@@ -144,7 +141,7 @@ def FullOutput():
         FileIO.write_qc_file(dir_name, sample_passes_qc, sample_qc_scores, edata.col_labels);
 
         #If specified, remove items that did not pass qc check
-        if(options.qc):
+        if(args.qc):
             for name, dataMatrix in Models.items():
                 Models[name] = dataMatrix.subset_samples(sample_passes_qc);
 
@@ -182,9 +179,10 @@ def FullOutput():
             pbar.update();
         pbar.complete();
 
-        if(options.precomputed):
-            precomputed_sig_scores = Signatures.load_precomputed(options.precomputed, data.col_labels);
-            sig_scores_dict.update(precomputed_sig_scores);
+        if(args.precomputed):
+            for precomputed_file in args.precomputed:
+                precomputed_sig_scores = Signatures.load_precomputed(precomputed_file, data.col_labels);
+                sig_scores_dict.update(precomputed_sig_scores);
 
         #Adds in quality score as a pre-computed signature
         if(sample_qc_scores is not None): #Might be None if --nomodel option is selected
@@ -224,7 +222,7 @@ def FullOutput():
 
 
             #Now do it all again using the principal component data
-            if(options.pca_filter):
+            if(args.pca_filter):
                 pcdata = Projections.filter_PCA(pcdata, scores=sample_qc_scores, variance_proportion=0.25);
             else:
                 pcdata = Projections.filter_PCA(pcdata, variance_proportion=0.25, min_components = 30);
@@ -309,7 +307,7 @@ def FullOutput():
     fout_js.write(HtmlViewer.toJS_variable("FP_Signatures", sig_dict));
 
     #Merge all the holdouts back into the model
-    if(options.subsample_size is not None):
+    if(args.subsample_size is not None):
         FP_Output("Merging held-out samples back in")
         SubSample.merge_samples(all_data, Models, sigs, prob_params);
 

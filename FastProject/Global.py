@@ -1,8 +1,7 @@
 from __future__ import division, print_function;
 import logging;
 
-options = dict();
-args = [];
+args = dict();
 
 
 def FP_Output(*args):
