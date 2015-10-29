@@ -45,7 +45,7 @@ def read_matrix(filename='', delimiter = '\t'):
     #load matrix data
     #First read in list of cell names
     
-    with open(filename,'r') as ff:
+    with open(filename,'rU') as ff:
         col_labels = ff.readline().strip().split(delimiter);
         col_labels = [col_label.strip() for col_label in col_labels];
 
@@ -66,7 +66,7 @@ def read_matrix(filename='', delimiter = '\t'):
         data = np.log(data + 1);
     
     #read in gene names
-    with open(filename,'r') as ff:
+    with open(filename,'rU') as ff:
         xx = ff.readline();
 
         row_labels = list();

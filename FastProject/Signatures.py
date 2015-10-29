@@ -66,7 +66,7 @@ def read_signatures_txt(filename='', match_terms=[]):
         Tk().withdraw();
         filename = askopenfilename();
     
-    ff = open(filename, 'r');
+    ff = open(filename, 'rU');
     found_signatures = dict();    ## dictionary of signatures
     
     if(type(match_terms) is str):
@@ -203,7 +203,7 @@ def read_signatures_gmt(filename='', match_terms=[]):
 
     match_terms = [term.lower() for term in match_terms];
 
-    with open(filename, 'r') as ff:
+    with open(filename, 'rU') as ff:
         found_signatures = dict();    ## dictionary of signatures
         end_of_file = False;
 
@@ -458,7 +458,7 @@ def load_precomputed(filename, sample_labels):
     :return: Dictionary of Signature Name (String) -> Signature (SignatureScores)
     """
 
-    with open(filename, 'r') as fin:
+    with open(filename, 'rU') as fin:
         #Determine column labels to apply
         line1 = fin.readline().rstrip().split('\t');
         line2 = fin.readline().rstrip().split('\t');

@@ -102,7 +102,7 @@ def remove_from_file(data, filename):
     if multiple entries per line, seperated by comma, take the first"""
 
     #load gene names from file
-    ff = open(filename);
+    ff = open(filename, 'rU');
     xx = ff.readline();  #discard first line
     
     hk_genes = list();
@@ -166,7 +166,7 @@ def save_filter(data, filename):
 def load_from_file(data, filename):
     loaded_genes = list();
     
-    ff = open(filename,'r')
+    ff = open(filename,'rU')
     for line in ff.readlines():
       loaded_genes.append(line.strip().lower());
     
