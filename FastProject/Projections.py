@@ -60,8 +60,8 @@ def generate_projections(data, filter_name = None):
     proj_weights = data.projection_weights(filter_name);
 
     if(type(data) is not PCData):
-        wpca_data, e_val = perform_weighted_PCA(proj_data, proj_weights, max_components = 50);
-        pcdata = PCData(wpca_data, e_val, data);
+        wpca_data, e_val, e_vec = perform_weighted_PCA(proj_data, proj_weights, max_components = 50);
+        pcdata = PCData(wpca_data, e_val, e_vec, data);
     else:
         pcdata = data;
 
@@ -240,7 +240,7 @@ def perform_weighted_PCA(data, weights, max_components=200):
     total_var = np.sum(np.var(proj_data, axis=1));
     e_val /= total_var;
 
-    return wpca_data, e_val;
+    return wpca_data, e_val, e_vec.T;
 
 
 def filter_PCA(data, scores=None, N=0, variance_proportion=1.0, min_components = 0):

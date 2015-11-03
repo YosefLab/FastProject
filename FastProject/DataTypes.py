@@ -103,6 +103,22 @@ class ExpressionData(np.ndarray):
         out.col_labels = [self.col_labels[i] for i in indices];
         return(out);
 
+    def filtered_genes(self, filter_name=None):
+        """
+        Returns the list of genes (in the order used by projection_data or projection_weights)
+        filtered by the listed filter
+
+        :param filter_name: Name of the filter to use
+        :return: List of gene (row) names
+        """
+
+        if(filter_name is None or filter_name == 'None'):
+            return self.row_labels;
+        else:
+            filter = self.filters[filter_name];
+            fg = [gene for gene in self.row_labels if gene in filter]
+            return fg;
+
     def projection_data(self, filter_name=None):
         """
         Returns the data matrix in self filtered by filters[filter_name]
@@ -259,6 +275,22 @@ class ProbabilityData(np.ndarray):
         out.expression_data = out.expression_data.subset_samples(indices);
         return(out);
 
+    def filtered_genes(self, filter_name=None):
+        """
+        Returns the list of genes (in the order used by projection_data or projection_weights)
+        filtered by the listed filter
+
+        :param filter_name: Name of the filter to use
+        :return: List of gene (row) names
+        """
+
+        if(filter_name is None or filter_name == 'None'):
+            return self.row_labels;
+        else:
+            filter = self.filters[filter_name];
+            fg = [gene for gene in self.row_labels if gene in filter]
+            return fg;
+
     def projection_data(self, filter_name=None):
         """
         Returns the data matrix in self filtered by filters[filter_name]
@@ -270,6 +302,7 @@ class ProbabilityData(np.ndarray):
             filter = self.filters[filter_name];
             filter_i = [i for i,gene in enumerate(self.row_labels) if gene in filter];
             return self.base[filter_i,:];
+
 
     def projection_weights(self, filter_name=None):
         """
@@ -310,16 +343,18 @@ class ProbabilityData(np.ndarray):
 
 class PCData(np.ndarray):
     
-    def __new__(subtype, data, variance, parent_data):
+    def __new__(subtype, data, variance, loadings, parent_data):
         
         obj = np.asarray(data).view(subtype);
 
         obj.variance = variance;
         
         obj.row_labels = ["PC"+str(i+1) for i in range(data.shape[0])];
-        
+
+        obj.loadings = loadings;
+
         obj.col_labels = parent_data.col_labels;
-        
+
         obj.parent_data = parent_data;
         
         return obj;
@@ -336,6 +371,7 @@ class PCData(np.ndarray):
         self.variance = getattr(obj, 'variance', []);
         self.row_labels = getattr(obj, 'row_labels', []);
         self.col_labels = getattr(obj, 'col_labels', []);
+        self.loadings = getattr(obj, 'loadings', []);
         self.parent_data = getattr(obj, 'parent_data', []);
         
     def distance_matrix(self, filter_name=None):
@@ -378,10 +414,21 @@ class PCData(np.ndarray):
                 indices = np.nonzero(indices)[0];
 
         out = self[indices,:];
+        out.loadings = out.loadings[:,indices];
         out.variance = out.variance[indices];
         out.row_labels = [self.row_labels[i] for i in indices];
         return(out);
 
+    def filtered_genes(self, filter_name=None):
+        """
+        Returns the list of genes (in the order used by projection_data or projection_weights)
+        filtered by the listed filter
+
+        :param filter_name: Name of the filter to use
+        :return: List of gene (row) names
+        """
+
+        return self.parent_data.filtered_genes(filter_name);
 
     def projection_data(self, filter_name=None):
         """

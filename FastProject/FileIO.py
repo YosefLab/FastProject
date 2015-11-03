@@ -305,6 +305,7 @@ def write_models(directory, Models):
                          projData["sigProjMatrix"],
                          projData["signatureKeys"],
                          projData["projectionKeys"]);
+
             write_matrix(os.path.join(filter_dir, "PMatrix.txt"),
                         projData["sigProjMatrix_p"],
                         projData["signatureKeys"],
@@ -313,6 +314,14 @@ def write_models(directory, Models):
             #Output genes used in filter
             write_filter_file(os.path.join(filter_dir, 'ProjectedGenes.txt'),
                               projData["genes"]);
+
+            #If PCA, output the Loadings
+            if(projData["pca"]):
+               write_matrix(os.path.join(filter_dir, "PCA_Loadings.txt"),
+                            projData["loadings"],
+                            projData["genes"],
+                            ["PC "+str(x+1) for x in range(projData["loadings"].shape[1])]);
+
 
 
 def write_qc_file(directory, sample_passes, sample_scores, sample_labels):

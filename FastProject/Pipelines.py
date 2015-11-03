@@ -210,7 +210,7 @@ def FullOutput():
 
             #Store in projData
             projData["filter"] = filter_name;
-            projData["genes"] = data.filters[filter_name];
+            projData["genes"] = data.filtered_genes(filter_name);
             projData["pca"] = False;
             projData["projections"] = projections;
             projData["sigProjMatrix"] = sig_proj_matrix;
@@ -241,7 +241,7 @@ def FullOutput():
 
             projData = dict();
             projData["filter"] = filter_name;
-            projData["genes"] = data.filters[filter_name];
+            projData["genes"] = data.filtered_genes(filter_name);
             projData["pca"] = True;
             projData["projections"] = projections;
             projData["sigProjMatrix"] = sig_proj_matrix;
@@ -249,6 +249,7 @@ def FullOutput():
             projData["projectionKeys"] = sp_col_labels;
             projData["signatureKeys"] = sp_row_labels;
             projData["clusters"] = clusters;
+            projData["loadings"] = pcdata.loadings[:,0:3];
             model["projectionData"].append(projData);
 
     #Filter output signatures
