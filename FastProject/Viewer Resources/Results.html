@@ -13,10 +13,10 @@
     <script type="text/javascript" src="_resources/jszip.min.js"></script>
 
     <!-- Bootstrap Stuff -->
-    <link rel="stylesheet" href="_resources/styles.css">
     <link rel="stylesheet" href="_resources/bootstrap.css">
     <script src="_resources/bootstrap.min.js"></script>
 
+    <link rel="stylesheet" href="_resources/styles.css">
     <script type="text/javascript">
 
         var global_status = {};
@@ -499,9 +499,10 @@
     </div>
 </div>
 <div style="float: left">
+    <div id="title_div" class="color_panel">
     <h1>FastProject Viewer</h1>
-    <br>
-    <div id="data_options_div">
+    </div>
+    <div id="data_options_div" class="color_panel">
         <span>
             <label for="probability_checkbox">Probability Model?</label>
             <input id="probability_checkbox" type="checkbox">
@@ -521,7 +522,7 @@
         </button>
         </span>
     </div>
-    <div id="table_div">
+    <div id="table_div" class="color_panel">
         <table>
             <thead><tr></tr></thead>
             <tbody></tbody>
@@ -530,12 +531,12 @@
     <div id="spacer"></div>
 </div>
 <div style="float: left">
-    <div id="plot_title_div">
+    <div id="plot_title_div" class="color_panel">
         <div class="title"></div>
         <div class="subtitle"></div>
-        <div class="colorOptions" style="margin: 10px 80px;">
-            <span style="float: left">Signature Score Colors:</span>
-            <div class="btn-group" data-toggle="buttons" style="float: left">
+        <div class="colorOptions">
+            <span>Signature Score Colors:</span>
+            <div class="btn-group" data-toggle="buttons">
                 <label class="btn btn-default">
                     <input type="radio" name="scatterColorButtons" id="valueoption" value="value" autocomplete="off"> Value
                 </label>
@@ -548,8 +549,8 @@
             </div>
         </div>
     </div>
-    <div id="scatter_div"></div>
-    <div id="heatmap_div">
+    <div id="scatter_div" class="color_panel"></div>
+    <div id="heatmap_div" class="color_panel">
         <select id="cluster_select" class="form-control" style="width: 200px; margin-bottom:10px"></select>
     </div>
 </div>
