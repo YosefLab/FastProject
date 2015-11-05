@@ -297,17 +297,30 @@ def sigs_vs_projections(projections, sig_scores_dict, NEIGHBORHOOD_SIZE = 0.33):
         Maps projections to their spatial coordinates for each sample
     :param sig_scores: dict of (string) => (numpy.ndarray of shape Num_Samples)
         Maps signature names to their value at each coordinate
-    :return:
+    :return: tuple
+
+        sp_row_labels: List of Strings. Labels for rows of the output matrices
+        sp_col_labels: List of Strings.  Labels for columns of the output matrices
+        sig_proj_matrix: numpy.ndarray, NUM_SIGNATURES x NUM_PROJECTIONS
+                        sig_proj dissimilarity score
+        sig_proj_matrix_p: numpy.ndarray, NUM_SIGNATURES x NUM_PROJECTIONS
+                        sig_proj dissimilarity p value
     """
     sp_row_labels = [];
     sp_row_labels_factors = [];
+    sp_row_labels_pnum = [];
 
-    #Remove signatures that are factor signatures
+    #Remove signatures that are factor signatures and precomputed-numerical signatures
     for name, sig_scores in sig_scores_dict.items():
-        if(sig_scores.isFactor):
-            sp_row_labels_factors.append(name);
+        if(sig_scores.isPrecomputed):
+            if(sig_scores.isFactor):
+                sp_row_labels_factors.append(name);
+            else:
+                sp_row_labels_pnum.append(name);
         else:
             sp_row_labels.append(name);
+
+
 
     sp_col_labels = projections.keys();
     sp_col_labels.sort();
@@ -315,6 +328,7 @@ def sigs_vs_projections(projections, sig_scores_dict, NEIGHBORHOOD_SIZE = 0.33):
     N_SAMPLES = len(sig_scores_dict[sp_row_labels[0]].sample_labels);
     N_SIGNATURES = len(sp_row_labels);
     N_SIGNATURES_FACTORS = len(sp_row_labels_factors);
+    N_SIGNATURES_PNUM = len(sp_row_labels_pnum);
     N_PROJECTIONS = len(sp_col_labels);
 
 
@@ -323,6 +337,9 @@ def sigs_vs_projections(projections, sig_scores_dict, NEIGHBORHOOD_SIZE = 0.33):
 
     factor_sig_proj_matrix   = np.zeros((N_SIGNATURES_FACTORS,N_PROJECTIONS));
     factor_sig_proj_matrix_p = np.zeros((N_SIGNATURES_FACTORS,N_PROJECTIONS));
+
+    pnum_sig_proj_matrix = np.zeros((N_SIGNATURES_PNUM, N_PROJECTIONS));
+    pnum_sig_proj_matrix_p = np.zeros((N_SIGNATURES_PNUM, N_PROJECTIONS));
 
     #Build a matrix of all signatures
     sig_score_matrix = np.zeros((N_SAMPLES, N_SIGNATURES));
@@ -385,6 +402,31 @@ def sigs_vs_projections(projections, sig_scores_dict, NEIGHBORHOOD_SIZE = 0.33):
         sig_proj_matrix[:,i] = med_dissimilarity;
         sig_proj_matrix_p[:,i] = p_values;
 
+
+        # Calculate significance for precomputed numerical signatures
+        # This is done separately because there are likely to be many repeats (e.g. for a time coordinate)
+        for j,sig in enumerate(sp_row_labels_pnum):
+            sig_scores = sig_scores_dict[sig].ranks;
+            sig_scores = sig_scores.reshape((sig_scores.size,1));
+            sig_predictions = np.dot(weights, sig_scores);
+            dissimilarity = np.abs(sig_scores - sig_predictions);
+            med_dissimilarity = np.median(dissimilarity);
+
+            # Now compute a background
+            bg_values = sig_scores.ravel()[random_sig_values];
+            random_predictions = np.dot(weights, bg_values);
+            random_scores = np.median(np.abs(bg_values - random_predictions), axis=0);
+
+            mu = np.mean(random_scores);
+            sigma = np.std(random_scores);
+            if(sigma == 0):
+                sigma = 1e-3;
+
+            p_value = norm.cdf((med_dissimilarity - mu)/sigma);
+
+            pnum_sig_proj_matrix[j,i] = med_dissimilarity;
+            pnum_sig_proj_matrix_p[j,i] = p_value;
+
         #Calculate significance for Factor signatures
         for j,sig in enumerate(sp_row_labels_factors):
             factor_levels, factor_frequencies, factor_matrix = factor_dict[sig];
@@ -396,34 +438,37 @@ def sigs_vs_projections(projections, sig_scores_dict, NEIGHBORHOOD_SIZE = 0.33):
 
             #Now...compute a background?
             NUM_REPLICATES = 1000;
-            rand_factors = np.random.rand(N_SAMPLES, NUM_REPLICATES);
             column_assignments = np.random.choice(N_LEVELS, NUM_REPLICATES, p = factor_frequencies);
             column_assignments = factor_frequencies[column_assignments];
             column_assignments = column_assignments.reshape((1,NUM_REPLICATES));
+            rand_factors = np.random.rand(N_SAMPLES, NUM_REPLICATES);
             rand_factors = (rand_factors < column_assignments).astype('int');
-            rand_med_dissimilarity = np.median(1-np.dot(weights, rand_factors), axis=0);
+            random_predictions = np.dot(weights, rand_factors);
+            for ii in xrange(random_predictions.shape[0]):
+                random_predictions[ii] = np.random.permutation(random_predictions[ii]);
+            rand_med_dissimilarity = np.median(1-random_predictions, axis=0);
 
             mu = np.mean(rand_med_dissimilarity);
             sigma = np.std(rand_med_dissimilarity);
             if(sigma == 0):
                 p_value = 1;
             else:
-                p_value = norm.cdf((med_dissimilarity - mu)/sigma); #Runtime error here possibly?  Divide by zero?
+                p_value = norm.cdf((med_dissimilarity - mu)/sigma);
 
             factor_sig_proj_matrix[j,i] = med_dissimilarity;
             factor_sig_proj_matrix_p[j,i] = p_value;
 
+
         pp.update();
 
     #Concatenate the Factor sig-proj entires back in
-    sig_proj_matrix = np.concatenate((sig_proj_matrix, factor_sig_proj_matrix), axis=0);
-    sig_proj_matrix_p = np.concatenate((sig_proj_matrix_p, factor_sig_proj_matrix_p), axis=0);
-    sp_row_labels = sp_row_labels + sp_row_labels_factors;
+    sig_proj_matrix = np.concatenate((sig_proj_matrix, factor_sig_proj_matrix, pnum_sig_proj_matrix), axis=0);
+    sig_proj_matrix_p = np.concatenate((sig_proj_matrix_p, factor_sig_proj_matrix_p, pnum_sig_proj_matrix_p), axis=0);
+    sp_row_labels = sp_row_labels + sp_row_labels_factors + sp_row_labels_pnum;
 
     sig_proj_matrix_p = p_to_q(sig_proj_matrix_p);
     sig_proj_matrix_p[sig_proj_matrix_p == 0] = 1e-300; #Correct for -inf
     sig_proj_matrix_p = np.log10(sig_proj_matrix_p);
-
 
     pp.complete();
 
