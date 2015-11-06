@@ -7,8 +7,13 @@ function HeatMap(parent)
     var self = this;
     this.h = 1;  //height of row
 
-    this.width = 500;
-    this.height = 450;
+    this.width = $(parent).width();
+    this.height = $(parent).height();
+
+    var otherHeight = 0;
+    //Subtract height of anything else
+    $(parent).children().each(function(i,e){ otherHeight += $(e).outerHeight(true);});
+    this.height -= otherHeight;
 
     this.svg = d3.select(parent).append("svg")
         .attr("width", self.width)
@@ -17,34 +22,28 @@ function HeatMap(parent)
     var offset = 0;
         
     this.labels = this.svg.append("g");
-    
-    this.labels.append("text")
-        .classed("col_label", true)
-        .attr("x", 0)
-        .attr("y", offset + 20)
-        .attr("font-size", "20px");
         
     this.labels.append("text")
         .classed("row_label", true)
         .attr("x", 0)
-        .attr("y", offset + 40)
+        .attr("y", offset + 30)
         .attr("font-size", "20px");
 
     this.labels.append("rect")
         .attr("x", this.width-40)
         .attr("y", offset)
         .attr("width", 40)
-        .attr("height", 40)
+        .attr("height", 30)
         .style("fill", "white");
 
     this.labels.append("text")
         .classed("rect_label", true)
         .attr("text-anchor", "middle")
         .attr("x", this.width-20)
-        .attr("y", offset+23)
+        .attr("y", offset+17)
         .attr("font-size", "10px");
         
-    offset += 40;
+    offset += 30;
     offset += 10; //Some margin
         
     this.grid = this.svg.append("g");
@@ -52,8 +51,7 @@ function HeatMap(parent)
         .attr("transform", "translate(0," +
         (offset)+")");
     
-    offset += this.height;
-    this.svg.attr("height", offset);
+    this.heat_height = this.height - offset;
 
     //define a color scale using the min and max expression values
     this.colorScale = d3.scale.linear()
@@ -134,7 +132,7 @@ HeatMap.prototype.setData = function(data, cluster_assignments)
     this.data = cluster_list;
     var N_ROWS = this.data[0].data.length;
 
-    this.h = Math.floor(this.height/N_ROWS);
+    this.h = Math.floor(this.heat_height/N_ROWS);
     if(this.h === 0) {this.h = 1;}
 
     this.redraw()();

@@ -6,10 +6,29 @@ body {
     height: 100%;
     padding-top: 1px;
     padding-left: 20px;
+    background-color: #aaa;
+}
+
+input[type=text]
+{
+    border-radius: 4px;
+    padding-left: 10px;
+    border: 1px gray; 
+}
+
+.color_panel
+{
+    background-color: #ccc;
+    padding: 5px;
+    margin: 10px;
+    /*box-shadow: 0 10px 6px -6px #777;*/
+    box-shadow: -8px 8px 10px -3px #777;
+
 }
 
 #data_options_div span{
     margin-left: 20px;
+    vertical-align: middle;
 }
 
 #data_options_div button{
@@ -19,6 +38,8 @@ body {
 
 #table_div table{
     margin-right: 50px; /* So the table div accounts for angled labels */
+    width: calc(100% - 50px);
+    table-layout: fixed;
 }
 
 #table_div table th:first-child{
@@ -38,12 +59,12 @@ body {
     -ms-word-wrap: break-word;
     word-wrap: break-word;
     cursor: pointer;
+    padding-left: 5px;
 }
 
 #table_div table td:not(:first-child), #table_div table th:not(:first-child){
     text-align: center;
     width: 35px;
-    max-width: 50px;
     cursor: pointer;
     font-size: 0.8em;
 }
@@ -64,9 +85,6 @@ body {
 #table_div{
     padding-top: 20px;
     overflow: auto;
-    position: absolute;
-    top: 130px;
-    bottom: 0px;
 }
 
 
@@ -93,12 +111,14 @@ body {
 #heatmap_div{
 }
 
+#title_div{
+    padding-left: 15px;
+}
+
 #plot_title_div{
     text-align: center;
-    width: 500px;
     word-wrap: break-word;
     font-size: 18px;
-    margin-top: 30px;
 }
 
 #plot_title_div .subtitle, #plot_title_div .title{
@@ -111,6 +131,8 @@ body {
 
 #plot_title_div .colorOptions{
     font-size: 13px;
+    text-align: left;
+    margin: 10px 70px;
 }
 
 #plot_title_div .colorOptions label{
