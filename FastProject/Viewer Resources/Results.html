@@ -30,6 +30,12 @@
         var global_scatter = {};
         var global_heatmap = {};
 
+        $(window).resize(function()
+        {
+            $('#scatter_div').children().remove();
+            global_scatter = new ColorScatter('#scatter_div');
+            drawChart();
+        });
 
         window.onload = function()
         {
@@ -498,7 +504,7 @@
         </div>
     </div>
 </div>
-<div style="float: left">
+<div style="float: left; width: 60%; height: 100%;">
     <div id="title_div" class="color_panel">
     <h1>FastProject Viewer</h1>
     </div>
@@ -522,37 +528,34 @@
         </button>
         </span>
     </div>
-    <div id="table_div" class="color_panel">
+    <div id="table_div" class="color_panel" style="height:83vh;">
         <table>
             <thead><tr></tr></thead>
             <tbody></tbody>
         </table>
     </div>
-    <div id="spacer"></div>
 </div>
-<div style="float: left">
-    <div id="plot_title_div" class="color_panel">
-        <div class="title"></div>
-        <div class="subtitle"></div>
-        <div class="colorOptions">
-            <span>Signature Score Colors:</span>
-            <div class="btn-group" data-toggle="buttons">
-                <label class="btn btn-default">
-                    <input type="radio" name="scatterColorButtons" id="valueoption" value="value" autocomplete="off"> Value
-                </label>
-                <label class="btn btn-default active">
-                    <input type="radio" name="scatterColorButtons" id="rankoption" value="rank" autocomplete="off" checked> Rank
-                </label>
-            </div>
-            <div style="float: right">
-                <button type="button" class="btn btn-default" onclick=exportSigProj()>&#x21e9;Export</button>
-            </div>
+<div id="plot_title_div" class="color_panel" style="float:left; width:36%;">
+    <div class="title"></div>
+    <div class="subtitle"></div>
+    <div class="colorOptions">
+        <span>Signature Score Colors:</span>
+        <div class="btn-group" data-toggle="buttons">
+            <label class="btn btn-default">
+                <input type="radio" name="scatterColorButtons" id="valueoption" value="value" autocomplete="off"> Value
+            </label>
+            <label class="btn btn-default active">
+                <input type="radio" name="scatterColorButtons" id="rankoption" value="rank" autocomplete="off" checked> Rank
+            </label>
+        </div>
+        <div style="float: right">
+            <button type="button" class="btn btn-default" onclick=exportSigProj()>&#x21e9;Export</button>
         </div>
     </div>
-    <div id="scatter_div" class="color_panel"></div>
-    <div id="heatmap_div" class="color_panel">
-        <select id="cluster_select" class="form-control" style="width: 200px; margin-bottom:10px"></select>
-    </div>
+</div>
+<div id="scatter_div" class="color_panel" style="float: left; width: 36%; height: calc((100vh - 200px)/2);"></div>
+<div id="heatmap_div" class="color_panel" style="float: left; width: 36%; height: calc((100vh - 200px)/2);">
+    <select id="cluster_select" class="form-control" style="width: 200px; margin-bottom:10px"></select>
 </div>
 <input id="sig_filt_input" type="text" placeholder="Filter Signatures...">
 </body>

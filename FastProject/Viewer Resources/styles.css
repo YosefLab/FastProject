@@ -84,9 +84,6 @@ input[type=text]
 #table_div{
     padding-top: 20px;
     overflow: auto;
-    position: absolute;
-    top: 140px;
-    bottom: 0px;
 }
 
 

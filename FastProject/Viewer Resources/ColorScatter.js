@@ -9,8 +9,8 @@ function ColorScatter(parent)
     var ydomain = [-2, 2];
 
     this.margin = {top: 20, right: 20, bottom: 30, left: 40};
-    this.width = 500 - this.margin.left - this.margin.right;
-    this.height = 375 - this.margin.top - this.margin.bottom;
+    this.width = $(parent).width() - this.margin.right - this.margin.left;
+    this.height = $(parent).height() - this.margin.top - this.margin.bottom;
 
     this.x = d3.scale.linear()
         .domain(xdomain)
