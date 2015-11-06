@@ -309,13 +309,20 @@
                         return FP_ExpressionMatrix.gene_labels[e];
                     });
 
+                    var gene_signs = gene_labels.map(function(e,i){
+                        var s_i = sig.Genes.indexOf(e);
+                        return sig.Signs[s_i];
+                    });
+
                     var proj_key = global_status.plotted_projection;
                     var choice = $('#cluster_select').val();
                     var assignments = data.Clusters[proj_key][choice];
 
-                    global_heatmap.setData(dataMat, assignments);
-                    global_heatmap.col_labels = FP_ExpressionMatrix.sample_labels;
-                    global_heatmap.row_labels = gene_labels;
+                    global_heatmap.setData(dataMat,
+                           assignments,
+                           gene_labels,
+                           gene_signs,
+                           FP_ExpressionMatrix.sample_labels);
                 }
                 else
                 {
@@ -569,7 +576,7 @@
         </div>
         <div id="scatter_div" class="color_panel" style="height: calc((100vh - 165px)/2);"></div>
         <div id="heatmap_div" class="color_panel" style="height: calc((100vh - 165px)/2);">
-            <select id="cluster_select" class="form-control" style="width: 200px; margin-bottom:10px"></select>
+            <select id="cluster_select" class="form-control" style="width: 200px;"></select>
         </div>
     </div>
 </div>

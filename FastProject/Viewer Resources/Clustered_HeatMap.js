@@ -26,7 +26,7 @@ function HeatMap(parent)
     this.labels.append("text")
         .classed("row_label", true)
         .attr("x", 0)
-        .attr("y", offset + 30)
+        .attr("y", offset + 28)
         .attr("font-size", "20px");
 
     this.labels.append("rect")
@@ -46,26 +46,43 @@ function HeatMap(parent)
     offset += 30;
     offset += 10; //Some margin
         
-    this.grid = this.svg.append("g");
-    this.grid
-        .attr("transform", "translate(0," +
-        (offset)+")");
-    
     this.heat_height = this.height - offset;
+    this.grid_gap = 10; //# of pixels between the plus and minus heat maps
+    this.grid_start = offset;
+    this.grid_xoffset = 50; //# of pixels to the left of the grids for the + and - labels
+
+    this.grid_plus = this.svg.append("g");
+    this.grid_minus = this.svg.append("g");
+
+    this.grid_plus_label = this.svg.append("text")
+        .attr("text-anchor", "middle")
+        .attr("x", this.grid_xoffset/2)
+        .attr("y", 0)
+        .attr("font-size", "25px")
+        .text("");
+
+    this.grid_minus_label = this.svg.append("text")
+        .attr("text-anchor", "middle")
+        .attr("x", this.grid_xoffset/2)
+        .attr("y", 0)
+        .attr("font-size", "25px")
+        .text("");
+    
 
     //define a color scale using the min and max expression values
     this.colorScale = d3.scale.linear()
         .domain([-0.6, 0, 0.6])
         .range(["steelblue", "white", "lightcoral"]);
 
-    this.data = [];
+    this.data_plus = [];
+    this.data_minus = [];
     this.selected = -1;
     this.selected_links = [];
 
     this.hover_cols = -1;
     this.hovered_links = [];
     
-    this.hover_rows = -1;
+    this.hovered_row = "";
 
     this.last_event = 0;
 
@@ -77,10 +94,13 @@ function HeatMap(parent)
 }
 
 
-HeatMap.prototype.setData = function(data, cluster_assignments)
+HeatMap.prototype.setData = function(data, cluster_assignments, gene_labels, gene_signs, sample_labels)
 {
     //Data is an array of rows, each containing an array of values for each col
     //cluster_assignments is an array of numbers indicating assignment
+    
+    this.row_labels = gene_labels;
+    this.col_labels = sample_labels;
 
     this.cluster_assignments = cluster_assignments;
     var dataT = d3.transpose(data);
@@ -116,24 +136,60 @@ HeatMap.prototype.setData = function(data, cluster_assignments)
     }
 
     //Add in information on the width of each cluster
-    var x_offset = 0;
+    var x_offset = this.grid_xoffset;
     for (var j = 0; j < cluster_list.length; j++)
     {
         var clust = cluster_list[j];
-        var width = clust.weight / TOTAL_SAMPLES * this.width;
+        var width = clust.weight / TOTAL_SAMPLES * (this.width - this.grid_xoffset);
         
-        clust.data = clust.data.map(function(e){
-            return {"value":e, "x":x_offset, "width":width, "index": clust.index};
+        clust.data = clust.data.map(function(e,i){
+            return {"value":e, "x":x_offset, "width":width, "index": clust.index, "gene": gene_labels[i]};
         });
 
         x_offset = x_offset + width;
     }
 
-    this.data = cluster_list;
-    var N_ROWS = this.data[0].data.length;
+    var N_ROWS = cluster_list[0].data.length;
 
-    this.h = Math.floor(this.heat_height/N_ROWS);
+    this.h = Math.floor((this.heat_height - this.grid_gap)/N_ROWS);
     if(this.h === 0) {this.h = 1;}
+
+    //Split data into data_plus and data_minus
+    //Unsigned sigs (sign = 0) go in data_plus
+
+    var cluster_list_plus = [];
+    var cluster_list_minus = [];
+    for(var i = 0; i < cluster_list.length; i++)
+    {
+        var clust = cluster_list[i];
+
+        //get positive rows
+        var clust_plus = {};
+        clust_plus.data = clust.data.filter(function(e,i){
+            return gene_signs[i] === 0 || gene_signs[i] === 1;
+        });
+
+        //get negative rows
+        var clust_minus = {};
+        clust_minus.data = clust.data.filter(function(e,i){
+            return gene_signs[i] === -1;
+        });
+
+        //copy over all other properties
+        for(var key in clust){
+            if(key !== "data"){
+                clust_plus[key] = clust[key];
+                clust_minus[key] = clust[key];
+            }
+        }
+
+        cluster_list_plus.push(clust_plus);
+        cluster_list_minus.push(clust_minus);
+
+    }
+
+    this.data_plus = cluster_list_plus;
+    this.data_minus = cluster_list_minus;
 
     this.redraw()();
 };
@@ -176,19 +232,11 @@ HeatMap.prototype.setHoveredCol = function(hovered_col_index)
     });
 };
 
-HeatMap.prototype.setHoveredRow = function(hovered_row_indices)
+HeatMap.prototype.setHoveredRowLabel = function(row_label)
 {
-    if(typeof(hovered_row_indices) === "number"){
-        hovered_row_indices = [hovered_row_indices];
-    }
-    
-    this.hover_rows = hovered_row_indices;
-    
-    if(this.hover_rows.length === 1)
-    {
-        var ii = this.hover_rows[0];
-        this.labels.select(".row_label").text(this.row_labels[ii]);
-    }
+
+    this.hovered_row = row_label;
+    this.labels.select(".row_label").text(this.hovered_row);
     
 };
 
@@ -216,31 +264,32 @@ HeatMap.prototype.redraw = function() {
     var self = this;
     return function(){
 
-        //generate heatmap columns
-        var heatmapCols = self.grid.selectAll("g")
-            .data(self.data);
+        //generate heatmap columns for plus grid
+        
+        var pos_grid_start = self.grid_start;
+        self.grid_plus.attr("transform",
+                "translate(0," + (pos_grid_start)+")"
+                );
 
-        heatmapCols.enter()
+        var heatmapCols_plus = self.grid_plus.selectAll("g")
+            .data(self.data_plus);
+
+        heatmapCols_plus.enter()
             .append("g");
 
-        heatmapCols.exit().remove();
+        heatmapCols_plus.exit().remove();
 
         //generate heatmap rows
-        var heatmapRects = heatmapCols
+        var heatmaRects_plus = heatmapCols_plus
             .selectAll("rect")
             .data(function(d) {
                 return d.data;
             });
 
-        heatmapRects.enter().append("rect")
-            .on("mouseover", function(d,i){ self.setHoveredRow(i); self.setHoveredCol(d.index); self.setHoveredIndicator(d.value);});
-        //    .on("mouseover", function(d){self.setHovered(d.col); self.setHoveredRow(d.row); self.setHoveredIndicator(d.value);});
+        heatmaRects_plus.enter().append("rect")
+            .on("mouseover", function(d,i){ self.setHoveredRowLabel(d.gene); self.setHoveredCol(d.index); self.setHoveredIndicator(d.value);});
 
-        self.svg
-            .on("mouseleave", function(d){ self.setHoveredRow(-1); self.setHoveredCol(); self.setHoveredIndicator();});
-        //    .on("mouseleave", function(d){self.setHovered(-1); self.setHoveredRow(-1); self.setHoveredIndicator();});
-
-        heatmapRects.style('fill',function(d) {
+        heatmaRects_plus.style('fill',function(d) {
                 return self.colorScale(d.value);})
             .attr('width',function(d){return d.width;})
             .attr('height',self.h)
@@ -248,6 +297,90 @@ HeatMap.prototype.redraw = function() {
             .attr('x', function(d) {
                 return d.x;});
 
-        heatmapRects.exit().remove();
+        heatmaRects_plus.exit().remove();
+
+        var num_pos_rects;
+        if(self.data_plus.length === 0)
+        {
+            num_pos_rects = 0;
+        } else {
+            num_pos_rects = self.data_plus[0].data.length;
+        }
+
+        var neg_grid_start = 0;
+        neg_grid_start += pos_grid_start; // Start location for all grids
+        neg_grid_start += self.h*num_pos_rects; // Offset for space taken up by positive grid
+        if(num_pos_rects > 0)
+        {
+            neg_grid_start += self.grid_gap;  // If there's a positive grid, introduce a gap between them
+        }
+
+        self.grid_minus.attr("transform",
+                "translate(0," + (neg_grid_start) + ")"
+                );
+
+        //generate heatmap columns for minus grid
+        var heatmapCols_minus = self.grid_minus.selectAll("g")
+            .data(self.data_minus);
+
+        heatmapCols_minus.enter()
+            .append("g");
+
+        heatmapCols_minus.exit().remove();
+
+        //generate heatmap rows
+        var heatmapRects_minus = heatmapCols_minus
+            .selectAll("rect")
+            .data(function(d) {
+                return d.data;
+            });
+
+        heatmapRects_minus.enter().append("rect")
+            .on("mouseover", function(d,i){ self.setHoveredRowLabel(d.gene); self.setHoveredCol(d.index); self.setHoveredIndicator(d.value);});
+
+        self.svg
+            .on("mouseleave", function(d){ self.setHoveredRowLabel(""); self.setHoveredCol(); self.setHoveredIndicator();});
+
+        heatmapRects_minus.style('fill',function(d) {
+                return self.colorScale(d.value);})
+            .attr('width',function(d){return d.width;})
+            .attr('height',self.h)
+            .attr('y',function(d,i){ return i*self.h;})
+            .attr('x', function(d) {
+                return d.x;});
+
+        heatmapRects_minus.exit().remove();
+
+        var num_neg_rects;
+        if(self.data_minus.length === 0)
+        {
+            num_neg_rects = 0;
+        } else {
+            num_neg_rects = self.data_minus[0].data.length;
+        }
+
+
+        //Plus and minus labels for the grids
+        if(num_pos_rects > 0){
+            var pos_grid_center = Math.floor(pos_grid_start + (self.h*num_pos_rects) / 2);
+            self.grid_plus_label
+                .attr("y", pos_grid_center+9) // Y lines up with baseline, need to offset to vertically center
+                .text("+");                   // Some browsers have an attribute to do this, doesn't work on FireFox
+        }
+        else
+        {
+            self.grid_plus_label.text("");
+        }
+
+        if(num_neg_rects > 0){
+            var neg_grid_center = Math.floor(neg_grid_start + (self.h*num_neg_rects) / 2);
+            self.grid_minus_label
+                .attr("y", neg_grid_center+9) // See note for plus label above
+                .text("-");
+        }
+        else
+        {
+            self.grid_minus_label.text("");
+        }
     };
 };
