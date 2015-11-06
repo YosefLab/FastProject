@@ -419,10 +419,11 @@ def sigs_vs_projections(projections, sig_scores_dict, NEIGHBORHOOD_SIZE = 0.33):
 
             mu = np.mean(random_scores);
             sigma = np.std(random_scores);
-            if(sigma == 0):
-                sigma = 1e-3;
+            if(sigma != 0):
+                p_value = norm.cdf((med_dissimilarity - mu)/sigma);
+            else:
+                p_value = 1.0;
 
-            p_value = norm.cdf((med_dissimilarity - mu)/sigma);
 
             pnum_sig_proj_matrix[j,i] = med_dissimilarity;
             pnum_sig_proj_matrix_p[j,i] = p_value;
@@ -487,6 +488,7 @@ def p_to_q(p_values):
     num_tests = p_values.size;
     q_vals = p_vals_flat * num_tests / rank;
     q_vals.shape = original_shape;
+    q_vals[q_vals > 1.0] = 1.0;
 
     return q_vals;
 
