@@ -34,12 +34,17 @@
         {
             $('#scatter_div').children().remove();
             global_scatter = new ColorScatter('#scatter_div');
-            drawChart();
 
             $('#heatmap_div').find('svg').remove();
             global_heatmap = new HeatMap('#heatmap_div');
-            drawHeat();
 
+            //Link the scatter/heatmap
+            global_scatter.hovered_links.push(global_heatmap);
+            global_heatmap.hovered_links.push(global_scatter);
+
+            //Render
+            drawChart();
+            drawHeat();
         });
 
         window.onload = function()
@@ -277,6 +282,7 @@
             var data = getDataContext();
             if(sig_key.length > 0)
             {
+                $('#heatmap_div').show();
                 var sig = FP_Signatures[sig_key];
                 if(sig !== undefined){  //undefined sig if it's precomputed
                     var genes = sig.Genes;
@@ -313,9 +319,7 @@
                 }
                 else
                 {
-                    global_heatmap.setData([FP_ExpressionMatrix.sample_labels.map(function() {return 0;})]);
-                    global_heatmap.col_labels = FP_ExpressionMatrix.sample_labels;
-                    global_heatmap.row_labels = "";
+                    $('#heatmap_div').hide();
                 }
 
             }
@@ -387,8 +391,10 @@
             content_row
                 .filter(function(d,i) { return i > 0;})
                 .text(function(d){
-                        if(d.val > -50){return d.val.toPrecision(2);}
-                        else{return "< -50";}})
+                    if(d.val < -50) { return "< -50";}
+                    else if(d.val > -1) { return d.val.toFixed(2);}
+                    else { return d.val.toPrecision(2);}
+                        })
                 .style('background-color', function(d){return colorScale(d.val);})
                 .on("click", function(d){tableClickFunction(row_labels[d.row], col_labels[d.col])});
 
@@ -510,58 +516,62 @@
         </div>
     </div>
 </div>
-<div style="float: left; width: 60%; height: 100%;">
-    <div id="title_div" class="color_panel">
-    <h1>FastProject Viewer</h1>
-    </div>
-    <div id="data_options_div" class="color_panel">
-        <span>
-            <label for="probability_checkbox">Probability Model?</label>
-            <input id="probability_checkbox" type="checkbox">
-        </span>
-        <span>
-            <label for="pca_checkbox">PCA Before Project?</label>
-            <input id="pca_checkbox" type="checkbox">
-        </span>
-        <span>
-            <label for="filter_dropdown">Filter Level</label>
-            <select id="filter_dropdown">
-            </select>
-        </span>
-        <span>
-        <button type="button" class="btn btn-default" onclick=createGeneModal()>
-            +Show Genes
-        </button>
-        </span>
-    </div>
-    <div id="table_div" class="color_panel" style="height: calc(100vh - 156px);">
-        <table>
-            <thead><tr></tr></thead>
-            <tbody></tbody>
-        </table>
-    </div>
-</div>
-<div id="plot_title_div" class="color_panel" style="float:left; width:36%;">
-    <div class="title"></div>
-    <div class="subtitle"></div>
-    <div class="colorOptions">
-        <span>Signature Score Colors:</span>
-        <div class="btn-group" data-toggle="buttons">
-            <label class="btn btn-default">
-                <input type="radio" name="scatterColorButtons" id="valueoption" value="value" autocomplete="off"> Value
-            </label>
-            <label class="btn btn-default active">
-                <input type="radio" name="scatterColorButtons" id="rankoption" value="rank" autocomplete="off" checked> Rank
-            </label>
+<div id="content_wrapper" style="display: flex; flex-direction: row; justify-content: center;">
+    <div style="width: 700px; max-width: 850px; height: 100%; flex: 1 0 auto;">
+        <div id="title_div" class="color_panel">
+            <h1>FastProject Viewer</h1>
         </div>
-        <div style="float: right">
-            <button type="button" class="btn btn-default" onclick=exportSigProj()>&#x21e9;Export</button>
+        <div id="data_options_div" class="color_panel">
+            <span>
+                <label for="probability_checkbox">Probability Model?</label>
+                <input id="probability_checkbox" type="checkbox">
+            </span>
+            <span>
+                <label for="pca_checkbox">PCA Before Project?</label>
+                <input id="pca_checkbox" type="checkbox">
+            </span>
+            <span>
+                <label for="filter_dropdown">Filter Level</label>
+                <select id="filter_dropdown">
+                </select>
+            </span>
+            <span>
+                <button type="button" class="btn btn-default" onclick=createGeneModal()>
+                    +Show Genes
+                </button>
+            </span>
+        </div>
+        <div id="table_div" class="color_panel" style="height: calc(100vh - 156px);">
+            <table>
+                <thead><tr></tr></thead>
+                <tbody></tbody>
+            </table>
         </div>
     </div>
-</div>
-<div id="scatter_div" class="color_panel" style="float: left; width: 36%; height: calc((100vh - 165px)/2);"></div>
-<div id="heatmap_div" class="color_panel" style="float: left; width: 36%; height: calc((100vh - 165px)/2);">
-    <select id="cluster_select" class="form-control" style="width: 200px; margin-bottom:10px"></select>
+    <div style="width: 500px; height: 100%; max-width: 500px; flex: 1 1 auto;">
+        <div id="plot_title_div" class="color_panel">
+            <div class="title"></div>
+            <div class="subtitle"></div>
+            <div class="colorOptions">
+                <span>Signature Score Colors:</span>
+                <div class="btn-group" data-toggle="buttons">
+                    <label class="btn btn-default">
+                        <input type="radio" name="scatterColorButtons" id="valueoption" value="value" autocomplete="off"> Value
+                    </label>
+                    <label class="btn btn-default active">
+                        <input type="radio" name="scatterColorButtons" id="rankoption" value="rank" autocomplete="off" checked> Rank
+                    </label>
+                </div>
+                <div style="float: right">
+                    <button type="button" class="btn btn-default" onclick=exportSigProj()>&#x21e9;Export</button>
+                </div>
+            </div>
+        </div>
+        <div id="scatter_div" class="color_panel" style="height: calc((100vh - 165px)/2);"></div>
+        <div id="heatmap_div" class="color_panel" style="height: calc((100vh - 165px)/2);">
+            <select id="cluster_select" class="form-control" style="width: 200px; margin-bottom:10px"></select>
+        </div>
+    </div>
 </div>
 <input id="sig_filt_input" type="text" placeholder="Filter Signatures..." style="display: none;">
 </body>
