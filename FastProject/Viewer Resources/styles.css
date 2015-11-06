@@ -114,7 +114,6 @@ input[type=text]
     text-align: center;
     word-wrap: break-word;
     font-size: 18px;
-    margin-top: 30px;
 }
 
 #plot_title_div .subtitle, #plot_title_div .title{

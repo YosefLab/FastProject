@@ -35,6 +35,11 @@
             $('#scatter_div').children().remove();
             global_scatter = new ColorScatter('#scatter_div');
             drawChart();
+
+            $('#heatmap_div').find('svg').remove();
+            global_heatmap = new HeatMap('#heatmap_div');
+            drawHeat();
+
         });
 
         window.onload = function()
@@ -395,6 +400,7 @@
             //Create filter signature box
             var th = $('#table_div').children('table').children('thead').children('tr').children('th:first-child');
             $(th).append(filterSig);
+            filterSig.show();
             filterSig.trigger('input');
         }
 
@@ -528,7 +534,7 @@
         </button>
         </span>
     </div>
-    <div id="table_div" class="color_panel" style="height:83vh;">
+    <div id="table_div" class="color_panel" style="height: calc(100vh - 156px);">
         <table>
             <thead><tr></tr></thead>
             <tbody></tbody>
@@ -553,10 +559,10 @@
         </div>
     </div>
 </div>
-<div id="scatter_div" class="color_panel" style="float: left; width: 36%; height: calc((100vh - 200px)/2);"></div>
-<div id="heatmap_div" class="color_panel" style="float: left; width: 36%; height: calc((100vh - 200px)/2);">
+<div id="scatter_div" class="color_panel" style="float: left; width: 36%; height: calc((100vh - 165px)/2);"></div>
+<div id="heatmap_div" class="color_panel" style="float: left; width: 36%; height: calc((100vh - 165px)/2);">
     <select id="cluster_select" class="form-control" style="width: 200px; margin-bottom:10px"></select>
 </div>
-<input id="sig_filt_input" type="text" placeholder="Filter Signatures...">
+<input id="sig_filt_input" type="text" placeholder="Filter Signatures..." style="display: none;">
 </body>
 </html>
