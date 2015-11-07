@@ -12,8 +12,7 @@ from sklearn.manifold import TSNE;
 from sklearn.manifold import Isomap
 from sklearn.manifold import MDS
 from sklearn.manifold import SpectralEmbedding
-from sklearn.cluster import MiniBatchKMeans, DBSCAN
-from scipy.spatial.distance import cdist;
+from sklearn.cluster import MiniBatchKMeans
 import scipy.stats;
 
 from .Utils import ProgressBar;
@@ -316,7 +315,7 @@ def define_clusters(projections):
         (dict of string (cluster technique) => np.ndarray of size N_Samples (cluster assignments))
     """
 
-    pbar = ProgressBar(5*len(projections));
+    pbar = ProgressBar(4 * len(projections));
 
     out_clusters = dict();
 
@@ -325,18 +324,13 @@ def define_clusters(projections):
         proj_data = projections[key];
         proj_clusters = dict();
 
-        #K-means for k = 2-5
-        for k in xrange(2,6):
+        # K-means for k = 2-5
+        for k in xrange(2, 6):
             clust_name = "K-Means, k=" + str(k);
             kmeans = MiniBatchKMeans(n_clusters=k);
             clust_assignments = kmeans.fit_predict(proj_data.T);
             proj_clusters.update({clust_name: clust_assignments});
             pbar.update();
-
-        dbscan = DBSCAN();
-        clust_assignments = dbscan.fit_predict(proj_data.T);
-        proj_clusters.update(({"DBSCAN": clust_assignments}));
-        pbar.update();
 
         out_clusters.update({key: proj_clusters});
 
