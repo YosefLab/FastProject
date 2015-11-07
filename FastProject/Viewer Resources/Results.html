@@ -353,7 +353,7 @@
                 .data([""].concat(col_labels));
 
             header_row.enter().append('th');
-            header_row.text(function(d){return d;})
+            header_row.html(function(d){return "<div>"+d+"</div>";})
                 .filter(function(d,i) {return i > 0;})
                 .on("click", function(d,i) { sortByColumn(i);});
 

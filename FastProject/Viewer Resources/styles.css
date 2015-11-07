@@ -38,6 +38,7 @@ input[type=text]
 
 #table_div table{
     margin-right: 50px; /* So the table div accounts for angled labels */
+    margin-top: 30px;
     width: calc(100% - 50px);
     table-layout: fixed;
 }
@@ -46,9 +47,11 @@ input[type=text]
     text-align:left;
 }
 
-#table_div table th:not(:first-child) {
+#table_div table th:not(:first-child) div {
     transform-origin: left center 0;
-    transform: translate(15px,1em) rotate(-50deg);
+    transform: translate(15px,0.5em) rotate(-50deg);
+    width: 100px;
+    text-align: left;
 }
 
 #table_div table td:first-child{
