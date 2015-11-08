@@ -41,6 +41,9 @@ def parseFPArgs():
     parser.add_argument("--subsample_size", type=int, metavar="N", default=1000,
             help="Number of samples to use when sub_sampling. Default is 1000");
 
+    parser.add_argument("--min_signature_genes", type=int, metavar="N", default=5,
+            help="Signatures that match less than N genes in the data are discarded");
+
     args = parser.parse_args();
 
     return args;

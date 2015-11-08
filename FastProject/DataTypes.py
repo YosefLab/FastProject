@@ -8,6 +8,7 @@ Created on Thu Mar 05 20:13:40 2015
 import numpy as np;
 from scipy.spatial import distance;
 from .Signatures import SignatureScores;
+import Global;
 
 class ExpressionData(np.ndarray):
     
@@ -68,9 +69,13 @@ class ExpressionData(np.ndarray):
         
         sig_vector = signature.sig_indices(self.row_labels);
 
-        signature_norm = np.sum(np.abs(sig_vector));
-        if(signature_norm == 0): #If no genes match signature
+        num_matched_genes = np.count_nonzero(sig_vector);
+
+        if(num_matched_genes == 0):
             raise ValueError("No genes match signature");
+
+        if(num_matched_genes < Global.args.min_signature_genes):
+            raise ValueError("Too few genes match signature");
 
         weights = self.weights;
         pdata = self * sig_vector * weights;
@@ -237,9 +242,13 @@ class ProbabilityData(np.ndarray):
         """
         sig_vector = signature.sig_indices(self.row_labels);
 
-        signature_norm = np.sum(np.abs(sig_vector));
-        if(signature_norm == 0): #No genes match signature
+        num_matched_genes = np.count_nonzero(sig_vector);
+
+        if(num_matched_genes == 0):
             raise ValueError("No genes match signature");
+
+        if(num_matched_genes < Global.args.min_signature_genes):
+            raise ValueError("Too few genes match signature");
 
         #Probability data already incorporates false-negative probability so no weights are used.
         weights = np.ones(self.shape);
