@@ -2,15 +2,26 @@
    Initializes a zoomable scatter plot in the element "parent"
    parent = , for example, "#chart_div"
 */
-function ColorScatter(parent)
+function ColorScatter(parent, colorbar)
 {
+    if(colorbar === undefined) { this.colorbar_enabled = false;}
+    else {this.colorbar_enabled = colorbar;}
+
+    var colorbar_height = 20;
+    var colorbar_width = 200;
+
     var self = this;
     var xdomain = [-2, 2];
     var ydomain = [-2, 2];
 
-    this.margin = {top: 20, right: 20, bottom: 30, left: 40};
+    this.margin = {top: 20, right: 20, bottom: 15, left: 40};
     this.width = $(parent).width() - this.margin.right - this.margin.left;
     this.height = $(parent).height() - this.margin.top - this.margin.bottom;
+
+    if(this.colorbar_enabled){
+        this.height -= colorbar_height;
+        this.height -= 15;
+    }
 
     this.x = d3.scale.linear()
         .domain(xdomain)
@@ -68,6 +79,18 @@ function ColorScatter(parent)
         .attr("class", "y axis")
         .call(self.yAxis);
 
+    if(this.colorbar_enabled){
+        this.colorbar_svg = d3.select(parent).append("svg")
+            .attr("width", this.width + this.margin.left + this.margin.right)
+            .attr("height", colorbar_height+20);
+
+        this.colorbar = this.colorbar_svg.append("rect")
+            .attr("x", this.width + this.margin.left + this.margin.right - colorbar_width - 50)
+            .attr("y", 0)
+            .attr("width", colorbar_width)
+            .attr("height", colorbar_height);
+    }
+
     this.points = [];
 
     this.selected = -1;
@@ -92,6 +115,7 @@ ColorScatter.prototype.setData = function(points, isFactor)
         else { this.colorScale = d3.scale.category20();}
 
         this.colorScale.domain(unique);
+        this.setColorBar();
     }
     else
     {
@@ -102,9 +126,71 @@ ColorScatter.prototype.setData = function(points, isFactor)
         this.colorScale = d3.scale.linear()
             .domain([low, mid, high])
             .range(["blue", "green", "red"]);
+
+        this.setColorBar(this.colorScale.range(),
+               low.toString(),
+               high.toString());
     }
 
     this.redraw(true)();
+};
+
+ColorScatter.prototype.setColorBar = function(colors, label_low, label_high)
+{
+    if(!this.colorbar_enabled){ return; }
+
+    this.colorbar_svg.selectAll("text").remove();
+    this.colorbar_svg.select("defs").remove();
+
+    if(colors === undefined){
+        // Clear color bar - useful for factors
+        this.colorbar
+            .style("fill","rgba(0,0,0,0)")
+            .style("stroke","none");
+    }
+    else
+    {
+        var gradient = this.colorbar_svg.append("svg:defs")
+          .append("svg:linearGradient")
+            .attr("id", "gradient")
+            .attr("x1", "0%")
+            .attr("y1", "0%")
+            .attr("x2", "100%")
+            .attr("y2", "0%")
+            .attr("spreadMethod", "pad");
+
+        for(var i = 0; i < colors.length; i++){
+            var stop_percentage = Math.floor((100 / (colors.length-1))*i);
+
+            gradient.append("svg:stop")
+                .attr("offset", stop_percentage.toString() + "%")
+                .attr("stop-color", colors[i])
+                .attr("stop-opacity", 0.8);
+        }
+
+        this.colorbar
+            .style("fill", "url(#gradient)")
+            .style("stroke", "black")
+            .style("stroke-width", "1px");
+
+        var label_low_x = this.colorbar.attr("x");
+        var label_high_x = (parseInt(this.colorbar.attr("x")) +
+            parseInt(this.colorbar.attr("width"))).toString();
+
+        this.colorbar_svg.append("text")
+            .attr("text-anchor", "middle")
+            .attr("x", label_low_x)
+            .attr("y", 30)
+            .attr("font-size", "10px")
+            .text(label_low);
+
+        this.colorbar_svg.append("text")
+            .attr("text-anchor", "middle")
+            .attr("x", label_high_x)
+            .attr("y", 30)
+            .attr("font-size", "10px")
+            .text(label_high);
+    }
 };
 
 ColorScatter.prototype.setSelected = function(selected_index, event_id)

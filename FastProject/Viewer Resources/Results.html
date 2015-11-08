@@ -33,7 +33,7 @@
         $(window).resize(function()
         {
             $('#scatter_div').children().remove();
-            global_scatter = new ColorScatter('#scatter_div');
+            global_scatter = new ColorScatter('#scatter_div', true);
 
             $('#heatmap_div').find('svg').remove();
             global_heatmap = new HeatMap('#heatmap_div');
@@ -50,7 +50,7 @@
         window.onload = function()
         {
             //Define some globals
-            global_scatter = new ColorScatter("#scatter_div");
+            global_scatter = new ColorScatter("#scatter_div", true);
             global_heatmap = new HeatMap("#heatmap_div");
             
             //Link the scatter/heatmap
