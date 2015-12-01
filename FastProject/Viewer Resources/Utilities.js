@@ -47,7 +47,28 @@ function exportSigProj()
     //Convert the heatmap into a tab-delimited table
     if(!sig.isPrecomputed)
     {
-        var heat_data = global_heatmap.data;
+        var heat_data_plus = global_heatmap.data_plus;
+        var heat_data_minus = global_heatmap.data_minus;
+        var heat_data = [];
+
+        //stitch together heat_data_plus and heat_data_minus to make heat_data
+        for(var i=0; i<heat_data_plus.length; i++)
+        {
+            var new_clust = {};
+            new_clust.data = heat_data_plus[i].data;
+            new_clust.weight = heat_data_plus[i].weight;
+            new_clust.index = heat_data_plus[i].index;
+            heat_data.push(new_clust);
+        }
+
+        //stitch together heat_data_plus and heat_data_minus to make heat_data
+        for(var i=0; i<heat_data_minus.length; i++)
+        {
+            new_clust = heat_data[i];
+            new_clust.data = new_clust.data.concat(heat_data_minus[i].data);
+        }
+        
+
         var header_row = ["Gene"];
         var heat_table = [];
         for(var i = 0; i<heat_data.length; i++)
