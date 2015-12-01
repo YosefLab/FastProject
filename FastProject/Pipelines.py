@@ -153,6 +153,30 @@ def FullOutput():
 
     Transforms.z_normalize(edata);
 
+    # Generate some random signatures for testing purposes
+    import random;
+    for size in [5, 10, 20, 50, 100, 200]:
+        for j in range(10):
+            new_sig_dict = dict();
+            new_sig_genes = random.sample(edata.row_labels, size);
+            new_sig_signs = np.random.choice([1, -1], size);
+            for gene, sign in zip(new_sig_genes, new_sig_signs):
+                new_sig_dict.update({gene: int(sign)});
+            new_sig = Signatures.Signature(new_sig_dict, True, 'x', "RANDOM_" + str(size) + "_" + str(j));
+            sigs.append(new_sig);
+
+    # Generate random signatures for background significance
+    random_sigs = [];
+    for size in [5, 10, 20, 50, 100, 200]:
+        for j in range(500):
+            new_sig_dict = dict();
+            new_sig_genes = random.sample(edata.row_labels, size);
+            new_sig_signs = np.random.choice([1, -1], size);
+            for gene, sign in zip(new_sig_genes, new_sig_signs):
+                new_sig_dict.update({gene: int(sign)});
+            new_sig = Signatures.Signature(new_sig_dict, True, 'x', "RANDOM_" + str(size) + "_" + str(j));
+            random_sigs.append(new_sig);
+
     fout_js = HtmlViewer.get_output_js_handle(dir_name);
 
     for name, model in Models.items():
@@ -179,6 +203,17 @@ def FullOutput():
             pbar.update();
         pbar.complete();
 
+        FP_Output("\nEvaluating null signature scores on samples...");
+        pbar = ProgressBar(len(random_sigs));
+        random_sig_scores_dict = dict();
+        for sig in random_sigs:
+            try:
+                random_sig_scores_dict[sig.name] = data.eval_signature(sig);
+            except ValueError:  # Only thrown when the signature has no genes in the data
+                pass  # Just discard the signature then
+            pbar.update();
+        pbar.complete();
+
         if(args.precomputed):
             for precomputed_file in args.precomputed:
                 precomputed_sig_scores = Signatures.load_precomputed(precomputed_file, data.col_labels);
@@ -186,7 +221,7 @@ def FullOutput():
 
         #Adds in quality score as a pre-computed signature
         if(sample_qc_scores is not None): #Might be None if --nomodel option is selected
-            sig_scores_dict["FP_Quality"] = Signatures.SignatureScores(sample_qc_scores,"FP_Quality",data.col_labels,isFactor=False, isPrecomputed=True);
+            sig_scores_dict["FP_Quality"] = Signatures.SignatureScores(sample_qc_scores,"FP_Quality",data.col_labels,isFactor=False, isPrecomputed=True, numGenes=0);
 
         model["signatureScores"] = sig_scores_dict;
         model["projectionData"] = [];
@@ -206,7 +241,8 @@ def FullOutput():
             clusters = Projections.define_clusters(projections);
 
             #%% Evaluating signatures against projections
-            sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p = Signatures.sigs_vs_projections(projections, sig_scores_dict);
+            # sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p = Signatures.sigs_vs_projections(projections, sig_scores_dict);
+            sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p = Signatures.sigs_vs_projections(projections, sig_scores_dict, random_sig_scores_dict);
 
             #Store in projData
             projData["filter"] = filter_name;
@@ -237,7 +273,8 @@ def FullOutput():
             clusters = Projections.define_clusters(projections);
 
             #%% Evaluating signatures against projections
-            sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p = Signatures.sigs_vs_projections(projections, sig_scores_dict);
+            #sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p = Signatures.sigs_vs_projections(projections, sig_scores_dict);
+            sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p = Signatures.sigs_vs_projections(projections, sig_scores_dict, random_sig_scores_dict);
 
             projData = dict();
             projData["filter"] = filter_name;

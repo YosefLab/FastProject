@@ -83,7 +83,7 @@ class ExpressionData(np.ndarray):
         sig_scores = pdata.sum(axis=0);
         sig_scores /= np.sum(np.abs(sig_vector)*weights, axis=0); #Only normalize by weights in the signature
 
-        sig_obj = SignatureScores(sig_scores, signature.name, self.col_labels, isFactor=False, isPrecomputed=False);
+        sig_obj = SignatureScores(sig_scores, signature.name, self.col_labels, isFactor=False, isPrecomputed=False, numGenes=num_matched_genes);
 
         return sig_obj;
         
@@ -258,7 +258,7 @@ class ProbabilityData(np.ndarray):
         sig_scores = pdata.sum(axis=0);
         sig_scores /= np.sum(np.abs(sig_vector)*weights, axis=0); #Only normalize by weights in the signature
 
-        sig_obj = SignatureScores(sig_scores, signature.name, self.col_labels, isFactor=False, isPrecomputed=False);
+        sig_obj = SignatureScores(sig_scores, signature.name, self.col_labels, isFactor=False, isPrecomputed=False, numGenes=num_matched_genes);
 
         return sig_obj;
         

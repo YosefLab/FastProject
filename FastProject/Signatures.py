@@ -289,13 +289,13 @@ def filter_sig_list(signatures, match_terms):
     
     return filtered_signatures;
 
-def sigs_vs_projections(projections, sig_scores_dict, NEIGHBORHOOD_SIZE = 0.33):
+def sigs_vs_projections(projections, sig_scores_dict, random_sig_scores_dict, NEIGHBORHOOD_SIZE = 0.33):
     """
     Evaluates the significance of each signature vs each projection
 
     :param projections: dict of (string) => (numpy.ndarray of shape 2xNum_Samples)
         Maps projections to their spatial coordinates for each sample
-    :param sig_scores: dict of (string) => (numpy.ndarray of shape Num_Samples)
+    :param sig_scores_dict: dict of (string) => (numpy.ndarray of shape Num_Samples)
         Maps signature names to their value at each coordinate
     :return: tuple
 
@@ -347,6 +347,13 @@ def sigs_vs_projections(projections, sig_scores_dict, NEIGHBORHOOD_SIZE = 0.33):
     for j, sig in enumerate(sp_row_labels):
         sig_score_matrix[:,j] = sig_scores_dict[sig].ranks;
 
+    # Build a matrix of random signatures
+    random_sig_score_matrix = np.zeros((N_SAMPLES, len(random_sig_scores_dict)));
+    random_sig_score_keys = random_sig_scores_dict.keys();
+
+    for j, sig in enumerate(random_sig_score_keys):
+        random_sig_score_matrix[:, j] = random_sig_scores_dict[sig].ranks;
+
     #Build one-hot matrices for each factor
     factor_dict = dict();
     for sig in sp_row_labels_factors:
@@ -384,18 +391,36 @@ def sigs_vs_projections(projections, sig_scores_dict, NEIGHBORHOOD_SIZE = 0.33):
         dissimilarity = np.abs(sig_score_matrix - neighborhood_prediction);
         med_dissimilarity = np.median(dissimilarity, axis=0);
 
-        NUM_REPLICATES = 10000;
+        # Calculate scores for random signatures
+        random_neighborhood_prediction = np.dot(weights, random_sig_score_matrix);
+        random_dissimilarity = np.abs(random_sig_score_matrix - random_neighborhood_prediction);
+        random_med_dissimilarity = np.median(random_dissimilarity, axis=0);
 
-        #random_sig_values of a given size is cached in this module
-        random_sig_values = get_bg_dist(N_SAMPLES, NUM_REPLICATES);
+        # Group by number of genes
+        backgrounds = dict();
+        for k, rsig in enumerate(random_sig_score_keys):
+            numGenes = random_sig_scores_dict[rsig].numGenes;
+            if(numGenes not in backgrounds):
+                backgrounds.update({numGenes: []});
+            backgrounds[numGenes].append(random_med_dissimilarity[k]);
 
-        random_predictions = np.dot(weights, random_sig_values);
-        random_scores = np.median(np.abs(random_sig_values - random_predictions), axis=0);
+        bg_stat = np.zeros((len(backgrounds), 3));
+        for k, numGenes in enumerate(backgrounds.keys()):
+            mu_x = np.mean(backgrounds[numGenes]);
+            std_x = np.std(backgrounds[numGenes]);
+            bg_stat[k, 0] = numGenes;
+            bg_stat[k, 1] = mu_x;
+            bg_stat[k, 2] = std_x;
 
-        mu = np.mean(random_scores);
-        sigma = np.std(random_scores);
-        if(sigma == 0):
-            sigma = 1e-3;
+        mu = np.zeros(med_dissimilarity.shape);
+        sigma = np.zeros(med_dissimilarity.shape);
+        for k in xrange(med_dissimilarity.size):
+            # find background with closest number of genes
+            numGenes = sig_scores_dict[sp_row_labels[k]].numGenes;
+            row_i = np.argmin(np.abs(numGenes - bg_stat[:, 0]));
+            mu[k] = bg_stat[row_i, 1];
+            sigma[k] = bg_stat[row_i, 2];
+
 
         p_values = norm.cdf((med_dissimilarity - mu)/sigma);
 
@@ -413,6 +438,8 @@ def sigs_vs_projections(projections, sig_scores_dict, NEIGHBORHOOD_SIZE = 0.33):
             med_dissimilarity = np.median(dissimilarity);
 
             # Now compute a background
+            NUM_REPLICATES = 10000;
+            random_sig_values = get_bg_dist(N_SAMPLES, NUM_REPLICATES);
             bg_values = sig_scores.ravel()[random_sig_values];
             random_predictions = np.dot(weights, bg_values);
             random_scores = np.median(np.abs(bg_values - random_predictions), axis=0);
@@ -564,7 +591,7 @@ def load_precomputed(filename, sample_labels):
             else:
                 raise ValueError('Column 2 of precomputed signature file should specify either "numerical" or "factor"');
 
-            sig_scores[sig_name] = SignatureScores(sig_vals, sig_name, sample_labels, sig_isFactor, isPrecomputed=True);
+            sig_scores[sig_name] = SignatureScores(sig_vals, sig_name, sample_labels, sig_isFactor, isPrecomputed=True, numGenes=0);
 
         return sig_scores;
 
@@ -628,14 +655,14 @@ class SignatureScores:
 
         return self._ranks;
 
-
-    def __init__(self, scores, name, sample_labels, isFactor, isPrecomputed):
+    def __init__(self, scores, name, sample_labels, isFactor, isPrecomputed, numGenes):
         self.scores = scores;
         self.name = name;
         self.sample_labels = sample_labels;
         self.isFactor = isFactor;
         self.isPrecomputed = isPrecomputed;
         self._ranks = None;
+        self.numGenes = numGenes;
 
     def to_JSON(self):
         """
