@@ -44,7 +44,7 @@ def generate_projections(data, filter_name = None):
           
     """
 
-    pbar = ProgressBar(8);
+    pbar = ProgressBar(7);
     
     projections = dict();
     
@@ -84,18 +84,11 @@ def generate_projections(data, filter_name = None):
     projections['ICA'] = result;
     pbar.update();
     
-    # tSNE with higher perplexity
+    # tSNE
     model = TSNE(n_components=2, perplexity=30.0, metric="precomputed", learning_rate = 100, early_exaggeration=4.0);
     result = model.fit_transform(dist_matrix);
     
-    projections['tSNE30'] = result;
-    pbar.update();
-
-    # tSNE with lower perplexity
-    model = TSNE(n_components=2, perplexity=1.0, metric="precomputed", learning_rate = 100, early_exaggeration=4.0);
-    result = model.fit_transform(dist_matrix);
-
-    projections['tSNE1'] = result;
+    projections['tSNE'] = result;
     pbar.update();
 
     # ISOMap
