@@ -6,7 +6,7 @@ from setuptools import setup, find_packages
 
 setup(
 	name = "FastProject",
-	version = "0.9.0",
+	version = "0.9.1",
 	packages = find_packages(),
 
 	entry_points = { 'console_scripts': ['FastProject = FastProject.__main__:entry']},

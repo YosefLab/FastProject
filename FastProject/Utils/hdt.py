@@ -3,6 +3,7 @@ from __future__ import print_function, division;
 
 import numpy as np;
 from FastProject.Utils import ProgressBar;
+import logging;
 
 def HDT_Sig_batch(xpdf_matrix, nboot, progressbar=True):
     """
@@ -161,7 +162,20 @@ def DipTest(xpdf):
 
     itarate_flag=True
 
+    iter_num = 0;
+    MAX_ITER = 100;
     while itarate_flag:
+
+        # Hartigans Dip Test has an issue where it may freeze
+        # This establishes a max number of iterations and outputs 
+        # An insignificant statistic so that the gene is rejected
+        iter_num += 1;
+        if(iter_num == MAX_ITER):
+            dip = 1e99;
+            logmessage = ', '.join([str(xx) for xx in xpdf]); 
+            logging.info(logmessage);
+            return (dip,xl,xu,ifault,gcm,lcm,mn,mj)
+
         ic=1
         gcm[0]=high
         igcm1=gcm[ic-1]
@@ -300,6 +314,7 @@ def DipTest(xpdf):
             low=gcm[ig-1]
             high=lcm[ih-1]
         #end if itarate_flag
+    logging.info(str(iter_num));
 
     dip*=0.5
     xl=x[low-1]
