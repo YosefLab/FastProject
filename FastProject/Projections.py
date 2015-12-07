@@ -14,11 +14,95 @@ from sklearn.manifold import MDS
 from sklearn.manifold import SpectralEmbedding
 from sklearn.cluster import MiniBatchKMeans
 import scipy.stats;
+import pandas as pd;
+from pandas.parser import CParserError;
+import os;
 
 from .Utils import ProgressBar;
 from .DataTypes import PCData;
+from .Global import args;
 
 import numpy as np;
+
+# Input projection coordinates are read once (at start) and cached here
+# Variable stores a list of pandas.DataFrame objects
+_input_projections = dict();
+def load_input_projections(sample_names):
+    """
+    Loads input projection coordinates into module variable _input_projections
+
+    :param sample_names: List of sample names.  Used to validate input
+    :return: None
+    """
+    global _input_projections;
+
+    sample_names_norm = [x.upper() for x in sample_names];
+
+    if(args.projections):
+        for projection_file in args.projections:
+            if(not os.path.isfile(projection_file)):
+                raise ValueError("Option Error: projection file " + projection_file + " not found.");
+
+            try:
+                loaded_coords = pd.read_table(projection_file, header=None);
+            except CParserError:
+                # if Header row has 2 entries and rest has 3, get this error
+                # Try to load data anyway and rework it back into the correct initial format
+                loaded_coords = pd.read_table(projection_file);
+                loaded_coords = pd.DataFrame({0: loaded_coords.index,
+                                              1: loaded_coords.iloc[:,0].values,
+                                              2: loaded_coords.iloc[:,1].values},
+                                             index=np.arange(loaded_coords.shape[0]));
+
+
+            # Verify the file
+            # Check for 3 columns
+            if(loaded_coords.shape[1] != 3):
+                raise ValueError("Format Error: projection file " + projection_file +
+                                 " should have 3 columns (sample name, x coordinate, y coordinate).");
+
+            # Fix in case header was included with first cell empty
+            if(pd.isnull(loaded_coords.iloc[0,0])):
+                loaded_coords.iloc[0,0] = "_____"; #Dummy value, won't match gene
+
+            # Normalize names to upper-case temporarily
+            loaded_coords[0] = [x.upper() for x in loaded_coords[0]];
+
+            # Did they accidentally include a heading?
+            if(loaded_coords.iloc[0,0] not in sample_names_norm):
+                loaded_coords = loaded_coords.drop(loaded_coords.index[0], axis='index'); # drop first row
+
+            # Check for duplicate names
+            if(loaded_coords[0].duplicated().any()):
+                duplicated_names = loaded_coords.loc[loaded_coords[0].duplicated(),0].values;
+                raise ValueError("Format Error: projection file " + projection_file +
+                                 " contains duplicate sample names:\n" + "\n".join(duplicated_names));
+
+            # Set as the index
+            loaded_coords = loaded_coords.set_index(0);
+
+            # Check that all data matrix sample names are in the projection file
+            not_matched = np.array([x not in loaded_coords.index for x in sample_names_norm]);
+            if(not_matched.any()):
+                missing_samples = [sample_names[i] for i in np.nonzero(not_matched)[0]];
+                raise ValueError("Format Error: projection file " + projection_file +
+                                 " missing entries for:\n" + "\n".join(missing_samples));
+
+            # If we got here, it's safe to re-order the file
+            loaded_coords = loaded_coords.loc[sample_names_norm,:];
+            loaded_coords.index = sample_names;  # Restore original case
+            loaded_coords["X"] = loaded_coords[1];
+            loaded_coords["Y"] = loaded_coords[2];
+            loaded_coords = loaded_coords.drop(1, axis="columns").drop(2, axis="columns");
+
+            # Check for null values and throw error
+            if(loaded_coords.isnull().any().any()):
+                bad_rows = loaded_coords.index[loaded_coords.isnull().any(axis=1)];
+                raise ValueError("Format Error: projection file " + projection_file +
+                                 " contains NaNs for samples:\n" + "\n".join(bad_rows));
+
+            proj_name = os.path.splitext(projection_file)[0];
+            _input_projections.update({proj_name: loaded_coords});
 
 
 def generate_projections(data, filter_name = None):
@@ -122,6 +206,10 @@ def generate_projections(data, filter_name = None):
     
     projections['Spectral Embedding'] = result;
     pbar.update();
+
+    # Input projections
+    # Load any projections that were supplied as an input file
+    projections.update(apply_input_projections(data.col_labels));
     
     # Add new projections here!
 
@@ -331,7 +419,20 @@ def define_clusters(projections):
 
     return out_clusters;
 
+def apply_input_projections(sample_names):
+    """
+    Returns projection coordinates supplied as file input when running FastProject
 
+    :param sample_names: Labels for samples used to subset/order the coordinates
+    :return: dict or proj_name(string) -> coordinates(numpy.ndarray size n_samples x 2)
+    """
 
+    output = dict()
+    for proj_name in _input_projections:
+        coordinates = _input_projections[proj_name];
+        coordinates = coordinates.loc[sample_names,:];
+        output.update({proj_name:
+                       coordinates.values});
 
+    return output;
 

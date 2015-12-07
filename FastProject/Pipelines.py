@@ -64,6 +64,7 @@ def FullOutput():
 
             sigs += Signatures.read_signatures(sig_file);
 
+    #%% Load Precomputed Sig file
     if(args.precomputed):
         for precomputed_sig_file in args.precomputed:
             if(not os.path.isfile(precomputed_sig_file)):
@@ -72,6 +73,9 @@ def FullOutput():
 
     if(not args.signatures and not args.precomputed): #Need one or the other here
         raise ValueError("Option Error: Must specify either a signature file or a pre-computed signature file.\nExiting...");
+
+    #%% Load projection coordinates
+    Projections.load_input_projections(cells);
 
 
     #Wrap data in ExpressionData object, add as a Model

@@ -44,6 +44,9 @@ def parseFPArgs():
     parser.add_argument("--min_signature_genes", type=int, metavar="N", default=5,
             help="Signatures that match less than N genes in the data are discarded");
 
+    parser.add_argument("--projections", metavar="FILE", nargs='*',
+                        help="Loads projection coordinates from FILE");
+
     args = parser.parse_args();
 
     return args;
