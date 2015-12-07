@@ -215,7 +215,7 @@ def write_projection_file(filename, sample_labels, projections):
             ff.write(proj + '\t');
             ff.write(sample_labels[i] + '\t');
             ff.write('{:.5f}'.format(coordinates[0,i]) + '\t');
-            ff.write('{:.5f}'.format(coordinates[1,i]) + '\t');
+            ff.write('{:.5f}'.format(coordinates[1,i]));
             ff.write('\n');
 
     ff.close();
