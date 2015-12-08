@@ -375,6 +375,7 @@ def FullOutput():
     fout_js.write(HtmlViewer.toJS_variable("FP_ExpressionMatrix", data_json));
 
     FileIO.write_models(dir_name, Models);
+    FileIO.write_weights(dir_name, Models["Expression"]["Data"]);
 
     #Remove model["Data"] since only the expression data is written for JS
     #  and it's already written above in FP_ExpressionMatrix

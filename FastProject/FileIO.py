@@ -11,6 +11,7 @@ import shutil;
 matplotlib.use("svg")
 import matplotlib.pyplot as plt;
 from . import HtmlViewer;
+import pandas as pd;
 
 def make_dirs(root_directory):
     """
@@ -321,6 +322,19 @@ def write_models(directory, Models):
                             projData["loadings"],
                             projData["genes"],
                             ["PC "+str(x+1) for x in range(projData["loadings"].shape[1])]);
+
+def write_weights(directory, data):
+    """
+    Writes the matrix of weights to file.
+
+    :param directory: Folder to which file is written
+    :param data: ExpressionData or ProbabilityData object
+    :return: None
+    """
+
+    weight_frame = pd.DataFrame(data.weights, index=data.row_labels, columns=data.col_labels);
+    out_file = os.path.join(directory, "weights.txt");
+    weight_frame.to_csv(out_file, sep="\t");
 
 
 
