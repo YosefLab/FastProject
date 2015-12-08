@@ -314,7 +314,6 @@ def DipTest(xpdf):
             low=gcm[ig-1]
             high=lcm[ih-1]
         #end if itarate_flag
-    logging.info(str(iter_num));
 
     dip*=0.5
     xl=x[low-1]
