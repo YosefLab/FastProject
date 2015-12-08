@@ -10,14 +10,59 @@ from __future__ import division, print_function;
 from .Utils import em_exp_norm_mixture;
 from . import Filters;
 from .DataTypes import ExpressionData, ProbabilityData, PCData;
+from .Global import args, FP_Output;
 import numpy as np;
+import pandas as pd;
 import os;
 
 this_directory = os.path.dirname(os.path.abspath(__file__));
 
+# Input projection coordinates are read once (at start) and cached here
+# Variable stores a list of pandas.DataFrame objects
+_input_weights = None;
+def load_input_weights(data):
+    """
+    Used to pre-load an input weight matrix
+
+    :param data: Used to validate input matrix.  Input file must have a corresponding row and column for each
+                gene/sample in data
+    :return: None
+    """
+    global _input_weights;
+
+    if(args.weights):
+        if(not os.path.isfile(args.weights)):
+            raise ValueError("Option Error: weights file " + args.weights + " not found.");
+
+        weights = pd.read_table(args.weights, header=0, index_col=0);
+        weights.index = [x.upper() for x in weights.index]; # Normalize gene names to upper-case
+
+        # Correct any NaNs
+        if(pd.isnull(weights).any().any()):
+            FP_Output("NaN's found in input weight matrix.  Replacing with zeros...");
+            weights[pd.isnull(weights)] = 0.0;
+
+        # Check that we have a gene/sample pair for everyone
+        missing_genes = np.array([x not in weights.index for x in data.row_labels]);
+        missing_samples = np.array([x not in weights.columns for x in data.col_labels]);
+
+        if(missing_genes.any()):
+            missing_gene_labels = [x for i,x in enumerate(data.row_labels) if missing_genes[i]];
+            raise ValueError("Format Error: weights file " + args.weights +
+                             " missing entries for:\n" + "\n".join(missing_gene_labels));
+
+        if(missing_samples.any()):
+            missing_sample_labels = [x for i,x in enumerate(data.col_labels) if missing_samples[i]];
+            raise ValueError("Format Error: weights file " + args.weights +
+                             " missing entries for:\n" + "\n".join(missing_sample_labels));
+
+        _input_weights = weights;
+
+
+
 
 def probability_of_expression(data):
-    cutoffs = np.mean(data,axis=1)/4;  #Empirically found to be good mosy of the time
+    cutoffs = np.mean(data,axis=1)/4;  #Empirically found to be good most of the time
     
     (gamma, mu_l, mu_h, st_l, st_h, Pi, L) = em_exp_norm_mixture(data,cutoffs);
     
@@ -237,7 +282,7 @@ def plot_em_norm_distribution(gamma, mu_l, mu_h, st_l, st_h, data, i):
     ylim(0, 1.1);    
 
     
-def correct_for_fn(prob, mu_h, fit_func, params):
+def correct_for_fn(prob, mu_h, fit_func, params, data):
     """
     Uses the estimated false_negative, fn(mu) curves to correct probability values.
         
@@ -251,24 +296,32 @@ def correct_for_fn(prob, mu_h, fit_func, params):
         Function, parameterized by params, that maps each mu_h to a false negative estimate
     params : (4 x Num_Samples) numpy.ndarray 
         Matrix containing parameters for the false-negative fit function (fit_func)
+    data : ExpressionData object from which prob derives
 
     Returns
     -------
     out_prob : (Num_Genes x Num_Samples) numpy.ndarray     
         Adjusted probability values
-    fn_prob : (Num_Genes x Num_Samples) numpy.ndarray
-        Estimated False-negative probability for each gene in each sample
+    weights : (Num_Genes x Num_Samples) numpy.ndarray
+        Estimated weight for each data point in input matrix.
+        Ranges from 0 to 1.  Represents estimate for likelihood that measure is not
+        confounded by technical error.
         
     """
 
-    fn_prob = np.zeros(prob.shape)
-    
-    for i in range(prob.shape[1]):
-        fn_prob[:,i] = fit_func(mu_h, *params[:,i]).ravel();
-    
-    out_prob = prob + (1-prob)*fn_prob;
-    
-    return out_prob, fn_prob
+    if(_input_weights is None):
+        fn_prob = np.zeros(prob.shape)
+
+        for i in range(prob.shape[1]):
+            fn_prob[:,i] = fit_func(mu_h, *params[:,i]).ravel();
+
+        out_prob = prob + (1-prob)*fn_prob;
+        weights = 1-fn_prob;
+    else:
+        weights = _input_weights.loc[data.row_labels, data.col_labels]; # Use data to align
+        out_prob = prob + (1-prob)*(1-weights);
+
+    return out_prob, weights;
 
 
 #def utility_plotting_routine(i, cutoff):

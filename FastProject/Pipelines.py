@@ -74,13 +74,16 @@ def FullOutput():
     if(not args.signatures and not args.precomputed): #Need one or the other here
         raise ValueError("Option Error: Must specify either a signature file or a pre-computed signature file.\nExiting...");
 
-    #%% Load projection coordinates
+    #%% Load projection coordinates (if provided)
     Projections.load_input_projections(cells);
 
 
     #Wrap data in ExpressionData object, add as a Model
     all_data = ExpressionData(edata, genes, cells); #TODO: Does this need to be copied?
     edata = ExpressionData(edata, genes, cells);
+
+    #%% Load input weights (if provided)
+    Transforms.load_input_weights(edata)
 
     if(args.subsample_size > edata.shape[1]):
         args.subsample_size = None;
@@ -133,15 +136,15 @@ def FullOutput():
 
         FP_Output('\nCorrecting for false-negatives using housekeeping gene levels');
         (fit_func, params) = Transforms.create_false_neg_map(original_data, housekeeping_filename);
-        (pdata, fn_prob) = Transforms.correct_for_fn(pdata, mu_h, fit_func, params);
-        fn_prob[edata > 0] = 0;
+        (pdata, weights) = Transforms.correct_for_fn(pdata, mu_h, fit_func, params, edata);
+        weights[edata > 0] = 1.0;
 
         pdata = ProbabilityData(pdata, edata);
         pmodel = dict({"Data": pdata});
         Models.update({"Probability": pmodel});
 
-        edata.weights = 1-fn_prob;
-        pdata.weights = 1-fn_prob;
+        edata.weights = weights;
+        pdata.weights = weights;
 
         sample_passes_qc, sample_qc_scores = Transforms.quality_check(params);
         FileIO.write_qc_file(dir_name, sample_passes_qc, sample_qc_scores, edata.col_labels);
