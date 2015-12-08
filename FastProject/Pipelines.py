@@ -100,7 +100,9 @@ def FullOutput():
 
         filter_dict.update({'No_Filter': set(edata.row_labels)});
     else:
-        edata = Filters.filter_genes_threshold(edata, 0.2);
+        if(args.threshold is None):
+            args.threshold = int(0.2 * edata.shape[1]); # Default threshold is 20% of samples - post sub-sampling
+        edata = Filters.filter_genes_threshold(edata, args.threshold);
 
         #HDT Filtering
         FP_Output("Removing genes with unimodal distribution across samples using Hartigans DT...");

@@ -47,6 +47,10 @@ def parseFPArgs():
     parser.add_argument("--projections", metavar="FILE", nargs='*',
                         help="Loads projection coordinates from FILE");
 
+    parser.add_argument("--threshold", metavar="N", type=int,
+                        help="Removes transcripts detected in less than N samples. " +
+                               "Default is 20% of total sample count.")
+
     args = parser.parse_args();
 
     return args;

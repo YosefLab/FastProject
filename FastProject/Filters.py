@@ -65,13 +65,11 @@ def filter_genes_fano(data, num_mad):
 
 
 def filter_genes_threshold(data, threshold):
-    """Filters out genes that are at least active in <threshold> 
-    of samples.  Threshold ranges from 0 to 1"""
+    """Filters out genes that are at least active in <threshold>
+    number of samples.
+    """
     
-    row_length = data.shape[1];
-    cutoff = row_length * threshold;
-    
-    keep_indices = np.where((data > 0).sum(axis=1) > cutoff)[0];
+    keep_indices = np.where((data > 0).sum(axis=1) > threshold)[0];
     
     return data.subset_genes(keep_indices);
 
