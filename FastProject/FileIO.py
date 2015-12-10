@@ -48,7 +48,7 @@ def read_matrix(filename='', delimiter = '\t'):
     
     with open(filename,'rU') as ff:
         col_labels = ff.readline().strip().split(delimiter);
-        col_labels = [col_label.strip() for col_label in col_labels];
+        col_labels = [col_label.strip().strip("'\"") for col_label in col_labels];
 
         #col_labels in first line may or may not be shifted by one to line up with
         #data in following lines.  Determine # of datapoints from second line
@@ -73,7 +73,7 @@ def read_matrix(filename='', delimiter = '\t'):
         row_labels = list();
         for line in ff:
           entries = line.split(delimiter);
-          row_labels.append(entries[0].upper());
+          row_labels.append(entries[0].strip("'\"").upper());
     
 
     #Test for unique row and column labels
