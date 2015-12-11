@@ -169,10 +169,17 @@ def generate_projections(data, filter_name = None):
     pbar.update();
     
     # tSNE
+    model = TSNE(n_components=2, perplexity=10.0, metric="precomputed", learning_rate = 100, early_exaggeration=4.0);
+    result = model.fit_transform(dist_matrix);
+    
+    projections['tSNE10'] = result;
+    pbar.update();
+
+    # tSNE
     model = TSNE(n_components=2, perplexity=30.0, metric="precomputed", learning_rate = 100, early_exaggeration=4.0);
     result = model.fit_transform(dist_matrix);
     
-    projections['tSNE'] = result;
+    projections['tSNE30'] = result;
     pbar.update();
 
     # ISOMap
