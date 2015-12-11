@@ -149,10 +149,19 @@
 
         function updateTable()
         {
+            updateMenuBar();
             createTableFromData();
             drawChart();
             populateClusterDropdown();
             drawHeat();
+        }
+
+        function updateMenuBar()
+        {
+            var button = $('#show_genes_button');
+            var data = getDataContext();
+            var num_genes = data.genes.length;
+            button.text(num_genes + " Genes");
         }
 
         function populateClusterDropdown()
@@ -551,7 +560,7 @@
                 </select>
             </span>
             <span>
-                <button type="button" class="btn btn-default" onclick=createGeneModal()>
+                <button id="show_genes_button" type="button" class="btn btn-default" onclick=createGeneModal()>
                     +Show Genes
                 </button>
             </span>
