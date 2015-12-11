@@ -252,7 +252,7 @@ ColorScatter.prototype.redraw = function(performTransition) {
     var circles = self.svg.selectAll("circle")
         .data(self.points);
 
-    circles.enter().append("circle").attr("r",4.5);
+    circles.enter().append("circle").attr("r",4.0);
     circles.style("fill", function(d){return self.colorScale(d[2]);})
         .on("click", function(d,i){self.setSelected(i);})
         .on("mouseover", function(d,i){self.tip.show(d,i); self.setHovered(i);})
