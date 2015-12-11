@@ -35,8 +35,11 @@
             $('#scatter_div').children().remove();
             global_scatter = new ColorScatter('#scatter_div', true);
 
-            $('#heatmap_div').find('svg').remove();
-            global_heatmap = new HeatMap('#heatmap_div');
+            if($('#heatmap_div').is(":visible"))
+            {
+                $('#heatmap_div').find('svg').remove();
+                global_heatmap = new HeatMap('#heatmap_div');
+            }
 
             //Link the scatter/heatmap
             global_scatter.hovered_links.push(global_heatmap);
@@ -282,7 +285,12 @@
             var data = getDataContext();
             if(sig_key.length > 0)
             {
-                $('#heatmap_div').show();
+                if( !$('#heatmap_div').is(":visible"))
+                {
+                    $('#heatmap_div').find('svg').remove();
+                    $('#heatmap_div').show();
+                    global_heatmap = new HeatMap('#heatmap_div');
+                }
                 var sig = FP_Signatures[sig_key];
                 if(sig !== undefined){  //undefined sig if it's precomputed
                     var genes = sig.Genes;
