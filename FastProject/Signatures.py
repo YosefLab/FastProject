@@ -626,7 +626,7 @@ class Signature:
         #                   =  mean(data*sig)
         #Results in mean(out) = 0
         #           mean(|out|) = 1 
-        if(self.signed):
+        if(False):
             num_pos = np.count_nonzero(out ==  1);
             num_neg = np.count_nonzero(out == -1);
             if(num_pos > 0 and num_neg > 0):
