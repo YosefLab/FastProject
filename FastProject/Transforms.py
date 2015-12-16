@@ -318,7 +318,7 @@ def correct_for_fn(prob, mu_h, fit_func, params, data):
         out_prob = prob + (1-prob)*fn_prob;
         weights = 1-fn_prob;
     else:
-        weights = _input_weights.loc[data.row_labels, data.col_labels]; # Use data to align
+        weights = _input_weights.loc[data.row_labels, data.col_labels].values; # Use data to align
         out_prob = prob + (1-prob)*(1-weights);
 
     return out_prob, weights;
