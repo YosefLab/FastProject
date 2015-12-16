@@ -134,8 +134,8 @@ def create_false_neg_map(data, housekeeping_file=""):
            
     #Fit a function mapping mu to gammas
 
-    def func(xvals, x0, a, L, H):
-        return L + (H-L)/(1 + np.exp((xvals-x0)*a));
+    def func(xvals, x0, a, L, S):
+        return L + S/(1 + np.exp((xvals-x0)*a));
 
     def efun(x,y, args):
         out = func(x, args[0], args[1], args[2], args[3]);
@@ -190,6 +190,8 @@ def create_false_neg_map(data, housekeeping_file=""):
             if(res.fun < best_eval):
                 best_eval = res.fun;
                 param = res.x;
+                if(param[2] + param[3] > 1): # clamp so function can't be > 1
+                    param[3] = 1-param[2];
                 params[:,i] = param;
 
 #        #Uncomment to plot result - useful for debugging
@@ -230,8 +232,8 @@ def quality_check(params):
     x0 = params[0,:];
     a = params[1,:];
     L = params[2,:];
-    H = params[3,:];
-    
+    S = params[3,:];
+
     #Bounds of integration
     low = 0;
     high = 9;
@@ -239,13 +241,13 @@ def quality_check(params):
     a[a == 0] = 1e-6;  #Fix so that integral isn't mis-calculated as inf or nan
     
     #Evaluate integral
-    int_low = H*low   - (H-L)/a * np.log(np.exp(a*(low -x0)) + 1)
-    int_high = H*high - (H-L)/a * np.log(np.exp(a*(high-x0)) + 1)
+    int_low = (L+S)*low   - S/a * np.log(np.exp(a*(low -x0)) + 1)
+    int_high = (L+S)*high - S/a * np.log(np.exp(a*(high-x0)) + 1)
     
     int_val = int_high - int_low;
 
     #Invert integral QC score increases with increasing quality
-    int_val = (H+L)*(high-low) - int_val;
+    int_val = (2*L + S)*(high-low) - int_val;
     int_val_med = np.median(int_val);
     
     abs_dev = np.abs(int_val - int_val_med);
