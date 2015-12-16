@@ -136,7 +136,7 @@ def FullOutput():
 
         FP_Output('\nCorrecting for false-negatives using housekeeping gene levels');
         (fit_func, params) = Transforms.create_false_neg_map(original_data, housekeeping_filename);
-        (pdata, weights) = Transforms.correct_for_fn(pdata, mu_h, fit_func, params, edata);
+        (pdata, weights) = Transforms.correct_for_fn(pdata, fit_func, params, edata);
         weights[edata > 0] = 1.0;
 
         pdata = ProbabilityData(pdata, edata);

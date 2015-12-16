@@ -129,9 +129,12 @@ def create_false_neg_map(data, housekeeping_file=""):
     data_hk = Filters.filter_genes_threshold(data_hk, 0.2);
         
     #calculate distributions for hk gene
-    cutoffs = np.mean(data_hk,axis=1)/4;
-    (gamma, mu_l, mu_h, st_l, st_h, Pi, L) = em_exp_norm_mixture(data_hk,cutoffs);
-           
+    # Gamma is 1 for any non-zero data point
+    # Mu_h is the row (per gene) average of non-zero points
+    gamma = (data_hk > 0).astype('float');
+    count_nonzero = (data_hk != 0).sum(axis=1);
+    mu_h = data_hk.sum(axis=1) / count_nonzero;
+
     #Fit a function mapping mu to gammas
 
     def func(xvals, x0, a, L, S):
@@ -284,7 +287,7 @@ def plot_em_norm_distribution(gamma, mu_l, mu_h, st_l, st_h, data, i):
     ylim(0, 1.1);    
 
     
-def correct_for_fn(prob, mu_h, fit_func, params, data):
+def correct_for_fn(prob, fit_func, params, data):
     """
     Uses the estimated false_negative, fn(mu) curves to correct probability values.
         
@@ -292,8 +295,6 @@ def correct_for_fn(prob, mu_h, fit_func, params, data):
     ----------
     prob : (Num_Genes x Num_Samples) numpy.ndarray
         Matrix containing estimate for probability of expression of each gene in each sample
-    mu_h : (Num_Genes x 1) numpy.ndarray
-        Average expression value of each gene across all samples in which gene is expressed
     fit_func : function (mu_h, params)
         Function, parameterized by params, that maps each mu_h to a false negative estimate
     params : (4 x Num_Samples) numpy.ndarray 
@@ -313,6 +314,9 @@ def correct_for_fn(prob, mu_h, fit_func, params, data):
 
     if(_input_weights is None):
         fn_prob = np.zeros(prob.shape)
+        count_nonzero = (data.base > 0).sum(axis=1);
+        count_nonzero[count_nonzero == 0] = 1; # Protect agains NaN
+        mu_h = data.base.sum(axis=1) / count_nonzero;
 
         for i in range(prob.shape[1]):
             fn_prob[:,i] = fit_func(mu_h, *params[:,i]).ravel();
