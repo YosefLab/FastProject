@@ -159,6 +159,8 @@ def FullOutput():
         sample_qc_scores = None;
         prob_params = None;
 
+    # Make an extra quality score of ust the zero proportion in each sample
+    zeros_qscore = (edata.base > 0).sum(axis=0) / edata.shape[0];
 
     Transforms.z_normalize(edata);
 
@@ -231,6 +233,9 @@ def FullOutput():
         #Adds in quality score as a pre-computed signature
         if(sample_qc_scores is not None): #Might be None if --nomodel option is selected
             sig_scores_dict["FP_Quality"] = Signatures.SignatureScores(sample_qc_scores,"FP_Quality",data.col_labels,isFactor=False, isPrecomputed=True, numGenes=0);
+
+        #Adds in zero proportion as another pre-computed signature
+        sig_scores_dict["Zero_Proportion"] = Signatures.SignatureScores(zeros_qscore,"Zero_Proportion",data.col_labels,isFactor=False, isPrecomputed=True, numGenes=0);
 
         model["signatureScores"] = sig_scores_dict;
         model["projectionData"] = [];
