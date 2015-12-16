@@ -162,7 +162,7 @@ def FullOutput():
     # Make an extra quality score of ust the zero proportion in each sample
     zeros_qscore = (edata.base > 0).sum(axis=0) / edata.shape[0];
 
-    Transforms.z_normalize(edata);
+    # Transforms.z_normalize(edata);
 
     # Generate some random signatures for testing purposes
     import random;
