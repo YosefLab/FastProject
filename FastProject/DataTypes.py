@@ -68,8 +68,9 @@ class ExpressionData(np.ndarray):
         """
         
         sig_vector = signature.sig_indices(self.row_labels);
+        ii = np.nonzero(sig_vector)[0];
 
-        num_matched_genes = np.count_nonzero(sig_vector);
+        num_matched_genes = ii.size;
 
         if(num_matched_genes == 0):
             raise ValueError("No genes match signature");
@@ -77,8 +78,11 @@ class ExpressionData(np.ndarray):
         if(num_matched_genes < Global.args.min_signature_genes):
             raise ValueError("Too few genes match signature");
 
-        weights = self.weights;
-        pdata = self * sig_vector * weights;
+        weights = self.weights[ii,:];
+        data = self.base[ii,:];
+        sig_vector = sig_vector[ii,:];
+
+        pdata = data * sig_vector * weights;
         
         sig_scores = pdata.sum(axis=0);
         sig_scores /= np.sum(np.abs(sig_vector)*weights, axis=0); #Only normalize by weights in the signature
@@ -241,8 +245,9 @@ class ProbabilityData(np.ndarray):
         
         """
         sig_vector = signature.sig_indices(self.row_labels);
+        ii = np.nonzero(sig_vector)[0];
 
-        num_matched_genes = np.count_nonzero(sig_vector);
+        num_matched_genes = ii.size;
 
         if(num_matched_genes == 0):
             raise ValueError("No genes match signature");
@@ -251,9 +256,12 @@ class ProbabilityData(np.ndarray):
             raise ValueError("Too few genes match signature");
 
         #Probability data already incorporates false-negative probability so no weights are used.
-        weights = np.ones(self.shape);
 
-        pdata = self * sig_vector * weights;
+        data = self.base[ii,:];
+        sig_vector = sig_vector[ii,:];
+        weights = np.ones(data);
+
+        pdata = data * sig_vector * weights;
         
         sig_scores = pdata.sum(axis=0);
         sig_scores /= np.sum(np.abs(sig_vector)*weights, axis=0); #Only normalize by weights in the signature
