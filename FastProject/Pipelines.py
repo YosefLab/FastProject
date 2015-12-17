@@ -14,7 +14,7 @@ from FastProject import SubSample;
 from FastProject.DataTypes import ExpressionData, ProbabilityData, PCData;
 from FastProject.Utils import ProgressBar;
 from FastProject import HtmlViewer;
-from .Global import args, FP_Output;
+from FastProject.Global import args, FP_Output;
 
 
 def FullOutput():
@@ -159,8 +159,8 @@ def FullOutput():
         sample_qc_scores = None;
         prob_params = None;
 
-    # Make an extra quality score of ust the zero proportion in each sample
-    zeros_qscore = (edata.base > 0).sum(axis=0) / edata.shape[0];
+    # Make an extra quality score of just the zero proportion in each sample
+    zeros_qscore = (edata.base == 0).sum(axis=0) / edata.shape[0];
 
     # Transforms.z_normalize(edata);
 
@@ -241,7 +241,7 @@ def FullOutput():
         model["projectionData"] = [];
         model["sampleLabels"] = data.col_labels;
 
-        for filter_name in filter_dict.keys():
+        for filter_name in data.filters.keys():
             projData = dict();
 
             FP_Output("\nFilter-Level:", filter_name);
