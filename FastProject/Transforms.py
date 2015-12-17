@@ -250,7 +250,7 @@ def quality_check(params):
     int_val = int_high - int_low;
 
     #Invert integral QC score increases with increasing quality
-    int_val = (2*L + S)*(high-low) - int_val;
+    int_val = (high-low) - int_val;
     int_val_med = np.median(int_val);
     
     abs_dev = np.abs(int_val - int_val_med);
