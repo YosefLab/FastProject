@@ -299,6 +299,8 @@
                     $('#heatmap_div').find('svg').remove();
                     $('#heatmap_div').show();
                     global_heatmap = new HeatMap('#heatmap_div');
+                    global_scatter.hovered_links.push(global_heatmap);
+                    global_heatmap.hovered_links.push(global_scatter);
                 }
                 var sig = FP_Signatures[sig_key];
                 if(sig !== undefined){  //undefined sig if it's precomputed
