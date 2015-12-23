@@ -86,11 +86,227 @@ function HeatMap(parent)
 
     this.last_event = 0;
 
-    this.row_labels = [];
     this.col_labels = [];
 
     this.cluster_assignments = []; //Used in hoverCol.  Denotes which cluster each sample is assigned to
 
+}
+
+function dist_mat(data)
+{
+    //creates a matrix of size data.length x data.length
+    //distance between entries(rows) of data
+    //each item in data (which is an array) is an array of numbers
+    
+    //Create the array
+    output = [];
+    for(var i = 0; i < data.length; i++)
+    {
+        output.push([]);
+    }
+
+    //Calculate distances
+    for(var i = 0; i < data.length; i++)
+    {
+        for(var j = i; j < data.length; j++)
+        {
+            dd = dist(data[i], data[j]);
+            output[i][j] = dd;
+            output[j][i] = dd;
+        }
+    }
+
+    return output;
+}
+
+function dist(x,y)
+{
+    //x and y are arrays of numbers of the same length
+    
+    //Euclidean
+    var total = 0;
+    for(var i=0; i < x.length; i++)
+    {
+        var temp = x[i] - y[i];
+        total = total + temp * temp;
+    }
+    return Math.sqrt(total);
+
+    //1-Pearsons
+    var stdx = d3.deviation(x);
+    var stdy = d3.deviation(y);
+    var meanx = d3.mean(x);
+    var meany = d3.mean(y);
+    var total = 0;
+    for(var i = 0; i < x.length; i++)
+    {
+        total = total + (x[i] - meanx) * (y[i] - meany);
+    }
+    total = total / (stdx * stdy);
+    return 1-total;
+}
+
+function cluster_order(data)
+{
+
+    var distances = dist_mat(data);
+    var clusters = [];
+
+    //Convert array of rows into array of objects
+    //row_data = row vector
+    //index = index in the original matrix
+    
+    for(var i=0; i < data.length; i++)
+    {
+        clusters.push([{'index':i, 'row_data':data[i]}]);
+    }
+
+    //clusters is a list of clusters
+    //each cluster is a list of row vectors
+    
+    while(clusters.length > 1)
+    {
+        clusters = merge_closest_cluster_pair(clusters, distances);
+    }
+
+    var leaves_indices = [];
+    for(var i = 0; i < clusters[0].length; i++)
+    {
+        leaves_indices.push(clusters[0][i].index);
+    }
+
+    return leaves_indices;
+}
+
+function merge_closest_cluster_pair(clusters, distances)
+{
+    var best_pair = [0,1];
+    var closest_distance = 1e99;
+
+    for(var i = 0; i < clusters.length; i++)
+    {
+        for(var j = i+1; j < clusters.length; j++)
+        {
+            var distance = distance_between_clusters(clusters[i], clusters[j], distances);
+            if(distance < closest_distance)
+            {
+                closest_distance = distance;
+                best_pair = [i,j];
+            }
+        }
+    }
+
+    var clusterA = clusters[best_pair[0]];
+    var clusterB = clusters[best_pair[1]];
+    var merged_cluster = merge_clusters(clusterA, clusterB, distances);
+
+    var new_clusters = [];
+    for(var i = 0; i < clusters.length; i++)
+    {
+        if(i != best_pair[0] && i != best_pair[1])
+        {
+            new_clusters.push(clusters[i]);
+        }
+    }
+
+    new_clusters.push(merged_cluster);
+    return new_clusters;
+}
+
+function merge_clusters(clusterA, clusterB, distances)
+{
+    //Merge can happen in two orders
+    //Compare first/last clusters in either order to determine the best order
+    
+    //AB
+    var a_last = clusterA[clusterA.length-1];
+    var b_first = clusterB[0];
+    var distAB = distances[a_last.index][b_first.index];
+
+    //BA
+    var a_first = clusterA[0];
+    var b_last = clusterB[clusterB.length-1];
+    var distBA = distances[a_first.index][b_last.index];
+
+    var new_cluster;
+    if(distBA < distAB)
+    {
+        new_cluster = clusterB.concat(clusterA);
+    }
+    else
+    {
+        new_cluster = clusterA.concat(clusterB);
+    }
+
+    return new_cluster;
+}
+
+function distance_between_clusters(clusterA, clusterB, distances)
+{
+    //Compute the average distance
+    var total_dist = 0;
+    for(var i = 0; i < clusterA.length; i++)
+    {
+        for(var j = 0; j < clusterB.length; j++)
+        {
+            var rowA = clusterA[i];
+            var rowB = clusterB[j];
+            total_dist = total_dist + distances[rowA.index][rowB.index];
+        }
+    }
+    total_dist = total_dist / clusterA.length / clusterB.length;
+    return total_dist;
+    
+//    var min_dist = 1e99;
+//    for(var i = 0; i < clusterA.length; i++)
+//    {
+//        for(var j = 0; j < clusterB.length; j++)
+//        {
+//            var rowA = clusterA[i];
+//            var rowB = clusterB[j];
+//            var curr_dist = distances[rowA.index][rowB.index];
+//            if(curr_dist < min_dist)
+//            {
+//                min_dist = curr_dist;
+//            }
+//        }
+//    }
+//
+//    return min_dist;
+}
+
+order_cluster_group = function(cluster_group)
+{
+    if(cluster_group[0].data.length == 0)
+    {
+        return;
+    }
+    //create data matrix from cluster_group
+    var data = [];
+    for(var i = 0; i < cluster_group.length; i++)
+    {
+        var col_obj = cluster_group[i];
+        var row = col_obj.data.map(function(x){return x.value;});
+        data.push(row);
+    }
+
+    data = d3.transpose(data);
+
+    // Get optimal leaf orderings from heirarchical clustering
+    var leaf_order = cluster_order(data);
+
+    // Reorder the cluster_group in place
+    for(var i = 0; i < cluster_group.length; i++)
+    {
+        var col_obj = cluster_group[i];
+        var old_data = col_obj.data;
+        var new_data = [];
+        for(var j = 0; j < leaf_order.length; j++)
+        {
+            new_data.push(old_data[leaf_order[j]]);
+        }
+        col_obj.data = new_data;
+    }
 }
 
 
@@ -99,7 +315,6 @@ HeatMap.prototype.setData = function(data, cluster_assignments, gene_labels, gen
     //Data is an array of rows, each containing an array of values for each col
     //cluster_assignments is an array of numbers indicating assignment
     
-    this.row_labels = gene_labels;
     this.col_labels = sample_labels;
 
     this.cluster_assignments = cluster_assignments;
@@ -187,6 +402,11 @@ HeatMap.prototype.setData = function(data, cluster_assignments, gene_labels, gen
         cluster_list_minus.push(clust_minus);
 
     }
+
+    // Cluster within data_minus and data_plus
+    
+    order_cluster_group(cluster_list_plus);
+    order_cluster_group(cluster_list_minus);
 
     this.data_plus = cluster_list_plus;
     this.data_minus = cluster_list_minus;
