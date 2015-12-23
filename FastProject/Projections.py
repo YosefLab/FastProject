@@ -138,10 +138,6 @@ def generate_projections(data, filter_name = None):
     proj_weights = data.projection_weights(filter_name);
     dist_matrix = data.distance_matrix(filter_name);
 
-    # PCA - Uses subsampling inside perform_weighted_pca
-    proj_data = data.projection_data(filter_name);
-    proj_weights = data.projection_weights(filter_name);
-
     if(type(data) is not PCData):
         wpca_data, e_val, e_vec = perform_weighted_PCA(proj_data, proj_weights, max_components = 50);
         pcdata = PCData(wpca_data, e_val, e_vec, data);
