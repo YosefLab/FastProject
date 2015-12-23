@@ -88,7 +88,7 @@ def make_monotonic(gamma, data):
     return gamma;        
     
 
-def create_false_neg_map(data, housekeeping_file=""):
+def create_false_neg_map(data, housekeeping_file="", debug=None):
     """Uses gene names in <filename> to create a mapping of false negatives.
         
     This assumes all genes in <filename> are actually active, despite measured
@@ -96,6 +96,9 @@ def create_false_neg_map(data, housekeeping_file=""):
     use all stored housekeeping gene names
     
     Creates a functional fit for each sample based on that samples HK genes
+
+    debug (if supplied), should be an int representing a particular sample
+        that should be examined
 
     Returns
     ----------
@@ -126,7 +129,7 @@ def create_false_neg_map(data, housekeeping_file=""):
 
     data_hk = ExpressionData(data_hk, genes_hk, data.col_labels);
 
-    data_hk = Filters.filter_genes_threshold(data_hk, 0.2);
+    data_hk = Filters.filter_genes_novar(data_hk);
         
     #calculate distributions for hk gene
     # Gamma is 1 for any non-zero data point
@@ -197,18 +200,18 @@ def create_false_neg_map(data, housekeeping_file=""):
                     param[3] = 1-param[2];
                 params[:,i] = param;
 
-#        #Uncomment to plot result - useful for debugging
-#        from pylab import figure, scatter, plot, ion;
-#        i = 0;
-#        plt.close();
-#        domain = np.linspace(0,10,1000);
-#        scatter(x,y[:,i]);
-#        scatter(x_quant, y_quant[:,i], color='red')
-#        plot(domain, func(domain, params[0,i], params[1,i], params[2,i], params[3,i]));
-#        ylabel("P(gene not expressed in " + data_hk.col_labels[i] + ")");
-#        xlabel("Gene average in samples expressing gene")
-#        print(params[:,i])
-#        i = i+1;
+    if(debug is not None):
+        import matplotlib.pyplot as plt;
+        i = debug;
+
+        plt.close();
+        domain = np.linspace(0,10,1000);
+        plt.plot(x,y[:,i], 'o');
+        plt.plot(x_quant, y_quant[:,i], 'o', color='red')
+        plt.plot(domain, func(domain, params[0,i], params[1,i], params[2,i], params[3,i]));
+        plt.ylabel("P(gene not expressed in " + data_hk.col_labels[i] + ")");
+        plt.xlabel("Gene average in samples expressing gene")
+        print(params[:,i])
 
         
     return func, params;
