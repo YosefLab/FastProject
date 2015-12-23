@@ -439,3 +439,62 @@ def apply_input_projections(sample_names):
 
     return output;
 
+
+def permutation_wPCA(data, weights, components=50, p_threshold=0.05, verbose=False, debug=False):
+    """
+    Computes weighted PCA on data.  Returns only significant components.
+
+    After performing PCA on the data matrix, this method then uses a permutation
+    procedure based on Buja A and Eyuboglu N (1992) to asses components for significance.
+
+
+    :param data: numpy.ndarray of shape Num_Features x Num_Samples
+    :param weights: numpy.ndarray of shape Num_Features x Num_Samples
+    :param components: int, Max components to calculate
+    :param p_threshold: float, P-value to cutoff components at
+    :param verbose: bool,
+    :return: reduced data, numpy.ndarray of shape Num_Components x Num_Samples
+    """
+
+    NUM_REPEATS = 20;
+
+    wpca_data, e_val, e_vec = perform_weighted_PCA(data, weights, components);
+
+    bg_vals = np.zeros((NUM_REPEATS, components));
+    bg_data = np.zeros(data.shape);
+    bg_weights = np.zeros(data.shape);
+
+    for i in xrange(NUM_REPEATS):
+        for j in xrange(data.shape[0]):
+            random_i = np.random.permutation(data.shape[1]);
+            bg_data[j,:] = data[j,random_i];
+            bg_weights[j,:] = weights[j,random_i];
+
+        print("starting wpca");
+        wpca_bg, bg_val, bg_vec = perform_weighted_PCA(bg_data, bg_weights, components);
+        print("finished wpca!");
+
+        bg_vals[i,:] = bg_val;
+
+    # Compute distributions (normal) for each column in bg_vals
+    mu = bg_vals.mean(axis=0);
+    sigma = bg_vals.std(axis=0);
+
+    p_vals = norm.sf((e_val - mu) / sigma);
+    threshold_component = np.nonzero(p_vals > p_threshold)[0][0];
+
+    wpca_data = wpca_data[0:threshold_component,:];
+
+    if(verbose):
+        print("Permutation test on wPCA: ", str(wpca_data.shape[0]), " components retained.");
+
+    if(debug):
+        import seaborn as sns;
+        import pandas as pd;
+        import matplotlib.pyplot as plt;
+        sns.violinplot(pd.DataFrame(bg_vals[:,0:20]));
+        plt.plot(e_val);
+
+    return wpca_data;
+
+
