@@ -119,17 +119,22 @@ ColorScatter.prototype.setData = function(points, isFactor)
     }
     else
     {
-        var low = d3.min(cvals);
-        var high = d3.max(cvals);
-        var mid = (low+high)/2;
+        cvals.sort(d3.ascending); // Needed for quantile
+        var low = d3.quantile(cvals, 0.1);
+        var high = d3.quantile(cvals, 0.9);
+        var mid = d3.mean(cvals);
 
         this.colorScale = d3.scale.linear()
             .domain([low, mid, high])
             .range(["blue", "green", "red"]);
 
+        // Format the bound labels
+        var label_low = parseFloat(low.toFixed(2)).toString();
+        var label_high = parseFloat(high.toFixed(2)).toString();
+
         this.setColorBar(this.colorScale.range(),
-               low.toString(),
-               high.toString());
+               label_low,
+               label_high);
     }
 
     this.redraw(true)();
