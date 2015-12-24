@@ -259,7 +259,7 @@ class ProbabilityData(np.ndarray):
 
         data = self.base[ii,:];
         sig_vector = sig_vector[ii,:];
-        weights = np.ones(data);
+        weights = np.ones(data.shape);
 
         pdata = data * sig_vector * weights;
         
