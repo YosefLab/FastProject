@@ -287,49 +287,79 @@ def plot_em_norm_distribution(gamma, mu_l, mu_h, st_l, st_h, data, i):
     scatter(data[i,:], gamma[i,:], color='red');
     ylim(0, 1.1);    
 
-    
-def correct_for_fn(prob, fit_func, params, data):
+
+def adjust_pdata(prob, weights):
     """
-    Uses the estimated false_negative, fn(mu) curves to correct probability values.
-        
+    Uses the estimated weights to modify pdata values
+
+    weights represent p(not expressed | not detected)
+
     Parameters
     ----------
     prob : (Num_Genes x Num_Samples) numpy.ndarray
         Matrix containing estimate for probability of expression of each gene in each sample
+    weights : (Num_Genes x Num_Samples) numpy.ndarray
+        Matrix containing estimate for p(not expressed | not detected) for each data point
+
+    Returns
+    -------
+    out_prob : (Num_Genes x Num_Samples) numpy.ndarray    
+        Adjusted probability values
+    """
+
+    out_prob = prob + (1 - prob) * (1 - weights);
+
+    return out_prob;
+
+
+def compute_weights(fit_func, params, data):
+    """
+    Calculates weights for the data from the FNR curves
+
+    Weights represent p(not expressed | not detected) for zero values
+        and are equal to 1.0 for detected values.
+
+    Parameters
+    ----------
     fit_func : function (mu_h, params)
         Function, parameterized by params, that maps each mu_h to a false negative estimate
-    params : (4 x Num_Samples) numpy.ndarray 
+    params : (4 x Num_Samples) numpy.ndarray
         Matrix containing parameters for the false-negative fit function (fit_func)
     data : ExpressionData object from which prob derives
 
     Returns
     -------
-    out_prob : (Num_Genes x Num_Samples) numpy.ndarray     
-        Adjusted probability values
     weights : (Num_Genes x Num_Samples) numpy.ndarray
         Estimated weight for each data point in input matrix.
-        Ranges from 0 to 1.  Represents estimate for likelihood that measure is not
-        confounded by technical error.
-        
+        Ranges from 0 to 1.
     """
 
     if(_input_weights is None):
-        fn_prob = np.zeros(prob.shape)
+        fn_prob = np.zeros(data.shape)
         count_nonzero = (data.base > 0).sum(axis=1);
-        count_nonzero[count_nonzero == 0] = 1; # Protect agains NaN
+        count_nonzero[count_nonzero == 0] = 1;  # Protect agains NaN
         mu_h = data.base.sum(axis=1) / count_nonzero;
 
-        for i in range(prob.shape[1]):
-            fn_prob[:,i] = fit_func(mu_h, *params[:,i]).ravel();
+        for i in range(fn_prob.shape[1]):
+            fn_prob[:, i] = fit_func(mu_h, *params[:, i]).ravel();
 
-        out_prob = prob + (1-prob)*fn_prob;
-        weights = 1-fn_prob;
+        pd_e = 1 - fn_prob;
+
+        pd_e[data > 0] = 1.0;
+
+        pne_nd = np.ones(pd_e.shape);
+
+        F = (data > 0).sum(axis=1, keepdims=True) / data.shape[1];
+        F[F == 1] = 0;  # This ensures no divide by zero.  When all expressed, weights eval to one
+        pne_nd = (F - pd_e) / ((F - 1) * pd_e);
+        pne_nd[pne_nd < 0] = 0;
+
+        weights = pne_nd;
+
     else:
-        weights = _input_weights.loc[data.row_labels, data.col_labels].values; # Use data to align
-        out_prob = prob + (1-prob)*(1-weights);
+        weights = _input_weights.loc[data.row_labels, data.col_labels].values;  # Use data to align
 
-    return out_prob, weights;
-
+    return weights;
 
 #def utility_plotting_routine(i, cutoff):
 #    #cutoff = 5;
