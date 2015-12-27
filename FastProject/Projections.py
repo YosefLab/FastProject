@@ -136,7 +136,6 @@ def generate_projections(data, filter_name = None):
 
     proj_data = data.projection_data(filter_name);
     proj_weights = data.projection_weights(filter_name);
-    dist_matrix = data.distance_matrix(filter_name);
 
     if(type(data) is not PCData):
         wpca_data, e_val, e_vec = perform_weighted_PCA(proj_data, proj_weights, max_components = 50);
@@ -165,15 +164,15 @@ def generate_projections(data, filter_name = None):
     pbar.update();
     
     # tSNE
-    model = TSNE(n_components=2, perplexity=10.0, metric="precomputed", learning_rate = 100, early_exaggeration=4.0);
-    result = model.fit_transform(dist_matrix);
+    model = TSNE(n_components=2, perplexity=10.0, metric="euclidean", learning_rate = 100, early_exaggeration=4.0);
+    result = model.fit_transform(proj_data.T);
     
     projections['tSNE10'] = result;
     pbar.update();
 
     # tSNE
-    model = TSNE(n_components=2, perplexity=30.0, metric="precomputed", learning_rate = 100, early_exaggeration=4.0);
-    result = model.fit_transform(dist_matrix);
+    model = TSNE(n_components=2, perplexity=30.0, metric="euclidean", learning_rate = 100, early_exaggeration=4.0);
+    result = model.fit_transform(proj_data.T);
     
     projections['tSNE30'] = result;
     pbar.update();
@@ -195,13 +194,13 @@ def generate_projections(data, filter_name = None):
     pbar.update();
     
     # MDS
-    
-    model = MDS(n_components=2, dissimilarity="precomputed")
-    result = model.fit_transform(dist_matrix);
-    
+
+    model = MDS(n_components=2, dissimilarity="euclidean")
+    result = model.fit_transform(proj_data.T);
+
     projections['MDS'] = result;
     pbar.update();
-        
+
     # Spectral Embedding
     # Issues using precomputed affinity matrix.  Need to understand how to construct it better
     model = SpectralEmbedding(n_components=2)

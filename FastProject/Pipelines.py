@@ -15,6 +15,8 @@ from FastProject.DataTypes import ExpressionData, ProbabilityData, PCData;
 from FastProject.Utils import ProgressBar;
 from FastProject import HtmlViewer;
 from FastProject.Global import args, FP_Output;
+from FastProject import SigScoreMethods;
+from FastProject import NormalizationMethods;
 
 
 def FullOutput():
@@ -85,8 +87,9 @@ def FullOutput():
     #%% Load input weights (if provided)
     Transforms.load_input_weights(edata)
 
-    if(args.subsample_size > edata.shape[1]):
-        args.subsample_size = None;
+    # if(args.subsample_size > edata.shape[1]):
+    #     args.subsample_size = None;
+    args.subsample_size = None;
 
     holdouts = None;
     if(args.subsample_size):
@@ -162,6 +165,9 @@ def FullOutput():
     # Make an extra quality score of just the zero proportion in each sample
     zeros_qscore = (edata.base == 0).sum(axis=0) / edata.shape[0];
 
+    # Make an extra matrix just storing the location of zeros in the original matrix
+    zero_locations = (edata.base == 0);
+
     # Transforms.z_normalize(edata);
 
     # Generate some random signatures for testing purposes
@@ -214,12 +220,46 @@ def FullOutput():
         #Evaluate Signatures
         FP_Output("\nEvaluating signature scores on samples...");
 
+        # Determine normalization method
+        if(type(data) is ExpressionData):
+
+            if(args.sig_norm_method == "none"):
+                sig_norm_method = NormalizationMethods.no_normalization;
+            elif(args.sig_norm_method == "znorm_columns"):
+                sig_norm_method = NormalizationMethods.col_normalization;
+            elif(args.sig_norm_method == "znorm_rows"):
+                sig_norm_method = NormalizationMethods.row_normalization;
+            elif(args.sig_norm_method == "znorm_rows_then_columns"):
+                sig_norm_method = NormalizationMethods.row_and_col_normalization;
+            elif(args.sig_norm_method == "rank_norm_columns"):
+                sig_norm_method = NormalizationMethods.col_rank_normalization;
+
+            sig_data = data.get_normalized_copy(sig_norm_method);
+
+        elif(type(data) is ProbabilityData):
+            sig_data = data;
+
+        # Determine signature score evaluation method
+        if(type(data) is ExpressionData):
+            if(args.sig_score_method == "naive"):
+                sig_score_method = SigScoreMethods.naive_eval_signature;
+            elif(args.sig_score_method == "weighted_avg"):
+                sig_score_method = SigScoreMethods.weighted_eval_signature;
+            elif(args.sig_score_method == "imputed"):
+                sig_score_method = SigScoreMethods.imputed_eval_signature;
+            elif(args.sig_score_method == "only_nonzero"):
+                sig_score_method = SigScoreMethods.fuckit_eval_signature;
+
+        elif(type(data) is ProbabilityData):
+            sig_score_method = SigScoreMethods.naive_eval_signature;
+
+
         sig_scores_dict = dict();
 
         pbar = ProgressBar(len(sigs));
         for sig in sigs:
             try:
-                sig_scores_dict[sig.name] = data.eval_signature(sig);
+                sig_scores_dict[sig.name] = sig_score_method(sig_data, sig, zero_locations);
             except ValueError:  #Only thrown when the signature has no genes in the data
                 pass #Just discard the signature then
             pbar.update();
@@ -230,7 +270,7 @@ def FullOutput():
         random_sig_scores_dict = dict();
         for sig in random_sigs:
             try:
-                random_sig_scores_dict[sig.name] = data.eval_signature(sig);
+                random_sig_scores_dict[sig.name] = sig_score_method(sig_data, sig, zero_locations);
             except ValueError:  # Only thrown when the signature has no genes in the data
                 pass  # Just discard the signature then
             pbar.update();

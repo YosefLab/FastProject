@@ -6,9 +6,9 @@ Created on Thu Mar 05 20:13:40 2015
 """
 
 import numpy as np;
-from scipy.spatial import distance;
 from .Signatures import SignatureScores;
 import Global;
+
 
 class ExpressionData(np.ndarray):
     
@@ -47,49 +47,45 @@ class ExpressionData(np.ndarray):
         self.row_labels = getattr(obj, 'row_labels', []);
         self.col_labels = getattr(obj, 'col_labels', []);
         
-    def distance_matrix(self, filter_name=None):
-        
-        dist_vec = distance.pdist(self.projection_data(filter_name).T, metric='euclidean');
-        return distance.squareform(dist_vec);
-
-    def eval_signature(self, signature):
-        """For a signature, calculate a score against each sample in the data
-        
-        Parameters
-        ----------
-        signature :   Signature,
-            expression data to evaluate the signature against
-
-        Returns
-        -------
-        out : 1D ndarray, length = Num_Samples 
-            result of evaluating this signature on each sample in data
-        
-        """
-        
-        sig_vector = signature.sig_indices(self.row_labels);
-        ii = np.nonzero(sig_vector)[0];
-
-        num_matched_genes = ii.size;
-
-        if(num_matched_genes == 0):
-            raise ValueError("No genes match signature");
-
-        if(num_matched_genes < Global.args.min_signature_genes):
-            raise ValueError("Too few genes match signature");
-
-        weights = self.weights[ii,:];
-        data = self.base[ii,:];
-        sig_vector = sig_vector[ii,:];
-
-        pdata = data * sig_vector * weights;
-        
-        sig_scores = pdata.sum(axis=0);
-        sig_scores /= np.sum(np.abs(sig_vector)*weights, axis=0); #Only normalize by weights in the signature
-
-        sig_obj = SignatureScores(sig_scores, signature.name, self.col_labels, isFactor=False, isPrecomputed=False, numGenes=num_matched_genes);
-
-        return sig_obj;
+# Pending removal
+#     def eval_signature(self, signature):
+#         """For a signature, calculate a score against each sample in the data
+#         
+#         Parameters
+#         ----------
+#         signature :   Signature,
+#             expression data to evaluate the signature against
+# 
+#         Returns
+#         -------
+#         out : 1D ndarray, length = Num_Samples 
+#             result of evaluating this signature on each sample in data
+#         
+#         """
+#         
+#         sig_vector = signature.sig_indices(self.row_labels);
+#         ii = np.nonzero(sig_vector)[0];
+# 
+#         num_matched_genes = ii.size;
+# 
+#         if(num_matched_genes == 0):
+#             raise ValueError("No genes match signature");
+# 
+#         if(num_matched_genes < Global.args.min_signature_genes):
+#             raise ValueError("Too few genes match signature");
+# 
+#         weights = self.weights[ii,:];
+#         data = self.base[ii,:];
+#         sig_vector = sig_vector[ii,:];
+# 
+#         pdata = data * sig_vector * weights;
+#         
+#         sig_scores = pdata.sum(axis=0);
+#         sig_scores /= np.sum(np.abs(sig_vector)*weights, axis=0); #Only normalize by weights in the signature
+# 
+#         sig_obj = SignatureScores(sig_scores, signature.name, self.col_labels, isFactor=False, isPrecomputed=False, numGenes=num_matched_genes);
+# 
+#         return sig_obj;
         
     def subset_genes(self, indices):
         if(issubclass(type(indices), np.ndarray)):
@@ -153,6 +149,29 @@ class ExpressionData(np.ndarray):
             filter_i = [i for i,gene in enumerate(self.row_labels) if gene in filter];
             return self.weights[filter_i,:];
 
+    def get_normalized_copy(self, norm_method):
+        """
+        Runs norm_method on the data and returns an ExpressionData copy
+
+        norm_method is of the form:
+
+            out = norm_method(input);
+
+            input: numpy.ndarray N x M
+            out: numpy.ndarray N x M
+
+        """
+
+        normalized_data = norm_method(self.base);
+        normalized_edata = ExpressionData(normalized_data,
+                row_labels=self.row_labels,
+                col_labels=self.col_labels);
+        
+        normalized_edata.weights = self.weights;
+        normalized_edata.filters = self.filters;
+
+        return normalized_edata;
+
     def merge_data(self, other):
         """
         Merges columns of self and other
@@ -212,63 +231,49 @@ class ProbabilityData(np.ndarray):
         self.col_labels = getattr(obj, 'col_labels', []);
         self.expression_data = getattr(obj, 'expression_data', []);
         
-    def distance_matrix(self, filter_name=None):
-
-        pos_self = self.projection_data(filter_name)
-        neg_self = 1-pos_self;
-        
-        prob_dist = np.dot(neg_self.T, pos_self) + \
-                    np.dot(pos_self.T, neg_self);
-        
-        #Set all diagonal entries equal to zero
-        np.fill_diagonal(prob_dist, 0.0);
-        
-        return prob_dist;
-
-    #All data values in PCData have the same weight
     @property
     def filters(self):
         return self.expression_data.filters;
 
-    def eval_signature(self, signature):
-        """For a signature, calculate a score against each sample in the data
-        
-        Parameters
-        ----------
-        signature :   Signature,
-            expression data to evaluate the signature against
-
-        Returns
-        -------
-        out : 1D ndarray, length = Num_Samples 
-            result of evaluating this signature on each sample in data
-        
-        """
-        sig_vector = signature.sig_indices(self.row_labels);
-        ii = np.nonzero(sig_vector)[0];
-
-        num_matched_genes = ii.size;
-
-        if(num_matched_genes == 0):
-            raise ValueError("No genes match signature");
-
-        if(num_matched_genes < Global.args.min_signature_genes):
-            raise ValueError("Too few genes match signature");
-
-        #Probability data already incorporates false-negative probability so no weights are used.
-
-        data = self.base[ii,:];
-        sig_vector = sig_vector[ii,:];
-        weights = np.ones(data.shape);
-
-        pdata = data * sig_vector * weights;
-        
-        sig_scores = pdata.sum(axis=0);
-        sig_scores /= np.sum(np.abs(sig_vector)*weights, axis=0); #Only normalize by weights in the signature
-
-        sig_obj = SignatureScores(sig_scores, signature.name, self.col_labels, isFactor=False, isPrecomputed=False, numGenes=num_matched_genes);
-
-        return sig_obj;
+#     def eval_signature(self, signature):
+#         """For a signature, calculate a score against each sample in the data
+#         
+#         Parameters
+#         ----------
+#         signature :   Signature,
+#             expression data to evaluate the signature against
+# 
+#         Returns
+#         -------
+#         out : 1D ndarray, length = Num_Samples 
+#             result of evaluating this signature on each sample in data
+#         
+#         """
+#         sig_vector = signature.sig_indices(self.row_labels);
+#         ii = np.nonzero(sig_vector)[0];
+# 
+#         num_matched_genes = ii.size;
+# 
+#         if(num_matched_genes == 0):
+#             raise ValueError("No genes match signature");
+# 
+#         if(num_matched_genes < Global.args.min_signature_genes):
+#             raise ValueError("Too few genes match signature");
+# 
+#         #Probability data already incorporates false-negative probability so no weights are used.
+# 
+#         data = self.base[ii,:];
+#         sig_vector = sig_vector[ii,:];
+#         weights = np.ones(data.shape);
+# 
+#         pdata = data * sig_vector * weights;
+#         
+#         sig_scores = pdata.sum(axis=0);
+#         sig_scores /= np.sum(np.abs(sig_vector)*weights, axis=0); #Only normalize by weights in the signature
+# 
+#         sig_obj = SignatureScores(sig_scores, signature.name, self.col_labels, isFactor=False, isPrecomputed=False, numGenes=num_matched_genes);
+# 
+#         return sig_obj;
         
     def subset_genes(self, indices):
         if(issubclass(type(indices), np.ndarray)):
@@ -390,29 +395,24 @@ class PCData(np.ndarray):
         self.col_labels = getattr(obj, 'col_labels', []);
         self.loadings = getattr(obj, 'loadings', []);
         self.parent_data = getattr(obj, 'parent_data', []);
-        
-    def distance_matrix(self, filter_name=None):
-        
-        dist_vec = distance.pdist(self.T, metric='euclidean');
-        return distance.squareform(dist_vec);
 
-    def eval_signature(self, signature):
-        """For a signature, calculate a score against each sample in the data
-        
-        Parameters
-        ----------
-        signature :   Signature,
-            expression data to evaluate the signature against
-
-        Returns
-        -------
-        out : 1D ndarray, length = Num_Samples 
-            result of evaluating this signature on each sample in data
-        
-        """
-        
-        #On Principle Components, just evaluate signature on parent data
-        return self.parent_data.eval_signature(signature);
+#     def eval_signature(self, signature):
+#         """For a signature, calculate a score against each sample in the data
+#         
+#         Parameters
+#         ----------
+#         signature :   Signature,
+#             expression data to evaluate the signature against
+# 
+#         Returns
+#         -------
+#         out : 1D ndarray, length = Num_Samples 
+#             result of evaluating this signature on each sample in data
+#         
+#         """
+#         
+#         #On Principle Components, just evaluate signature on parent data
+#         return self.parent_data.eval_signature(signature);
         
     
     def subset_samples(self, indices):

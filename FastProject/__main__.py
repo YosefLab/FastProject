@@ -39,7 +39,7 @@ def parseFPArgs():
             help="Performs a quality check on samples, filtering samples that do not pass");
 
     parser.add_argument("--subsample_size", type=int, metavar="N", default=1000,
-            help="Number of samples to use when sub_sampling. Default is 1000");
+            help="Planned Feature: Number of samples to use when sub_sampling");
 
     parser.add_argument("--min_signature_genes", type=int, metavar="N", default=5,
             help="Signatures that match less than N genes in the data are discarded");
@@ -52,7 +52,16 @@ def parseFPArgs():
 
     parser.add_argument("--threshold", metavar="N", type=int,
                         help="Removes transcripts detected in less than N samples. " +
-                               "Default is 20%% of total sample count.")
+                        "Default is 20%% of total sample count.")
+
+    parser.add_argument("--sig_norm_method", default="none",
+        choices=["none", "znorm_columns", "znorm_rows",
+            "znorm_rows_then_columns", "rank_norm_columns"],
+        help="Pick a normalization method to be applied to data before evaluating signature scores");
+
+    parser.add_argument("--sig_score_method", default="naive",
+        choices=["naive", "weighted_avg", "imputed", "only_nonzero"],
+        help="Pick a method to evaluate signature scores");
 
     args = parser.parse_args();
 
