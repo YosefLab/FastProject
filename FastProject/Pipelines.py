@@ -40,6 +40,7 @@ def FullOutput():
     FileIO.make_dirs(dir_name);
     logging.basicConfig(format='%(asctime)s %(message)s', filename=os.path.join(dir_name, 'fastproject.log'), level=logging.INFO);
     logging.info("Running FastProject Analysis");
+    logging.info("Using numpy version " + np.__version__);
     for key in args.__dict__:
         logging.info(key + ": " + str(args.__dict__[key]));
 
