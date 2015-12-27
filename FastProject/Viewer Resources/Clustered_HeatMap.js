@@ -71,8 +71,8 @@ function HeatMap(parent)
 
     //define a color scale using the min and max expression values
     this.colorScale = d3.scale.linear()
-        .domain([-0.6, 0, 0.6])
-        .range(["steelblue", "white", "lightcoral"]);
+        .domain([0, 4])
+        .range(["white", "lightcoral"]);
 
     this.data_plus = [];
     this.data_minus = [];
