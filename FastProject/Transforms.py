@@ -140,11 +140,11 @@ def create_false_neg_map(data, housekeeping_file="", debug=None):
 
     #Fit a function mapping mu to gammas
 
-    def func(xvals, x0, a, L, S):
+    def func(xvals, x0, a, L=0, S=1):
         return L + S/(1 + np.exp((xvals-x0)*a));
 
     def efun(x,y, args):
-        out = func(x, args[0], args[1], args[2], args[3]);
+        out = func(x, args[0], args[1]);
         return np.sum((out-y)**2);
 
     params = np.zeros((4,gamma.shape[1]));
@@ -179,15 +179,13 @@ def create_false_neg_map(data, housekeeping_file="", debug=None):
     from scipy.optimize import minimize;
 
     #Multiple restarts for better solutions
-    initial_guesses = [[3.5, 1.26, 0, 1],
-                       [3.5, 1, .2, .7],
-                       [5.5, 1, 0, 1],
-                       [5.5, 1, .2, .7],
-                       [1.5, .5, .2, .7],
-                       [5.5, .5, .2, .7],
-                       [3.5, 1.7, .2, .7]];
+    initial_guesses = [[3.5, 1],
+                       [5.5, 1],
+                       [1.5, .5],
+                       [5.5, .5],
+                       [3.5, 1.7]];
 
-    bounds = [(0, np.inf),(0, 2),(0,1), (0,1)];
+    bounds = [(0, np.inf),(0, 2)];
 
     for i in range(gamma.shape[1]):
         best_eval = 1e99;
@@ -196,9 +194,9 @@ def create_false_neg_map(data, housekeeping_file="", debug=None):
             if(res.fun < best_eval):
                 best_eval = res.fun;
                 param = res.x;
-                if(param[2] + param[3] > 1): # clamp so function can't be > 1
-                    param[3] = 1-param[2];
-                params[:,i] = param;
+                params[0:2, i] = param;
+                params[2, i] = 0;
+                params[3, i] = 1;
 
     if(debug is not None):
         import matplotlib.pyplot as plt;
