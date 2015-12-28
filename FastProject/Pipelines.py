@@ -175,33 +175,33 @@ def FullOutput():
     # Generate some random signatures for testing purposes
     import random;
     for size in [5, 10, 20, 50, 100, 200]:
-        for j in range(10):
+        for j in range(100):
             new_sig_dict = dict();
             new_sig_genes = random.sample(edata.row_labels, size);
             new_sig_signs = np.random.choice([1, -1], size);
             for gene, sign in zip(new_sig_genes, new_sig_signs):
                 new_sig_dict.update({gene: int(sign)});
-            new_sig = Signatures.Signature(new_sig_dict, True, 'x', "RANDOM_" + str(size) + "_" + str(j));
+            new_sig = Signatures.Signature(new_sig_dict, True, 'x', "RANDOM_SIGNED_" + str(size) + "_" + str(j));
             sigs.append(new_sig);
 
     # Generate some positive random signatures too (only + sign)
     for size in [5, 10, 20, 50, 100, 200]:
-        for j in range(10):
+        for j in range(100):
             new_sig_dict = dict();
             new_sig_genes = random.sample(edata.row_labels, size);
             new_sig_signs = np.random.choice([1], size);
             for gene, sign in zip(new_sig_genes, new_sig_signs):
                 new_sig_dict.update({gene: int(sign)});
-            new_sig = Signatures.Signature(new_sig_dict, True, 'x', "RANDOM_POSITIVE_" + str(size) + "_" + str(j));
+            new_sig = Signatures.Signature(new_sig_dict, True, 'x', "RANDOM_UNISNGED_" + str(size) + "_" + str(j));
             sigs.append(new_sig);
 
     # Generate random signatures for background significance
     random_sigs = [];
     for size in [5, 10, 20, 50, 100, 200]:
-        for j in range(500):
+        for j in range(300):
             new_sig_dict = dict();
             new_sig_genes = random.sample(edata.row_labels, size);
-            new_sig_signs = np.random.choice([1, -1], size);
+            new_sig_signs = np.random.choice([1], size);
             for gene, sign in zip(new_sig_genes, new_sig_signs):
                 new_sig_dict.update({gene: int(sign)});
             new_sig = Signatures.Signature(new_sig_dict, True, 'x', "RANDOM_BG_" + str(size) + "_" + str(j));
