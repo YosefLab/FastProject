@@ -119,10 +119,18 @@ def FullOutput():
         fano_mask = Filters.filter_genes_fano(edata, 2);
 
         filter_dict.update({
-            'Threshold': set(edata.row_labels), #None means 'use all genes'. This set only used when outputting filter
-            'HDT': set([edata.row_labels[i] for i,x in enumerate(hdt_mask) if x]),
-            'Fano': set([edata.row_labels[i] for i,x in enumerate(fano_mask) if x])
+            'Threshold': set(edata.row_labels), # None means 'use all genes'. This set only used when outputting filter
         });
+
+        if(np.array(hdt_mask).sum() > 10): # Only add these filters if they have enough genes
+            filter_dict.update({
+                'HDT': set([edata.row_labels[i] for i, x in enumerate(hdt_mask) if x]),
+            });
+
+        if(np.array(fano_mask).sum() > 10):
+            filter_dict.update({
+                'Fano': set([edata.row_labels[i] for i, x in enumerate(fano_mask) if x])
+            });
 
     edata.filters = filter_dict;
 
