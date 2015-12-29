@@ -13,6 +13,7 @@ from sklearn.manifold import Isomap
 from sklearn.manifold import MDS
 from sklearn.manifold import SpectralEmbedding
 from sklearn.cluster import MiniBatchKMeans
+from scipy.stats import norm;
 import scipy.stats;
 import pandas as pd;
 from pandas.parser import CParserError;
