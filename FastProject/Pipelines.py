@@ -200,7 +200,7 @@ def FullOutput():
             new_sig_signs = np.random.choice([1], size);
             for gene, sign in zip(new_sig_genes, new_sig_signs):
                 new_sig_dict.update({gene: int(sign)});
-            new_sig = Signatures.Signature(new_sig_dict, True, 'x', "RANDOM_UNISNGED_" + str(size) + "_" + str(j));
+            new_sig = Signatures.Signature(new_sig_dict, True, 'x', "RANDOM_UNSIGNED_" + str(size) + "_" + str(j));
             sigs.append(new_sig);
 
     # Generate random signatures for background significance
