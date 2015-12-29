@@ -87,7 +87,7 @@ def entry():
 
         if(args.debug):
             import pdb;
-            pdb.port_mortem(tb);
+            pdb.post_mortem(tb);
 
 
 if(__name__ == "__main__"):
