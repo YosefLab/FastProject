@@ -38,6 +38,9 @@ def parseFPArgs():
     parser.add_argument("--qc",         action="store_true",
             help="Performs a quality check on samples, filtering samples that do not pass");
 
+    parser.add_argument("--debug",         action="store_true",
+            help="Run FastProject in Debug mode");
+
     parser.add_argument("--subsample_size", type=int, metavar="N", default=1000,
             help="Planned Feature: Number of samples to use when sub_sampling");
 
@@ -73,7 +76,12 @@ def entry():
     Global.args = args;
 
     from FastProject import Pipelines;
-    Pipelines.FullOutput();
+    try:
+        Pipelines.FullOutput();
+    except:
+        if(args.debug):
+            import pdb;
+            pdb.pm();
 
 
 if(__name__ == "__main__"):
