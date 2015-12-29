@@ -325,10 +325,10 @@ def FullOutput():
 
 
             #Now do it all again using the principal component data
-            if(args.pca_filter):
-                pcdata = Projections.filter_PCA(pcdata, scores=sample_qc_scores, variance_proportion=0.25);
-            else:
-                pcdata = Projections.filter_PCA(pcdata, variance_proportion=0.25, min_components = 30);
+            # if(args.pca_filter):
+            #     pcdata = Projections.filter_PCA(pcdata, scores=sample_qc_scores, variance_proportion=0.25);
+            # else:
+            #     pcdata = Projections.filter_PCA(pcdata, variance_proportion=0.25, min_components = 30);
 
             #%% Dimensional Reduction procedures
             FP_Output("Projecting PC data into 2 dimensions");

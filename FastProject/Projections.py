@@ -138,7 +138,7 @@ def generate_projections(data, filter_name = None):
     proj_weights = data.projection_weights(filter_name);
 
     if(type(data) is not PCData):
-        wpca_data, e_val, e_vec = perform_weighted_PCA(proj_data, proj_weights, max_components = 50);
+        wpca_data, e_val, e_vec = permutation_wPCA(proj_data, proj_weights, components=50, p_threshold=0.05, verbose=True);
         pcdata = PCData(wpca_data, e_val, e_vec, data);
     else:
         pcdata = data;
@@ -482,7 +482,9 @@ def permutation_wPCA(data, weights, components=50, p_threshold=0.05, verbose=Fal
     p_vals = norm.sf((e_val - mu) / sigma);
     threshold_component = np.nonzero(p_vals > p_threshold)[0][0];
 
-    wpca_data = wpca_data[0:threshold_component,:];
+    wpca_data = wpca_data[0:threshold_component, :];
+    e_val = e_val[0:threshold_component];
+    e_vec = e_vec[0:threshold_component, :];
 
     if(verbose):
         print("Permutation test on wPCA: ", str(wpca_data.shape[0]), " components retained.");
@@ -494,6 +496,6 @@ def permutation_wPCA(data, weights, components=50, p_threshold=0.05, verbose=Fal
         sns.violinplot(pd.DataFrame(bg_vals[:,0:20]));
         plt.plot(e_val);
 
-    return wpca_data;
+    return wpca_data, e_val, e_vec;
 
 
