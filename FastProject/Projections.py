@@ -482,12 +482,17 @@ def permutation_wPCA(data, weights, components=50, p_threshold=0.05, verbose=Fal
     p_vals = norm.sf((e_val - mu) / sigma);
     threshold_component = np.nonzero(p_vals > p_threshold)[0][0];
 
+    if(verbose):
+        FP_Output("Permutation test on wPCA: ", str(threshold_component), " components retained.");
+
+    if(threshold_component < 5):
+        FP_Output("Less than 5 components identified as significant.  Preserving top 5.");
+        threshold_component = 5;
+
     wpca_data = wpca_data[0:threshold_component, :];
     e_val = e_val[0:threshold_component];
     e_vec = e_vec[0:threshold_component, :];
 
-    if(verbose):
-        FP_Output("Permutation test on wPCA: ", str(wpca_data.shape[0]), " components retained.");
 
     if(debug):
         import seaborn as sns;
