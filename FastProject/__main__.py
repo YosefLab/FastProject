@@ -79,9 +79,15 @@ def entry():
     try:
         Pipelines.FullOutput();
     except:
+        import traceback;
+        import sys;
+        traceback.print_exc();
+
+        tb_type, value, tb = sys.exc_info();
+
         if(args.debug):
             import pdb;
-            pdb.pm();
+            pdb.port_mortem(tb);
 
 
 if(__name__ == "__main__"):
