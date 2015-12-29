@@ -314,6 +314,7 @@ def perform_weighted_PCA(data, weights, max_components=200):
     weighted_data_centered = data_centered * weights;
 
     wcov = np.dot(weighted_data_centered, weighted_data_centered.T) / np.dot(weights,weights.T);
+    wcov[np.isnan(wcov)] = 0.0;  # Need this when weight dot product is zero
     model = RandomizedPCA(n_components=min(proj_data.shape[0], proj_data.shape[1], max_components));
     model.fit(wcov);
     e_vec = model.components_;
