@@ -382,7 +382,7 @@ def FullOutput():
             aa = np.argsort(signature_significance);
             threshold = signature_significance[aa[OUTPUT_SIGNATURE_LIMIT]];
         else:
-            threshold = -1.301;
+            threshold = 100; # Keep all signatures
 
         #Iterate back through and prune signatures worse than threshold
         #Create a dictionary of sigs to keep
