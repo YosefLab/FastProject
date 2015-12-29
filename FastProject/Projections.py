@@ -21,7 +21,7 @@ import os;
 
 from .Utils import ProgressBar;
 from .DataTypes import PCData;
-from .Global import args;
+from .Global import args, FP_Output;
 
 import numpy as np;
 
@@ -470,9 +470,7 @@ def permutation_wPCA(data, weights, components=50, p_threshold=0.05, verbose=Fal
             bg_data[j,:] = data[j,random_i];
             bg_weights[j,:] = weights[j,random_i];
 
-        print("starting wpca");
         wpca_bg, bg_val, bg_vec = perform_weighted_PCA(bg_data, bg_weights, components);
-        print("finished wpca!");
 
         bg_vals[i,:] = bg_val;
 
@@ -488,7 +486,7 @@ def permutation_wPCA(data, weights, components=50, p_threshold=0.05, verbose=Fal
     e_vec = e_vec[0:threshold_component, :];
 
     if(verbose):
-        print("Permutation test on wPCA: ", str(wpca_data.shape[0]), " components retained.");
+        FP_Output("Permutation test on wPCA: ", str(wpca_data.shape[0]), " components retained.");
 
     if(debug):
         import seaborn as sns;
