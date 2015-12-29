@@ -62,7 +62,9 @@ def weighted_eval_signature(self, signature, zeros):
     pdata = data * sig_vector * weights;
 
     sig_scores = pdata.sum(axis=0);
-    sig_scores /= np.sum(np.abs(sig_vector) * weights, axis=0);  # Only normalize by weights in the signature
+    norm_factor = np.sum(np.abs(sig_vector) * weights, axis=0);  # Only normalize by weights in the signature
+    norm_factor[norm_factor == 0] = 1.0;
+    sig_scores /= norm_factor;
 
     sig_obj = SignatureScores(sig_scores, signature.name, self.col_labels,
                               isFactor=False, isPrecomputed=False, numGenes=num_matched_genes);
@@ -94,6 +96,7 @@ def imputed_eval_signature(self, signature, zeros):
     # impute values
     # weight represents p(not e | not d)
     mu = (data * (~zeros)).sum(axis=1, keepdims=True) / (~zeros).sum(axis=1, keepdims=True);
+    mu[np.isnan(mu)] = 0.0;  # All zeros, mu is zero
 
     pe_nd = 1 - weights;  # Probability expressed | not detected
     pne_nd = weights;
