@@ -57,13 +57,15 @@ def parseFPArgs():
                         help="Removes transcripts detected in less than N samples. " +
                         "Default is 20%% of total sample count.")
 
-    parser.add_argument("--sig_norm_method", default="none",
+    parser.add_argument("--sig_norm_method",
         choices=["none", "znorm_columns", "znorm_rows",
             "znorm_rows_then_columns", "rank_norm_columns"],
+        default="znorm_rows",
         help="Pick a normalization method to be applied to data before evaluating signature scores");
 
-    parser.add_argument("--sig_score_method", default="naive",
+    parser.add_argument("--sig_score_method",
         choices=["naive", "weighted_avg", "imputed", "only_nonzero"],
+        default="weighted_avg",
         help="Pick a method to evaluate signature scores");
 
     args = parser.parse_args();
