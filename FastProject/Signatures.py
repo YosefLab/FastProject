@@ -424,7 +424,7 @@ def sigs_vs_projections(projections, sig_scores_dict, random_sig_scores_dict, NE
 
         p_values = norm.cdf((med_dissimilarity - mu)/sigma);
 
-        sig_proj_matrix[:,i] = med_dissimilarity;
+        sig_proj_matrix[:,i] = med_dissimilarity / mu;
         sig_proj_matrix_p[:,i] = p_values;
 
 
@@ -452,7 +452,7 @@ def sigs_vs_projections(projections, sig_scores_dict, random_sig_scores_dict, NE
                 p_value = 1.0;
 
 
-            pnum_sig_proj_matrix[j,i] = med_dissimilarity;
+            pnum_sig_proj_matrix[j,i] = med_dissimilarity / mu;
             pnum_sig_proj_matrix_p[j,i] = p_value;
 
         #Calculate significance for Factor signatures
@@ -464,7 +464,7 @@ def sigs_vs_projections(projections, sig_scores_dict, random_sig_scores_dict, NE
             dissimilarity = 1 - np.sum(factor_matrix * factor_predictions, axis=1);
             med_dissimilarity = np.median(dissimilarity);
 
-            #Now...compute a background?
+            #Now...compute a background
             NUM_REPLICATES = 1000;
             column_assignments = np.random.choice(N_LEVELS, NUM_REPLICATES, p = factor_frequencies);
             column_assignments = factor_frequencies[column_assignments];
@@ -483,7 +483,7 @@ def sigs_vs_projections(projections, sig_scores_dict, random_sig_scores_dict, NE
             else:
                 p_value = norm.cdf((med_dissimilarity - mu)/sigma);
 
-            factor_sig_proj_matrix[j,i] = med_dissimilarity;
+            factor_sig_proj_matrix[j,i] = med_dissimilarity / rand_med_dissimilarity;
             factor_sig_proj_matrix_p[j,i] = p_value;
 
 
