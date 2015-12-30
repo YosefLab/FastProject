@@ -411,7 +411,36 @@ HeatMap.prototype.setData = function(data, cluster_assignments, gene_labels, gen
     this.data_plus = cluster_list_plus;
     this.data_minus = cluster_list_minus;
 
+    this.setColormap();
+
     this.redraw()();
+};
+
+HeatMap.prototype.setColormap = function()
+{
+    var self = this;
+    var vals_p = self.data_plus.map(function(x){
+        return x.data.map(function(y){
+            return y.value;}
+            );
+    });
+    var vals_m = self.data_minus.map(function(x){
+        return x.data.map(function(y){
+            return y.value;}
+            );
+    });
+    var vals = vals_p.concat(vals_m);
+
+    vals = d3.merge(vals);
+    vals = vals.sort(d3.ascending);
+    var upper = d3.quantile(vals, 0.99);
+    var low = d3.quantile(vals, 0.01);
+    var mid = (low + upper)/2;
+
+    self.colorScale = d3.scale.linear()
+        .domain([low, mid, upper])
+        .range(["steelblue", "white", "lightcoral"]);
+
 };
 
 HeatMap.prototype.setSelected = function(selected_index, event_id)
