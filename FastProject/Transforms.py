@@ -345,16 +345,20 @@ def compute_weights(fit_func, params, data):
 
         pd_e = 1 - fn_prob;
 
-        pd_e[data > 0] = 1.0;
+        pnd = (data == 0).sum(axis=1, keepdims=True) / data.shape[1];
+        pe = pnd / (
+            ((data == 0) * (1 - pd_e)).sum(axis=1, keepdims=True) /
+            (data == 0).sum(axis=1, keepdims=True)
+        );
+        pe[np.isnan(pe)] == 1.0;  # Set to 1 if all expressed
 
-        pne_nd = np.ones(pd_e.shape);
+        pne_nd = 1 - (1 - pd_e) * pe / pnd;
 
-        F = (data > 0).sum(axis=1, keepdims=True) / data.shape[1];
-        F[F == 1] = 0;  # This ensures no divide by zero.  When all expressed, weights eval to one
-        pne_nd = (F - pd_e) / ((F - 1) * pd_e);
-        pne_nd[pne_nd < 0] = 0;
+        pne_nd[pne_nd < 0] = 0.0;
+        pne_nd[pne_nd > 1] = 1.0;
 
         weights = pne_nd;
+        weights[data > 0] = 1.0;
 
     else:
         weights = _input_weights.loc[data.row_labels, data.col_labels].values;  # Use data to align
