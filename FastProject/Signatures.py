@@ -11,6 +11,7 @@ from sklearn.metrics.pairwise import pairwise_distances;
 from scipy.spatial.distance import cdist;
 from scipy.stats import norm, rankdata;
 from .Utils import ProgressBar;
+from .Global import FP_Output;
 import HtmlViewer;
 
 #This is used to cache the background distribution used when evaluating
@@ -411,6 +412,7 @@ def sigs_vs_projections(projections, sig_scores_dict, random_sig_scores_dict, NE
             bg_stat[k, 0] = numGenes;
             bg_stat[k, 1] = mu_x;
             bg_stat[k, 2] = std_x;
+            FP_Output(str(numGenes), str(mu_x), str(std_x));
 
         mu = np.zeros(med_dissimilarity.shape);
         sigma = np.zeros(med_dissimilarity.shape);
