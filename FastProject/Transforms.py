@@ -346,10 +346,8 @@ def compute_weights(fit_func, params, data):
         pd_e = 1 - fn_prob;
 
         pnd = (data == 0).sum(axis=1, keepdims=True) / data.shape[1];
-        pe = pnd / (
-            ((data == 0) * (1 - pd_e)).sum(axis=1, keepdims=True) /
-            (data == 0).sum(axis=1, keepdims=True)
-        );
+        pe = (1 - pnd) / (pd_e).mean(axis=1, keepdims=True);
+
         pe[np.isnan(pe)] == 1.0;  # Set to 1 if all expressed
 
         pne_nd = 1 - (1 - pd_e) * pe / pnd;
