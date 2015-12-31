@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-#Check if virtualenv is installed and install
-pip install virtualenv
+#Install virtualenv if not installed
+pip install virtualenv --user
 
 #Create virtualenv for FastProject
 virtualenv FastProject
