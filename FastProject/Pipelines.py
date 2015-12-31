@@ -154,7 +154,7 @@ def FullOutput():
 
         pdata = ProbabilityData(pdata, edata);
         pmodel = dict({"Data": pdata});
-        Models.update({"Probability": pmodel});
+        #Models.update({"Probability": pmodel});
 
         edata.weights = weights;
         pdata.weights = weights;
@@ -206,7 +206,7 @@ def FullOutput():
     # Generate random signatures for background significance
     random_sigs = [];
     for size in [5, 10, 20, 50, 100, 200]:
-        for j in range(300):
+        for j in range(3000):
             new_sig_dict = dict();
             new_sig_genes = random.sample(edata.row_labels, size);
             new_sig_signs = np.random.choice([1], size);

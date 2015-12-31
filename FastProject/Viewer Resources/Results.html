@@ -203,7 +203,7 @@
         {
             var probability = $('#probability_checkbox').is(":checked");
             var model_name = 'Expression';
-            if(probability){ model_name = 'Probability';}
+            if(probability){ model_name = 'Expression';}
             
             //Find right model
             var model;
@@ -571,7 +571,7 @@
         <div id="data_options_div" class="color_panel">
             <span>
                 <label for="probability_checkbox">Probability Model?</label>
-                <input id="probability_checkbox" type="checkbox">
+                <input id="probability_checkbox" type="checkbox" disabled>
             </span>
             <span>
                 <label for="pca_checkbox">PCA Before Project?</label>
