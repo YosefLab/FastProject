@@ -29,17 +29,17 @@ ln -s ../bin/fastproject Scripts/fastproject
 
 echo "FastProject script installed to $(pwd)/Scripts"
 echo
-echo "Add folder to path by appending to .bashrc?"
+echo "Add folder to path by appending to .bash_profile?"
 read -p "[y/n] >>> " -r
 echo
 if [[ ($REPLY == "yes") || ($REPLY == "Yes") || ($REPLY == "YES") ||
     ($REPLY == "y") || ($REPLY == "Y")]]
 then
-    echo "export PATH=\"$(pwd)/Scripts\":\$PATH" >> ~/.bashrc
-    echo "Your .bashrc was updated."
+    echo "export PATH=\"$(pwd)/Scripts\":\$PATH" >> ~/.bash_profile
+    echo "Your .bash_profile was updated."
     echo "Restart the terminal for the change to take effect"
 else
-    echo "Your .bashrc was not modified."
+    echo "Your PATH was not modified."
 fi
 
 # Cleanup
