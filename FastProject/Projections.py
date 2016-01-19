@@ -457,6 +457,10 @@ def permutation_wPCA(data, weights, components=50, p_threshold=0.05, verbose=Fal
     :return: reduced data, numpy.ndarray of shape Num_Components x Num_Samples
     """
 
+    # Make sure components isn't too big for matrix dimension
+    components = min(components, data.shape[0], data.shape[1]);
+
+
     NUM_REPEATS = 20;
 
     wpca_data, e_val, e_vec = perform_weighted_PCA(data, weights, components);
