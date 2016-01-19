@@ -5,9 +5,10 @@ plots can be easily viewed.
 import shutil;
 import os;
 import numpy as np;
+from .Global import get_viewer_resource_dir;
 
-this_directory = os.path.dirname(os.path.abspath(__file__));
-RESOURCE_DIR = this_directory + os.sep + "Viewer Resources";
+
+RESOURCE_DIR = get_viewer_resource_dir();
 OUTPUT_RESOURCE_DIRECTORY = "_resources";
 
 def get_output_js_handle(destination_dir):
@@ -34,7 +35,7 @@ def copy_html_files(destination_dir):
 def toJS_variable(variable_name, obj):
     return "var " + variable_name + " = " + toJS(obj) + ";\n";
 
-def toJS(obj):
+def toJS(obj, level=0):
     """
     Convert a python object into a javascript format.
     Only certain object types are supported:
@@ -42,6 +43,7 @@ def toJS(obj):
         Numpy.ndarray >> Javascript Array
         Dictionary >> Javascript Object if keys are strings
     :param obj: object to be converted
+    :param level: determines indentation level
     :return: string representation of the object in javascript
     """
 
@@ -65,9 +67,10 @@ def toJS(obj):
         else: return 'false';
     if(type(obj) is dict):
         pairs = list();
+        indentation = "".join(["\t"]*(level+1));
         for key in obj.keys():
             if(type(key) is str or type(key) is int or type(key) is float):
-                pairs.append(toJS(key)+':'+toJS(obj[key]));
+                pairs.append("\n"+indentation+toJS(key, level+1)+':'+toJS(obj[key], level+1));
             else:
                 raise ValueError("Non-compatible Value Encountered for Object Key:", type(key));
         return '{' + ','.join(pairs) + '}';
