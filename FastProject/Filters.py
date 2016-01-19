@@ -11,10 +11,10 @@ from __future__ import print_function, division;
 #Output:  Similarity matrices of size NumSamples x NumSamples
 
 import numpy as np
-import os;
+import os
 from . import Utils
+from .Global import get_housekeeping_dir
 
-this_directory = os.path.dirname(os.path.abspath(__file__));
 
 def filter_genes_fano(data, num_mad):
     """
@@ -135,7 +135,7 @@ def filter_housekeeping(data, housekeeping_file=""):
     Filters out Housekeeping genes.  Uses specified file if provided.
     Otherwise, uses every file in the Housekeeping folder with the module.
     """
-    housekeeping_dir = os.path.join(this_directory,'Housekeeping Genes');
+    housekeeping_dir = get_housekeeping_dir();
     
     housekeeping_files = list();
     

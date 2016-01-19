@@ -10,12 +10,11 @@ from __future__ import division, print_function;
 from .Utils import em_exp_norm_mixture;
 from . import Filters;
 from .DataTypes import ExpressionData, ProbabilityData, PCData;
-from .Global import args, FP_Output;
+from .Global import args, FP_Output, get_housekeeping_dir;
 import numpy as np;
 import pandas as pd;
 import os;
 
-this_directory = os.path.dirname(os.path.abspath(__file__));
 
 # Input projection coordinates are read once (at start) and cached here
 # Variable stores a list of pandas.DataFrame objects
@@ -109,7 +108,7 @@ def create_false_neg_map(data, housekeeping_file="", debug=None):
 
     """
     
-    housekeeping_dir = os.path.join(this_directory,'Housekeeping Genes');
+    housekeeping_dir = get_housekeeping_dir();
     
     housekeeping_files = list();
     

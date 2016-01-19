@@ -1,6 +1,8 @@
 from __future__ import division, print_function;
 import logging;
 from collections import namedtuple;
+import sys
+import os
 
 # Defaults for arguments are defined here
 # These are all overwritten if called from the command line
@@ -30,7 +32,6 @@ args.weights = "";
 args.threshold = None;
 
 
-
 def FP_Output(*args):
     """
     Used to have finer control over outputs.
@@ -38,3 +39,19 @@ def FP_Output(*args):
     print(*args);
     logmessage = ' '.join([str(a) for a in args]);
     logging.info(logmessage);
+
+# This section for finding resource files
+# Behavior is different depending on whether or not we are running frozen
+
+if getattr(sys, 'frozen', False):
+    this_directory = sys._MEIPASS;
+else:
+    this_directory = os.path.dirname(os.path.abspath(__file__));
+
+
+def get_viewer_resource_dir():
+    return os.path.join(this_directory, "Viewer Resources");
+
+
+def get_housekeeping_dir():
+    return os.path.join(this_directory, "Housekeeping Genes");
