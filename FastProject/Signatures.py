@@ -431,7 +431,14 @@ def sigs_vs_projections(projections, sig_scores_dict, random_sig_scores_dict, NE
         # Calculate significance for precomputed numerical signatures
         # This is done separately because there are likely to be many repeats (e.g. for a time coordinate)
         for j,sig in enumerate(sp_row_labels_pnum):
+
             sig_scores = sig_scores_dict[sig].ranks;
+
+            if((sig_scores == sig_scores[0]).all()): # If they are all the same, p-value is 1.0
+                pnum_sig_proj_matrix[j, i] = 0.0;
+                pnum_sig_proj_matrix_p[j, i] = 1.0;
+                continue;
+
             sig_scores = sig_scores.reshape((sig_scores.size,1));
             sig_predictions = np.dot(weights, sig_scores);
             dissimilarity = np.abs(sig_scores - sig_predictions);
@@ -458,6 +465,12 @@ def sigs_vs_projections(projections, sig_scores_dict, random_sig_scores_dict, NE
         #Calculate significance for Factor signatures
         for j,sig in enumerate(sp_row_labels_factors):
             factor_levels, factor_frequencies, factor_matrix = factor_dict[sig];
+
+            if((factor_frequencies == 1).any()):  # Act accordingly if all values are the same
+                factor_sig_proj_matrix[j, i] = 0.0;
+                factor_sig_proj_matrix_p[j, i] = 1.0;
+                continue;
+
             N_LEVELS = len(factor_levels);
             factor_predictions = np.dot(weights, factor_matrix);
 
