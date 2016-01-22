@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Sat Jan 03 21:29:39 2015
+"""Code to handle reading and writing various files
 
-@author: daved_000
+Methods that interact with files are found here.
+Except for cases when it made more sense to put them
+in another module 
+  For example: reading Signatures is handled in the Signatures module
+
 """
 import os;
 import numpy as np;

@@ -1,3 +1,12 @@
+# -*- coding: utf-8 -*-
+"""Methods to normalize data
+
+Different options to normalize the data before the signature
+values are calculated.
+
+Determined using the command-line argument: --sig_norm_method
+
+"""
 import numpy as np;
 from scipy.stats import rankdata;
 

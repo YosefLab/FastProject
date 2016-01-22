@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Jan 07 15:12:02 2015
+"""Functions to transform the data and calculate weights
 
-@author: David
+Originally 'transform' referred to going from 
+    ExpressionData -> ProbabilityData
+
 """
 from __future__ import division, print_function;
 

@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Fri Jan 30 15:16:22 2015
+""" Entry point for console fastproject script
 
-@author: David
+This module parses arguments and places in the Global module
+
+Then launches the main pipeline
 """
 
 import Global;

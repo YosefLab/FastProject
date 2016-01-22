@@ -1,8 +1,15 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Mar 05 20:13:40 2015
+"""Wrapper classes for different types of data
 
-@author: daved_000
+Here are the wrapper classes for ExpressionData, 
+ProbabilityData, and PCData
+
+This was created to organize nuances in how signature
+scores, distance matrices, and anything else, is computed
+on the different types of data.
+
+ProbabilityData is no longer being used
+
 """
 
 import numpy as np;

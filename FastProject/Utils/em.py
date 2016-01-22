@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Sun Dec 14 12:29:19 2014
+"""EM Algorithm
 
-@author: daved_000
+Used to fit data to an exponential/normal mixture of
+distributions
+
+Derived from Nir Yosef's MATLAB code
+
 """
 from __future__ import division, print_function;
 import numpy as np;

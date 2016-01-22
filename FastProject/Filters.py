@@ -1,14 +1,12 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Mon Dec 15
+"""Functions that are used to select genes
 
-@author: David DeTomaso
+Functions here use a variety of criteria to reduce the number
+of genes to a more manageable size - ideally extracting the
+genes that are more biologically informative.
+
 """
 from __future__ import print_function, division;
-
-#Compute the distance matrix between samples
-#Input:  Data = matrix of NumGenes x NumSamples
-#Output:  Similarity matrices of size NumSamples x NumSamples
 
 import numpy as np
 import os

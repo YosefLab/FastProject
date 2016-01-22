@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Jan 21 16:34:49 2015
+"""Functions for loading and manipulating signatures
 
-@author: David
+Also, the sigs_vs_projections method is here 
+   (I couldn't decide whether to put it here or in 
+   Projections so I just picked one)
+
 """
 from __future__ import division, print_function;
 

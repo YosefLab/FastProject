@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Feb 04 13:21:47 2015
+"""Functions for generating projections
 
-@author: David
+This module handles the generation of lower-dimensional
+projections from the higher-dimensional data objects
+
 """
 from sklearn.decomposition import PCA
 from sklearn.decomposition import RandomizedPCA

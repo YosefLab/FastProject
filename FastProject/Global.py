@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+"""Contains information that is useful to share
+across all modules.
+
+Right now, mainly command-line arguments, logging
+and resource locations.
+"""
 from __future__ import division, print_function;
 import logging;
 from collections import namedtuple;

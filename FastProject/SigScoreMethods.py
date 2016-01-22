@@ -1,8 +1,12 @@
-"""
-Different ways to evlauate the signature score
+# -*- coding: utf-8 -*-
+""" Different ways to evlauate the signature score
+
 Each method should have the same signature so they can be swapped
 
 Right now, each takes in a wrapped data object and a signature object
+
+Specified by the command-line argument: --sig_score_method
+
 """
 
 from .Signatures import SignatureScores;

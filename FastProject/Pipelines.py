@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+""" Main FastProject Pipeline
+
+Here is the main execution path for FastProject
+While this defines the types of processining and the
+order in which it is done, the goal should be to organize
+as much of that off into other modules.
+"""
 from __future__ import division, print_function;
 import os;
 import numpy as np;

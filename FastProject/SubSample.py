@@ -1,5 +1,8 @@
-"""
-This module handles the splitting and joining of the data if sub-sampling is enabled
+# -*- coding: utf-8 -*-
+""" This module handles the splitting and joining of the data if sub-sampling is enabled
+
+This process is likely out of date - needs attention
+before re-enabling this feature.
 """
 from __future__ import division, print_function;
 from .Utils import ProgressBar;

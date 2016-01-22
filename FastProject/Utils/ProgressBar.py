@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Fri Feb 06 13:20:43 2015
+"""Simple progress bar used throughout FastProject
 
-@author: David
 """
 from __future__ import division;
 

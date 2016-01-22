@@ -1,6 +1,6 @@
-"""
-This module contains functions for generating html and js files so that
-plots can be easily viewed.
+# -*- coding: utf-8 -*-
+"""Contains functions for generating result html and js files 
+
 """
 import shutil;
 import os;
