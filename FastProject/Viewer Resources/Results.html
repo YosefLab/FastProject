@@ -192,11 +192,15 @@
             var clusters = data.Clusters[proj_key];
             var clust_dropdown = $('#cluster_select');
             var old_i = clust_dropdown.prop('selectedIndex');
-            if(old_i == -1){old_i = 0;}
+            if(old_i == -1){
+                if(Object.keys(clusters).length > 3){ old_i = 2;}
+                else { old_i = 0;}
+            }
             clust_dropdown.empty();
             $.each(clusters, function(name, value){
                 clust_dropdown.append($("<option />").val(name).text(name));
             });
+            clust_dropdown[0].selectedIndex = old_i; // Restore index on model change
         }
 
         function getDataContext()

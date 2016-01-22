@@ -275,9 +275,9 @@ function distance_between_clusters(clusterA, clusterB, distances)
 //    return min_dist;
 }
 
-order_cluster_group = function(cluster_group)
+order_cluster_group_rows = function(cluster_group)
 {
-    if(cluster_group[0].data.length == 0)
+    if(cluster_group[0].data.length === 0)
     {
         return;
     }
@@ -307,7 +307,66 @@ order_cluster_group = function(cluster_group)
         }
         col_obj.data = new_data;
     }
-}
+};
+
+
+order_cluster_group_cols = function(self, cluster_group_plus, cluster_group_minus, TOTAL_SAMPLES)
+{
+    if(cluster_group_plus[0].data.length === 0)
+    {
+        return;
+    }
+    //create data matrix from cluster_group
+    var data = [];
+    for(var i = 0; i < cluster_group_plus.length; i++)
+    {
+        var col_obj_p = cluster_group_plus[i];
+        var col_obj_m = cluster_group_minus[i];
+        var row = col_obj_p.data.map(function(x){return x.value;});
+        row = row + col_obj_m.data.map(function(x){return x.value;});
+        data.push(row);
+    }
+
+    // Get optimal leaf orderings from heirarchical clustering
+    var leaf_order = cluster_order(data);
+
+    cluster_group_plus = leaf_order.map(function(e){return cluster_group_plus[e];});
+    cluster_group_minus = leaf_order.map(function(e){return cluster_group_minus[e];});
+
+
+    // Change the x_offset for each cluster
+    var x_offset = self.grid_xoffset;
+    for (var j = 0; j < cluster_group_plus.length; j++)
+    {
+        var clust_p = cluster_group_plus[j];
+        var width = clust_p.weight / TOTAL_SAMPLES * (self.width - self.grid_xoffset);
+
+        for (var k = 0; k < clust_p.data.length; k++)
+        {
+            clust_p.data[k].x = x_offset;
+        }
+        
+        x_offset = x_offset + width;
+    }
+
+    // Same thing for the minus clusters
+    var x_offset = self.grid_xoffset;
+    for (var j = 0; j < cluster_group_minus.length; j++)
+    {
+        var clust_m = cluster_group_minus[j];
+        var width = clust_m.weight / TOTAL_SAMPLES * (self.width - self.grid_xoffset);
+
+        for (var k = 0; k < clust_m.data.length; k++)
+        {
+            clust_m.data[k].x = x_offset;
+        }
+        
+        x_offset = x_offset + width;
+    }
+
+    return [cluster_group_plus, cluster_group_minus];
+
+};
 
 
 HeatMap.prototype.setData = function(data, cluster_assignments, gene_labels, gene_signs, sample_labels)
@@ -405,8 +464,12 @@ HeatMap.prototype.setData = function(data, cluster_assignments, gene_labels, gen
 
     // Cluster within data_minus and data_plus
     
-    order_cluster_group(cluster_list_plus);
-    order_cluster_group(cluster_list_minus);
+    order_cluster_group_rows(cluster_list_plus);
+    order_cluster_group_rows(cluster_list_minus);
+
+    out = order_cluster_group_cols(this, cluster_list_plus, cluster_list_minus, TOTAL_SAMPLES);
+    cluster_list_plus = out[0];
+    cluster_list_minus = out[1];
 
     this.data_plus = cluster_list_plus;
     this.data_minus = cluster_list_minus;
