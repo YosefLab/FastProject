@@ -13,6 +13,16 @@ then
     exit 1
 fi
 
+# Test if new directory is empty.  Exit if it's not
+if [ "$(ls -A $(pwd)/FastProject)" ]; then
+    echo "ERROR: Directory is not empty" >&2
+    echo "If you want to install into $(pwd)/FastProject, "
+    echo "clear the directory first and run this script again."
+    echo "Exiting..."
+    echo
+    exit 1
+fi
+
 curl "https://repo.continuum.io/miniconda/Miniconda-latest-MacOSX-x86_64.sh" -o Miniconda_Install.sh
 
 bash Miniconda_Install.sh -b -f -p FastProject
