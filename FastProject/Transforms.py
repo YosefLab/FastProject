@@ -123,7 +123,7 @@ def create_false_neg_map(data, housekeeping_file="", debug=None):
     data_hk = np.zeros((0, data.shape[1]));
     genes_hk = list();
     for hkf in housekeeping_files:
-        data_t = Filters.load_from_file(data, hkf);        
+        data_t = _load_from_file(data, hkf);        
         data_hk = np.vstack((data_hk, data_t));
         genes_hk.extend(data_t.row_labels);
 
@@ -409,3 +409,33 @@ def z_normalize(data):
     #Note, operations are in place, no return needed
     data -= mu;
     data /= sigma;
+
+
+def _load_from_file(data, filename):
+    """
+    Helper Method for Creating False-Neg Maps
+
+    Subsets the data matrix with only genes whose identifiers
+    were found in `filename`
+
+    Returns the subsetted version of `data`
+    """
+
+    loaded_genes = list();
+
+    ff = open(filename, 'rU')
+    for line in ff.readlines():
+        loaded_genes.append(line.strip().lower());
+
+    ff.close();
+
+    keep_indices = list();
+    for lgene in loaded_genes:
+        for i, gene in enumerate(data.row_labels):
+            if(gene.lower() == lgene):
+                keep_indices.append(i);
+                continue;
+
+    data = data.subset_genes(keep_indices);
+
+    return data;

@@ -127,14 +127,12 @@ def generate_projections(data, filter_name = None):
 
     PC_Data : (Num_Components x Num_Samples) numpy.ndarray
         Weighted PCA of the original data object
-          
+
     """
 
-    pbar = ProgressBar(7);
-    
-    projections = dict();
-    
+    pbar = ProgressBar(1 + len(_proj_methods));
 
+    projections = dict();
 
     proj_data = data.projection_data(filter_name);
     proj_weights = data.projection_weights(filter_name);
@@ -157,67 +155,15 @@ def generate_projections(data, filter_name = None):
     projections['PCA: 1,3'] = result13;
     pbar.update();
 
-    # ICA
-    
-    ica = FastICA(n_components = 2);
-    result = ica.fit_transform(proj_data.T.copy()); #Copy needed because ICA whitens the input matrix
-    
-    projections['ICA'] = result;
-    pbar.update();
-    
-    # tSNE
-    model = TSNE(n_components=2, perplexity=10.0, metric="euclidean", learning_rate = 100, early_exaggeration=4.0);
-    result = model.fit_transform(proj_data.T);
-    
-    projections['tSNE10'] = result;
-    pbar.update();
-
-    # tSNE
-    model = TSNE(n_components=2, perplexity=30.0, metric="euclidean", learning_rate = 100, early_exaggeration=4.0);
-    result = model.fit_transform(proj_data.T);
-    
-    projections['tSNE30'] = result;
-    pbar.update();
-
-    # ISOMap
-    
-    model = Isomap(n_neighbors = 4, n_components = 2);
-    result = model.fit_transform(proj_data.T);
-    
-    projections['ISOMap'] = result;
-    pbar.update();
-    
-    # PCA with RBF Kernel
-
-    model =  KernelPCA(n_components=2, kernel='rbf');
-    result = model.fit_transform(proj_data.T);
-    
-    projections['RBF Kernel PCA'] = result;
-    pbar.update();
-    
-    # MDS
-
-    model = MDS(n_components=2, dissimilarity="euclidean")
-    result = model.fit_transform(proj_data.T);
-
-    projections['MDS'] = result;
-    pbar.update();
-
-    # Spectral Embedding
-    # Issues using precomputed affinity matrix.  Need to understand how to construct it better
-    model = SpectralEmbedding(n_components=2)
-    result = model.fit_transform(proj_data.T);
-    
-    projections['Spectral Embedding'] = result;
-    pbar.update();
+    for method in _proj_methods:
+        result = _proj_methods[method](proj_data, proj_weights);
+        projections[method] = result;
+        pbar.update();
 
     # Input projections
     # Load any projections that were supplied as an input file
     projections.update(apply_input_projections(data.col_labels));
     
-    # Add new projections here!
-
-
 
     #Normalize projections
     #Mean-center X
@@ -508,4 +454,75 @@ def permutation_wPCA(data, weights, components=50, p_threshold=0.05, verbose=Fal
 
     return wpca_data, e_val, e_vec;
 
+# --------------------------------------------------------------------------- #
+#                                                                             #
+#                    Define Projection Methods Here                           #
+#                                                                             #
+# --------------------------------------------------------------------------- #
 
+# Built-in Methods
+
+
+# ICA
+def apply_ICA(proj_data, proj_weights=None):
+    ica = FastICA(n_components=2);
+    result = ica.fit_transform(proj_data.T.copy());  # Copy needed because ICA whitens the input matrix
+    return result;
+
+
+# tSNE
+def apply_tSNE10(proj_data, proj_weights=None):
+    model = TSNE(n_components=2, perplexity=10.0, metric="euclidean",
+                 learning_rate=100, early_exaggeration=4.0);
+    result = model.fit_transform(proj_data.T);
+    return result;
+
+
+# tSNE
+def apply_tSNE30(proj_data, proj_weights=None):
+    model = TSNE(n_components=2, perplexity=30.0, metric="euclidean",
+                 learning_rate=100, early_exaggeration=4.0);
+    result = model.fit_transform(proj_data.T);
+    return result;
+
+
+# ISOMap
+def apply_ISOMap(proj_data, proj_weights=None):
+    model = Isomap(n_neighbors=4, n_components=2);
+    result = model.fit_transform(proj_data.T);
+    return result;
+
+
+# PCA with RBF Kernel
+def apply_rbf_PCA(proj_data, proj_weights=None):
+    model = KernelPCA(n_components=2, kernel='rbf');
+    result = model.fit_transform(proj_data.T);
+    return result;
+
+
+# MDS
+def apply_MDS(proj_data, proj_weights=None):
+    model = MDS(n_components=2, dissimilarity="euclidean")
+    result = model.fit_transform(proj_data.T);
+    return result;
+
+
+# Spectral Embedding
+def apply_spectral_embedding(proj_data, proj_weights=None):
+    model = SpectralEmbedding(n_components=2)
+    result = model.fit_transform(proj_data.T);
+    return result;
+
+# Add New Methods Here
+
+
+# Register methods
+_proj_methods = dict();
+
+_proj_methods['ICA'] = apply_ICA;
+_proj_methods['Spectral Embedding'] = apply_spectral_embedding;
+_proj_methods['MDS'] = apply_MDS;
+_proj_methods['RBF Kernel PCA'] = apply_rbf_PCA;
+_proj_methods['ISOMap'] = apply_ISOMap;
+_proj_methods['tSNE30'] = apply_tSNE30;
+_proj_methods['tSNE10'] = apply_tSNE10;

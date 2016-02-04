@@ -104,43 +104,16 @@ def FullOutput():
     if(args.subsample_size):
         holdouts, edata = SubSample.split_samples(edata, args.subsample_size);
 
+    if(args.threshold is None):
+        # Default threshold is 20% of samples - post sub-sampling
+        args.threshold = int(0.2 * edata.shape[1]);
+
 
     #Hold on to originals so we don't lose data after filtering in case it's needed later
     original_data = edata.copy();
 
     #Filtering
-    filter_dict = {};
-    if(args.nofilter):
-        edata = Filters.filter_genes_novar(edata);
-
-        filter_dict.update({'No_Filter': set(edata.row_labels)});
-    else:
-        if(args.threshold is None):
-            args.threshold = int(0.2 * edata.shape[1]); # Default threshold is 20% of samples - post sub-sampling
-        edata = Filters.filter_genes_threshold(edata, args.threshold);
-
-        #HDT Filtering
-        FP_Output("Removing genes with unimodal distribution across samples using Hartigans DT...");
-        hdt_mask = Filters.filter_genes_hdt(edata, 0.05);
-        #Fano Filtering
-        FP_Output("Applying Fano-Filtering...");
-        fano_mask = Filters.filter_genes_fano(edata, 2);
-
-        filter_dict.update({
-            'Threshold': set(edata.row_labels), # None means 'use all genes'. This set only used when outputting filter
-        });
-
-        if(np.array(hdt_mask).sum() > 10): # Only add these filters if they have enough genes
-            filter_dict.update({
-                'HDT': set([edata.row_labels[i] for i, x in enumerate(hdt_mask) if x]),
-            });
-
-        if(np.array(fano_mask).sum() > 10):
-            filter_dict.update({
-                'Fano': set([edata.row_labels[i] for i, x in enumerate(fano_mask) if x])
-            });
-
-    edata.filters = filter_dict;
+    edata = Filters.apply_filters(edata);
 
     Models = dict();
     emodel = dict({"Data": edata});
@@ -161,8 +134,8 @@ def FullOutput():
         pdata = Transforms.adjust_pdata(pdata, weights);
 
         pdata = ProbabilityData(pdata, edata);
-        pmodel = dict({"Data": pdata});
-        #Models.update({"Probability": pmodel});
+        # pmodel = dict({"Data": pdata});
+        # Models.update({"Probability": pmodel});
 
         edata.weights = weights;
         pdata.weights = weights;
