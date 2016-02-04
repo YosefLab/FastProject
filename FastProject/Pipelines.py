@@ -385,12 +385,20 @@ def FullOutput():
 
         #Determine a threshold of significance
         #If too many samples, hard limit the number of output signatures to conserve file size
-        OUTPUT_SIGNATURE_LIMIT = 200;
-        if(all_data.shape[1] > 2000 and len(signatureScores) > OUTPUT_SIGNATURE_LIMIT):
-            aa = np.argsort(signature_significance);
-            threshold = signature_significance[aa[OUTPUT_SIGNATURE_LIMIT]];
+        if(args.all_sigs): # Keep all sigs if this flag is set
+            threshold = 1e99; 
         else:
-            threshold = -1.3;
+            OUTPUT_SIGNATURE_LIMIT = min(200, signature_significance.size);
+            if(all_data.shape[1] > 2000):
+                aa = np.argsort(signature_significance);
+                threshold = signature_significance[aa[OUTPUT_SIGNATURE_LIMIT - 1]];
+            else:
+                threshold = -1.3;
+                aa = np.argsort(signature_significance);
+                # Ensure at least N = Output_Signature_Limit signatures
+                # If the Nth best signature is over the threshold, raise the threshold
+                if(signature_significance[aa[OUTPUT_SIGNATURE_LIMIT-1]] > threshold):
+                    threshold = signature_significance[aa[OUTPUT_SIGNATURE_LIMIT-1]];
 
         #Iterate back through and prune signatures worse than threshold
         #Create a dictionary of sigs to keep
