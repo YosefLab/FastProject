@@ -11,6 +11,13 @@ import argparse;
 
 
 def parseFPArgs():
+    """Defines the command-line arguments and parses the FastProject call
+
+    Returns
+    -------
+    argparse.Namespace
+
+    """
     parser = argparse.ArgumentParser(prog="FastProject", description='Analyze a set of expression data with FastProject.');
 
     parser.add_argument("data_file", help="Input expression data matrix");
@@ -38,6 +45,9 @@ def parseFPArgs():
 
     parser.add_argument("--qc",         action="store_true",
             help="Performs a quality check on samples, filtering samples that do not pass");
+
+    parser.add_argument("--all_sigs",         action="store_true",
+            help="Do not remove insignificant signatures from output.");
 
     parser.add_argument("--debug",         action="store_true",
             help="Run FastProject in Debug mode");
@@ -75,6 +85,8 @@ def parseFPArgs():
 
 
 def entry():
+    """Entry point for the fastproject command-line script
+    """
     args = parseFPArgs();
     Global.args = args;
 

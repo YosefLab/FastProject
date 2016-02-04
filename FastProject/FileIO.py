@@ -3,7 +3,7 @@
 
 Methods that interact with files are found here.
 Except for cases when it made more sense to put them
-in another module 
+in another module
   For example: reading Signatures is handled in the Signatures module
 
 """
@@ -11,17 +11,20 @@ import os;
 import numpy as np;
 import matplotlib;
 import shutil;
-matplotlib.use("svg")
+#matplotlib.use("svg")
 import matplotlib.pyplot as plt;
 from . import HtmlViewer;
 import pandas as pd;
 
-def make_dirs(root_directory):
-    """
-    Creates relevant directories that will be needed for output files.
 
-    :param root_directory: Root directory for FastProject output.
-    :return: None
+def make_dirs(root_directory):
+    """Creates relevant directories that will be needed for output files.
+
+    Parameters
+    ----------
+    root_directory : str
+        Root directory for FastProject output
+
     """
 
     try:
@@ -35,10 +38,29 @@ def make_dirs(root_directory):
     except OSError:
         pass;
 
+
 def read_matrix(filename='', delimiter = '\t'):
-    """Reads data in matrix format from <filename>  Returns data_matrix, 
-    row_labels, and column_labels"""
-    
+    """Reads gene expression matrix from `filename`
+
+    Parameters
+    ----------
+    filename : str
+        Name (with path) of file to read from
+    delimiter : str, optional
+        Delimiter used in file to separate columns
+        Default: '\t' (tab-delimited)
+
+    Returns
+    -------
+    data_matrix : numpy.ndarray
+        Contains expression levels from `filename`
+        Size is NUM_GENES x NUM_SAMPLES
+    row_labels: [str]
+        Label for each row - names for each gene
+    col_labels: [str]
+        Label for each column - names for each sample
+    """
+
     if(filename == ''):
         from Tkinter import Tk
         from tkFileDialog import askopenfilename

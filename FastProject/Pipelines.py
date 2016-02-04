@@ -60,7 +60,7 @@ def FullOutput():
     filename = args.data_file;
 
     if(not os.path.isfile(filename)):
-        raise ValueError("Argument Error: data file not found.\nExiting...");
+        raise ValueError("\n", filename, "not found.\nExiting...");
 
     (edata, genes, cells) = FileIO.read_matrix(filename);
 
