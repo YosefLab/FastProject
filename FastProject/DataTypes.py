@@ -137,11 +137,11 @@ class ExpressionData(np.ndarray):
         :return: A sliced copy of the underlying data matrix
         """
         if(filter_name is None or filter_name == 'None'):
-            return normalize_columns(self.base);
+            return self.base;
         else:
             filter = self.filters[filter_name];
-            filter_i = [i for i,gene in enumerate(self.row_labels) if gene in filter];
-            return normalize_columns(self.base[filter_i,:]);
+            filter_i = [i for i, gene in enumerate(self.row_labels) if gene in filter];
+            return self.base[filter_i, :];
 
     def projection_weights(self, filter_name=None):
         """
@@ -470,11 +470,4 @@ class PCData(np.ndarray):
         #PCA Data does not have a projection mask, just return weights
         return self.weights;
 
-
-def normalize_columns(data):
-    col_means = data.mean(axis=0, keepdims=True);
-    col_stds = data.std(axis=0, keepdims=True);
-    col_stds[col_stds==0]=1; #Fix to avoid divide-by-zero
-
-    return (data-col_means)/col_stds;
 
