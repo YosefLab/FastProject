@@ -130,14 +130,20 @@ def generate_projections(data, filter_name = None):
 
     """
 
-    pbar = ProgressBar(1 + len(_proj_methods));
+    IS_PCDATA = type(data) is PCData;
+    if(IS_PCDATA):
+        method_list = _proj_methods_pca;
+    else:
+        method_list = _proj_methods;
+
+    pbar = ProgressBar(1 + len(method_list));
 
     projections = dict();
 
     proj_data = data.projection_data(filter_name);
     proj_weights = data.projection_weights(filter_name);
 
-    if(type(data) is not PCData):
+    if(not IS_PCDATA):
         wpca_data, e_val, e_vec = permutation_wPCA(proj_data, proj_weights, components=50, p_threshold=0.05, verbose=True);
         pcdata = PCData(wpca_data, e_val, e_vec, data);
     else:
@@ -155,8 +161,8 @@ def generate_projections(data, filter_name = None):
     projections['PCA: 1,3'] = result13;
     pbar.update();
 
-    for method in _proj_methods:
-        result = _proj_methods[method](proj_data, proj_weights);
+    for method in method_list:
+        result = method_list[method](proj_data, proj_weights);
         projections[method] = result;
         pbar.update();
 
@@ -545,7 +551,10 @@ def apply_spectral_embedding(proj_data, proj_weights=None):
     return result;
 
 # Add New Methods Here
-
+from ZIFA import block_ZIFA, ZIFA
+def apply_ZIFA(proj_data, proj_weights=None):
+    Z, model_params = ZIFA.fitModel(proj_data.T, 2);
+    return Z;
 
 # Register methods
 _proj_methods = dict();
@@ -557,3 +566,13 @@ _proj_methods['RBF Kernel PCA'] = apply_rbf_PCA;
 _proj_methods['ISOMap'] = apply_ISOMap;
 _proj_methods['tSNE30'] = apply_tSNE30;
 _proj_methods['tSNE10'] = apply_tSNE10;
+_proj_methods['ZIFA'] = apply_ZIFA;
+
+# Methods to apply to data that has already been filtered with PCA
+_proj_methods_pca = dict();
+
+_proj_methods_pca['Spectral Embedding'] = apply_spectral_embedding;
+_proj_methods_pca['MDS'] = apply_MDS;
+_proj_methods_pca['ISOMap'] = apply_ISOMap;
+_proj_methods_pca['tSNE30'] = apply_tSNE30;
+_proj_methods_pca['tSNE10'] = apply_tSNE10;
