@@ -22,7 +22,7 @@
         var global_status = {};
         global_status.plotted_projection = "";
         global_status.plotted_signature = "";
-        global_status.sorted_column = -1;
+        global_status.sorted_column = "";
         global_status.signature_filter = "";
         global_status.scatterColorOption = "rank";
 
@@ -155,21 +155,51 @@
                 drawChart();
             });
 
-            //Sort the data initially by PC 1,2
-            var data = getDataContext();
-            global_status.sorted_column = data.ProjectionKeys.indexOf("PCA: 1,2");
-
-            //Select top PC 1,2 plot by default
-            var j = data.ProjectionKeys.indexOf("PCA: 1,2");
-            global_status.plotted_projection = "PCA: 1,2";
-            var s_i = data.SigProjMatrix_p.map(function(e){return e[j];}).argSort();
-            global_status.plotted_signature = data.SignatureKeys[s_i[0]];
-
             updateTable();
         };
 
+        function updateCurrentSelections()
+        {
+            //Sort the data initially by PC 1,2
+            var data = getDataContext();
+            if(data.ProjectionKeys.indexOf(global_status.sorted_column) == -1 )
+            {
+                if(data.ProjectionKeys.indexOf("PCA: 1,2" ) != -1){
+                    global_status.sorted_column = "PCA: 1,2";
+                }
+                else
+                {
+                    global_status.sorted_column = "";
+                }
+            }
+
+            if(data.ProjectionKeys.indexOf(global_status.plotted_projection) == -1)
+            {
+                if(data.ProjectionKeys.indexOf("PCA: 1,2" ) != -1){
+                    global_status.plotted_projection = "PCA: 1,2";
+                }
+                else
+                {
+                    global_status.plotted_projection = data.ProjectionKeys[0];
+                }
+            }
+
+            if(data.SignatureKeys.indexOf(global_status.plotted_signature) == -1)
+            {
+                //Select top signature of sorted projection by default
+                var j = data.ProjectionKeys.indexOf(global_status.plotted_projection);
+                var s_i = data.SigProjMatrix_p.map(function(e){return e[j];}).argSort();
+
+                global_status.plotted_signature = data.SignatureKeys[s_i[0]];
+
+            }
+
+
+        }
+
         function updateTable()
         {
+            updateCurrentSelections();
             updateMenuBar();
             createTableFromData();
             drawChart();
@@ -261,9 +291,9 @@
             return out;
         };
 
-        function sortByColumn(col_num)
+        function sortByColumn(col_name)
         {
-            global_status.sorted_column = col_num;
+            global_status.sorted_column = col_name;
             createTableFromData();
         }
 
@@ -399,7 +429,7 @@
             header_row.enter().append('th');
             header_row.html(function(d){return "<div>"+d+"</div>";})
                 .filter(function(d,i) {return i > 0;})
-                .on("click", function(d,i) { sortByColumn(i);});
+                .on("click", function(d,i) { sortByColumn(d);});
 
             header_row.exit().remove();
 
@@ -413,7 +443,7 @@
             var formatted_data_w_row_labels = d3.zip(row_labels, formatted_data_matrix);
 
             //Sort data if necessary
-            var sort_col = global_status.sorted_column;
+            var sort_col = data.ProjectionKeys.indexOf(global_status.sorted_column);
             if(sort_col > -1){
                 sortFun = function(a,b){
                     a_precomp = data.SigScores[a[0]].isPrecomputed;
