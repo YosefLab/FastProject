@@ -551,10 +551,6 @@ def apply_spectral_embedding(proj_data, proj_weights=None):
     return result;
 
 # Add New Methods Here
-from ZIFA import block_ZIFA, ZIFA
-def apply_ZIFA(proj_data, proj_weights=None):
-    Z, model_params = ZIFA.fitModel(proj_data.T, 2);
-    return Z;
 
 # Register methods
 _proj_methods = dict();
@@ -566,7 +562,6 @@ _proj_methods['RBF Kernel PCA'] = apply_rbf_PCA;
 _proj_methods['ISOMap'] = apply_ISOMap;
 _proj_methods['tSNE30'] = apply_tSNE30;
 _proj_methods['tSNE10'] = apply_tSNE10;
-_proj_methods['ZIFA'] = apply_ZIFA;
 
 # Methods to apply to data that has already been filtered with PCA
 _proj_methods_pca = dict();
