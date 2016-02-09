@@ -62,3 +62,7 @@ def get_viewer_resource_dir():
 
 def get_housekeeping_dir():
     return os.path.join(this_directory, "Housekeeping Genes");
+
+# Chosen by roll of a 2147483648-sided die
+# Guaranteed to be random
+RANDOM_SEED = 1335607827;

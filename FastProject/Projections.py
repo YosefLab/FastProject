@@ -22,7 +22,7 @@ import os;
 
 from .Utils import ProgressBar;
 from .DataTypes import PCData;
-from .Global import args, FP_Output;
+from .Global import args, FP_Output, RANDOM_SEED;
 
 import numpy as np;
 
@@ -256,6 +256,7 @@ def perform_weighted_PCA(data, weights, max_components=200):
         Data transformed using PCA.  Num_Components = Num_Samples
 
     """
+    np.random.seed(RANDOM_SEED);
 
     proj_data = data;
 
@@ -495,7 +496,7 @@ def normalize_columns(data):
 
 # ICA
 def apply_ICA(proj_data, proj_weights=None):
-    ica = FastICA(n_components=2);
+    ica = FastICA(n_components=2, random_state=RANDOM_SEED);
     norm_data = normalize_columns(proj_data);
     result = ica.fit_transform(norm_data.T);  # Copy needed because ICA whitens the input matrix
     return result;
@@ -504,7 +505,8 @@ def apply_ICA(proj_data, proj_weights=None):
 # tSNE
 def apply_tSNE10(proj_data, proj_weights=None):
     model = TSNE(n_components=2, perplexity=10.0, metric="euclidean",
-                 learning_rate=100, early_exaggeration=4.0);
+                 learning_rate=100, early_exaggeration=4.0,
+                 random_state=RANDOM_SEED);
     norm_data = normalize_columns(proj_data);
     result = model.fit_transform(norm_data.T);
     return result;
@@ -513,7 +515,8 @@ def apply_tSNE10(proj_data, proj_weights=None):
 # tSNE
 def apply_tSNE30(proj_data, proj_weights=None):
     model = TSNE(n_components=2, perplexity=30.0, metric="euclidean",
-                 learning_rate=100, early_exaggeration=4.0);
+                 learning_rate=100, early_exaggeration=4.0,
+                 random_state=RANDOM_SEED);
     norm_data = normalize_columns(proj_data);
     result = model.fit_transform(norm_data.T);
     return result;
@@ -537,7 +540,8 @@ def apply_rbf_PCA(proj_data, proj_weights=None):
 
 # MDS
 def apply_MDS(proj_data, proj_weights=None):
-    model = MDS(n_components=2, dissimilarity="euclidean")
+    model = MDS(n_components=2, dissimilarity="euclidean",
+            random_state=RANDOM_SEED)
     norm_data = normalize_columns(proj_data);
     result = model.fit_transform(norm_data.T);
     return result;
@@ -545,7 +549,7 @@ def apply_MDS(proj_data, proj_weights=None):
 
 # Spectral Embedding
 def apply_spectral_embedding(proj_data, proj_weights=None):
-    model = SpectralEmbedding(n_components=2)
+    model = SpectralEmbedding(n_components=2, random_state=RANDOM_SEED)
     norm_data = normalize_columns(proj_data);
     result = model.fit_transform(norm_data.T);
     return result;

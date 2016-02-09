@@ -10,12 +10,12 @@ from . import Signatures;
 from . import Projections;
 from . import Transforms;
 from .DataTypes import ProbabilityData, ExpressionData;
-from .Global import args, FP_Output;
+from .Global import args, FP_Output, RANDOM_SEED;
 from scipy.spatial.distance import cdist;
 import numpy as np;
 
 def split_samples(data, subsample_size):
-    np.random.seed(0); #Set seed so outputs are repeatable
+    np.random.seed(RANDOM_SEED); #Set seed so outputs are repeatable
     sub_ii = np.random.choice(data.shape[1], subsample_size, replace=False);
     holdouts_ii = np.setxor1d(np.arange(data.shape[1]), sub_ii);
 
