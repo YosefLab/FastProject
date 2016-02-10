@@ -9,7 +9,7 @@ Installing FastProject
 -----------------
 FastProject is written in Python 2.7 and has a few dependencies.  To simplify the install process, we have created an install file for each platform that will take care of everything.
 
-#Download the file, and move into the folder where you'd like to install the application before running*
+*Download the file, and move into the folder where you'd like to install the application before running*
 
 - [Linux](https://rawgit.com/YosefLab/FastProject/master/FP_Unix_Install.sh) (Install using `bash FP_Unix_Install.sh`)
 - [OSX](https://rawgit.com/YosefLab/FastProject/master/FP_OSX_Install.sh) (Install using `bash FP_OSX_Install.sh`)
