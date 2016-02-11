@@ -11,7 +11,7 @@ FastProject is written in Python 2.7 and has a few dependencies.  To simplify th
 
 *Download the file, and move into the folder where you'd like to install the application before running*
 
-- [Linux](https://rawgit.com/YosefLab/FastProject/master/FP_Unix_Install.sh) (Install using `bash FP_Unix_Install.sh`)
+- [Linux](https://rawgit.com/YosefLab/FastProject/master/FP_Linux_Install.sh) (Install using `bash FP_Linux_Install.sh`)
 - [OSX](https://rawgit.com/YosefLab/FastProject/master/FP_OSX_Install.sh) (Install using `bash FP_OSX_Install.sh`)
 - [Windows](https://rawgit.com/YosefLab/FastProject/master/FP_Windows_Install.ps1) (Right click and select "Run with PowerShell")
 

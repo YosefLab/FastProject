@@ -55,7 +55,7 @@ if [ -d $(pwd)/$InstallDir ]; then
 fi
 
 # Download and install Miniconda
-curl "https://repo.continuum.io/miniconda/Miniconda-latest-MacOSX-x86_64.sh" -o Miniconda_Install.sh
+curl "https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh" -o Miniconda_Install.sh
 
 bash Miniconda_Install.sh -b -f -p $InstallDir
 
@@ -102,13 +102,13 @@ if [[ $EntryPoint ]]; then
 
     echo "$EntryPoint script installed to $(pwd)/Scripts"
     echo
-    echo "Add folder to path by appending to .bash_profile?"
+    echo "Add folder to path by appending to .bashrc?"
     read -p "[y/n] >>> " -r
     echo
     if [[ ($REPLY == "yes") || ($REPLY == "Yes") || ($REPLY == "YES") ||
         ($REPLY == "y") || ($REPLY == "Y")]]
     then
-        echo "export PATH=\"$(pwd)/Scripts\":\$PATH" >> ~/.bash_profile
+        echo "export PATH=\"$(pwd)/Scripts\":\$PATH" >> ~/.bashrc
         echo "Your PATH was updated."
         echo "Restart the terminal for the change to take effect"
     else
