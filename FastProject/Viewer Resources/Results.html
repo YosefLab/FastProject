@@ -61,7 +61,6 @@
             global_heatmap.hovered_links.push(global_scatter);
             
             //Make the options update the table
-            $("#probability_checkbox").change(updateTable);
             $("#pca_checkbox").change(updateTable);
             $("#filter_dropdown").change(updateTable);
 
@@ -235,7 +234,7 @@
 
         function getDataContext()
         {
-            var probability = $('#probability_checkbox').is(":checked");
+            var probability = false;
             var model_name = 'Expression';
             if(probability){ model_name = 'Expression';}
             
@@ -603,10 +602,10 @@
             <h1>FastProject Viewer</h1>
         </div>
         <div id="data_options_div" class="color_panel">
-            <span>
+            <!--<span>
                 <label for="probability_checkbox">Probability Model?</label>
                 <input id="probability_checkbox" type="checkbox" disabled>
-            </span>
+                </span>-->
             <span>
                 <label for="pca_checkbox">PCA Before Project?</label>
                 <input id="pca_checkbox" type="checkbox">
