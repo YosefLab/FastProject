@@ -19,6 +19,6 @@ setup(
 	author_email = "David.DeTomaso@berkeley.edu",
 	description = "A python module for evaulating dimensionality reduction techniques on gene expression data.",
 	keywords = "Bioinformatics dimensionality reduction projection rna-seq",
-	url = "https://github.com/deto/FastProject",
+	url = "https://github.com/YosefLab/FastProject",
 	)
 	
