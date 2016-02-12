@@ -13,13 +13,13 @@ CondaDeps="numpy scipy scikit-learn pandas matplotlib"
 
 # Install the package from PyPi
 # Comment out next line if installing locally
-# PyPiPackage="mypackage"
+PyPiPackage="FastProject"
 
 # Local packages to install
 # Useful if your application is not in PyPi
 # Distribute this with a .tar.gz and use this variable
 # Comment out the next line if no local package to install
-LocalPackage="FastProject-0.9.2.tar.gz"
+# LocalPackage="FastProject-0.9.2.tar.gz"
 
 # Entry points to add to the path
 # Comment out the next line of no entry point
