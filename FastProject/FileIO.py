@@ -9,10 +9,7 @@ in another module
 """
 import os;
 import numpy as np;
-import matplotlib;
 import shutil;
-#matplotlib.use("svg")
-import matplotlib.pyplot as plt;
 from . import HtmlViewer;
 import pandas as pd;
 
@@ -195,28 +192,6 @@ def write_signature_scores(filename, sig_scores_dict, col_labels):
 
             ff.write('\t'.join(row) + '\n');
 
-
-#def write_scatter_plot(filename, x_coords, y_coords, colors=[], xlabel='', ylabel='', title=''):
-#    #Add .png extension if filename lacks it
-#    if(not filename.endswith(".png")):
-#        filename = filename + ".png";
-#
-#    plt.ioff();
-#    ff = plt.figure();
-#    if(len(colors) == len(x_coords)):
-#        plt.scatter(x_coords, y_coords, c=colors);
-#        plt.colorbar();
-#    else:
-#        plt.scatter(x_coords, y_coords);
-#
-#    plt.xlabel(xlabel);
-#    plt.ylabel(ylabel);
-#    plt.title(title);
-#
-#    plt.savefig(filename, bbox_inches='tight');
-#
-#    plt.close(ff);
-
 def write_projection_file(filename, sample_labels, projections):
     """
     Outputs the coordinates for each projection to a file.
@@ -378,22 +353,15 @@ def write_qc_file(directory, sample_passes, sample_scores, sample_labels):
     :return: None
     """
 
-    #Build SVG
-    svg_file_name = os.path.join(directory, HtmlViewer.OUTPUT_RESOURCE_DIRECTORY, "qc.svg");
-
-    plt.style.use("fivethirtyeight");
-    quantity, boundaries, patches = plt.hist(sample_scores, 30);
-
-    ##Compute MAD
+    # Compute MAD
     med = np.median(sample_scores);
     mad = np.median(np.abs(sample_scores - med));
-    cutoff = med - 1.6*mad;
-    plt.plot([cutoff, cutoff], [0, np.max(quantity)*1.1], "red");
+    cutoff = med - 1.6 * mad;
 
+    # Build data object
+    values = HtmlViewer.toJS_variable("values", sample_scores);
 
-    plt.savefig(svg_file_name);
-
-    #Build html Table
+    # Build html Table
     ii = np.argsort(sample_scores);
 
     sample_scores = sample_scores[ii];
@@ -427,6 +395,8 @@ def write_qc_file(directory, sample_passes, sample_scores, sample_labels):
         contents = fin.read();
 
     contents = contents.replace("<% table %>", "\n".join(out_table));
+    contents = contents.replace("<% values %>", values);
+    contents = contents.replace("<% MAD %>", HtmlViewer.toJS_variable("MAD", cutoff));
 
     with open(out_html, "w") as fout:
         fout.write(contents);

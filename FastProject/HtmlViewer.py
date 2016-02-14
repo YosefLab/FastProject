@@ -56,7 +56,7 @@ def toJS(obj, level=0):
 
     if(type(obj) is str):
         return '"' + obj + '"';
-    if(type(obj) is int or type(obj) is float):
+    if(type(obj) is int or type(obj) is float or isinstance(obj, np.number)):
         return str(obj);
     if(issubclass(type(obj),np.ndarray) and obj.ndim < 3):
         return ndarray_to_JS(obj);

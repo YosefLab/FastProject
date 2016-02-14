@@ -9,7 +9,7 @@ InstallDir="FastProject"
 
 # Dependencies installed by Conda
 # Comment out the next line if no Conda dependencies
-CondaDeps="numpy scipy scikit-learn pandas matplotlib"
+CondaDeps="numpy scipy scikit-learn pandas"
 
 # Install the package from PyPi
 # Comment out next line if installing locally
