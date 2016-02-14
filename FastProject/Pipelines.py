@@ -13,6 +13,7 @@ import pandas as pd;
 import time;
 import scipy.stats;
 import logging;
+import random;
 from FastProject import Filters;
 from FastProject import FileIO;
 from FastProject import Transforms;
@@ -162,27 +163,26 @@ def FullOutput():
     # Transforms.z_normalize(edata);
 
     # Generate some random signatures for testing purposes
-    import random;
-    for size in [5, 10, 20, 50, 100, 200]:
-        for j in range(100):
-            new_sig_dict = dict();
-            new_sig_genes = random.sample(edata.row_labels, size);
-            new_sig_signs = np.random.choice([1, -1], size);
-            for gene, sign in zip(new_sig_genes, new_sig_signs):
-                new_sig_dict.update({gene: int(sign)});
-            new_sig = Signatures.Signature(new_sig_dict, True, 'x', "RANDOM_SIGNED_" + str(size) + "_" + str(j));
-            sigs.append(new_sig);
+    # for size in [5, 10, 20, 50, 100, 200]:
+    #     for j in range(100):
+    #         new_sig_dict = dict();
+    #         new_sig_genes = random.sample(edata.row_labels, size);
+    #         new_sig_signs = np.random.choice([1, -1], size);
+    #         for gene, sign in zip(new_sig_genes, new_sig_signs):
+    #             new_sig_dict.update({gene: int(sign)});
+    #         new_sig = Signatures.Signature(new_sig_dict, True, 'x', "RANDOM_SIGNED_" + str(size) + "_" + str(j));
+    #         sigs.append(new_sig);
 
-    # Generate some positive random signatures too (only + sign)
-    for size in [5, 10, 20, 50, 100, 200]:
-        for j in range(100):
-            new_sig_dict = dict();
-            new_sig_genes = random.sample(edata.row_labels, size);
-            new_sig_signs = np.random.choice([1], size);
-            for gene, sign in zip(new_sig_genes, new_sig_signs):
-                new_sig_dict.update({gene: int(sign)});
-            new_sig = Signatures.Signature(new_sig_dict, True, 'x', "RANDOM_UNSIGNED_" + str(size) + "_" + str(j));
-            sigs.append(new_sig);
+    # # Generate some positive random signatures too (only + sign)
+    # for size in [5, 10, 20, 50, 100, 200]:
+    #     for j in range(100):
+    #         new_sig_dict = dict();
+    #         new_sig_genes = random.sample(edata.row_labels, size);
+    #         new_sig_signs = np.random.choice([1], size);
+    #         for gene, sign in zip(new_sig_genes, new_sig_signs):
+    #             new_sig_dict.update({gene: int(sign)});
+    #         new_sig = Signatures.Signature(new_sig_dict, True, 'x', "RANDOM_UNSIGNED_" + str(size) + "_" + str(j));
+    #         sigs.append(new_sig);
 
     # Generate random signatures for background significance
     random_sigs = [];
