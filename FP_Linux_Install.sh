@@ -54,8 +54,13 @@ if [ -d $(pwd)/$InstallDir ]; then
     fi
 fi
 
+set +e
 # Download and install Miniconda
 curl "https://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh" -o Miniconda_Install.sh
+if [ $? -ne 0 ]; then
+    curl "http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh" -o Miniconda_Install.sh
+fi
+set -e
 
 bash Miniconda_Install.sh -b -f -p $InstallDir
 
