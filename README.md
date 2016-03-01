@@ -30,9 +30,9 @@ How to Run FastProject
 
 Sample FastProject command:
  
-    fastproject <data file> -s <signature file(s)> -p <precomputed signature file(s)> -k <housekeeping file> -o <output directory>
+    fastproject <data file> -s <signature file(s)> -p <precomputed signature file(s)>
  
-The -k and -o flags are optional.  Only need one of -s or -p though can include both
+FastProject must be run with either the -s input or the -p input, though both can be used together.
 For signature files and precomputed signature files, multiple files can be specified, separated by a space.
  
 To display help and additional options: 
@@ -40,6 +40,8 @@ To display help and additional options:
  
 Sample Output
 -------------
+![FastProject Output Sample Image](/SampleOutput.png?raw=true)
+
 
 Additional Info
 ---------------
