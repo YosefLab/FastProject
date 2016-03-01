@@ -438,7 +438,11 @@ def permutation_wPCA(data, weights, components=50, p_threshold=0.05, verbose=Fal
     sigma = bg_vals.std(axis=0);
 
     p_vals = norm.sf((e_val - mu) / sigma);
-    threshold_component = np.nonzero(p_vals > p_threshold)[0][0];
+    threshold_component_i = np.nonzero(p_vals > p_threshold)[0]
+    if(threshold_component_i.size == 0):  # True if ALL PCs deemed significant
+        threshold_component = wpca_data.shape[0];
+    else:
+        threshold_component = threshold_component_i[0];
 
     if(verbose):
         FP_Output("Permutation test on wPCA: ", str(threshold_component), " components retained.");
