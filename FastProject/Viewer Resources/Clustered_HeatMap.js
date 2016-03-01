@@ -99,7 +99,7 @@ function dist_mat(data)
     //each item in data (which is an array) is an array of numbers
     
     //Create the array
-    output = [];
+    var output = [];
     for(var i = 0; i < data.length; i++)
     {
         output.push([]);
@@ -110,7 +110,7 @@ function dist_mat(data)
     {
         for(var j = i; j < data.length; j++)
         {
-            dd = dist(data[i], data[j]);
+            var dd = dist(data[i], data[j]);
             output[i][j] = dd;
             output[j][i] = dd;
         }
@@ -275,7 +275,7 @@ function distance_between_clusters(clusterA, clusterB, distances)
 //    return min_dist;
 }
 
-order_cluster_group_rows = function(cluster_group)
+function order_cluster_group_rows(cluster_group)
 {
     if(cluster_group[0].data.length === 0)
     {
@@ -307,10 +307,10 @@ order_cluster_group_rows = function(cluster_group)
         }
         col_obj.data = new_data;
     }
-};
+}
 
 
-order_cluster_group_cols = function(self, cluster_group_plus, cluster_group_minus, TOTAL_SAMPLES)
+function order_cluster_group_cols(self, cluster_group_plus, cluster_group_minus, TOTAL_SAMPLES)
 {
     if(cluster_group_plus[0].data.length === 0)
     {
@@ -366,7 +366,7 @@ order_cluster_group_cols = function(self, cluster_group_plus, cluster_group_minu
 
     return [cluster_group_plus, cluster_group_minus];
 
-};
+}
 
 
 HeatMap.prototype.setData = function(data, cluster_assignments, gene_labels, gene_signs, sample_labels)
@@ -467,7 +467,7 @@ HeatMap.prototype.setData = function(data, cluster_assignments, gene_labels, gen
     order_cluster_group_rows(cluster_list_plus);
     order_cluster_group_rows(cluster_list_minus);
 
-    out = order_cluster_group_cols(this, cluster_list_plus, cluster_list_minus, TOTAL_SAMPLES);
+    var out = order_cluster_group_cols(this, cluster_list_plus, cluster_list_minus, TOTAL_SAMPLES);
     cluster_list_plus = out[0];
     cluster_list_minus = out[1];
 
