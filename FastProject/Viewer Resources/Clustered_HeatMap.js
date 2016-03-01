@@ -448,8 +448,9 @@ HeatMap.prototype.setData = function(data, cluster_assignments, gene_labels, gen
 
     var N_ROWS = cluster_list[0].data.length;
 
-    this.h = Math.floor((this.heat_height - this.grid_gap)/N_ROWS);
-    if(this.h === 0) {this.h = 1;}
+    //this.h = Math.floor((this.heat_height - this.grid_gap)/N_ROWS);
+    this.h = (this.heat_height - this.grid_gap)/N_ROWS;
+    if(this.h === 0) {this.h = (this.heat_height - this.grid_gap)/N_ROWS;}
 
     //Split data into data_plus and data_minus
     //Unsigned sigs (sign = 0) go in data_plus
