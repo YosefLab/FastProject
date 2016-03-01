@@ -46,10 +46,12 @@ function HeatMap(parent)
     offset += 30;
     offset += 10; //Some margin
         
-    this.heat_height = this.height - offset;
+    this.xlabel_margin = 30;
+    this.heat_height = this.height - offset - this.xlabel_margin;
     this.grid_gap = 10; //# of pixels between the plus and minus heat maps
     this.grid_start = offset;
     this.grid_xoffset = 50; //# of pixels to the left of the grids for the + and - labels
+    this.grid_xoffsetr = 50; //# of pixels to the right of the grids for the ylabel
 
     this.grid_plus = this.svg.append("g");
     this.grid_minus = this.svg.append("g");
@@ -67,6 +69,21 @@ function HeatMap(parent)
         .attr("y", 0)
         .attr("font-size", "25px")
         .text("");
+
+    this.grid_x_label = this.svg.append("text")
+        .attr("text-anchor", "middle")
+        .attr("x", this.grid_xoffset+(this.width - this.grid_xoffsetr)/2)
+        .attr("y", this.grid_start + this.heat_height + this.xlabel_margin*.8)
+        .attr("font-size", "25px")
+        .text("Sample Clusters");
+
+    this.grid_y_label = this.svg.append("text")
+        .attr("text-anchor", "middle")
+        .attr("x", this.width - this.grid_xoffsetr/2)
+        .attr("y", this.height/2)
+        .attr("font-size", "25px")
+        .style("writing-mode", "tb")
+        .text("Genes");
     
 
     //define a color scale using the min and max expression values
@@ -89,8 +106,14 @@ function HeatMap(parent)
     this.col_labels = [];
 
     this.cluster_assignments = []; //Used in hoverCol.  Denotes which cluster each sample is assigned to
-
 }
+
+HeatMap.prototype.setLabels = function(xlabel, ylabel)
+{
+    this.grid_x_label.text(xlabel);
+    this.grid_y_label.text(ylabel);
+};
+
 
 function dist_mat(data)
 {
@@ -339,7 +362,7 @@ function order_cluster_group_cols(self, cluster_group_plus, cluster_group_minus,
     for (var j = 0; j < cluster_group_plus.length; j++)
     {
         var clust_p = cluster_group_plus[j];
-        var width = clust_p.weight / TOTAL_SAMPLES * (self.width - self.grid_xoffset);
+        var width = clust_p.weight / TOTAL_SAMPLES * (self.width - self.grid_xoffset - self.grid_xoffsetr);
 
         for (var k = 0; k < clust_p.data.length; k++)
         {
@@ -354,7 +377,7 @@ function order_cluster_group_cols(self, cluster_group_plus, cluster_group_minus,
     for (var j = 0; j < cluster_group_minus.length; j++)
     {
         var clust_m = cluster_group_minus[j];
-        var width = clust_m.weight / TOTAL_SAMPLES * (self.width - self.grid_xoffset);
+        var width = clust_m.weight / TOTAL_SAMPLES * (self.width - self.grid_xoffset - self.grid_xoffsetr);
 
         for (var k = 0; k < clust_m.data.length; k++)
         {
@@ -414,7 +437,7 @@ HeatMap.prototype.setData = function(data, cluster_assignments, gene_labels, gen
     for (var j = 0; j < cluster_list.length; j++)
     {
         var clust = cluster_list[j];
-        var width = clust.weight / TOTAL_SAMPLES * (this.width - this.grid_xoffset);
+        var width = clust.weight / TOTAL_SAMPLES * (this.width - this.grid_xoffset - this.grid_xoffsetr);
         
         clust.data = clust.data.map(function(e,i){
             return {"value":e, "x":x_offset, "width":width, "index": clust.index, "gene": gene_labels[i]};
