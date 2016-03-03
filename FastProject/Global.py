@@ -10,6 +10,7 @@ import logging;
 from collections import namedtuple;
 import sys
 import os
+import random;
 
 # Defaults for arguments are defined here
 # These are all overwritten if called from the command line
@@ -66,3 +67,4 @@ def get_housekeeping_dir():
 # Chosen by roll of a 2147483648-sided die
 # Guaranteed to be random
 RANDOM_SEED = 1335607827;
+random.seed(RANDOM_SEED);
