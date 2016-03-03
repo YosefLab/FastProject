@@ -20,5 +20,6 @@ setup(
 	description = "A python module for evaulating dimensionality reduction techniques on gene expression data.",
 	keywords = "Bioinformatics dimensionality reduction projection rna-seq",
 	url = "https://github.com/YosefLab/FastProject",
+        license = "Free for Academic and Not-For-Profit Use, See Repository for Details"
 	)
 	
