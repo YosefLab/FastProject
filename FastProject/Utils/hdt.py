@@ -10,6 +10,7 @@ from __future__ import print_function, division;
 
 import numpy as np;
 from FastProject.Utils import ProgressBar;
+from FastProject.Global import RANDOM_SEED;
 import logging;
 
 def HDT_Sig_batch(xpdf_matrix, nboot, progressbar=True):
@@ -25,6 +26,7 @@ def HDT_Sig_batch(xpdf_matrix, nboot, progressbar=True):
                 xups: xup for each row in xpdf_matrix
     """
 
+    np.random.seed(RANDOM_SEED);
     dips = np.zeros(xpdf_matrix.shape[0]);
     xlows = np.zeros(xpdf_matrix.shape[0]);
     xups = np.zeros(xpdf_matrix.shape[0]);
