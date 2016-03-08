@@ -7,7 +7,7 @@ FastProject analyzes a gene expression matrix and produces a dynamic output repo
 
 Installing FastProject
 -----------------
-FastProject is written in Python 2.7 and has a few dependencies.
+FastProject is written in Python (2.7 or 3.3+) and has a few dependencies.
 
 To simplify the install process, we have created an install file for each platform that will take care of everything.  This method is recommended for users that do not regularly use Python.
 
