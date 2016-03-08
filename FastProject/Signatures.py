@@ -13,6 +13,7 @@ from sklearn.metrics.pairwise import pairwise_distances;
 from scipy.spatial.distance import cdist;
 from scipy.stats import norm, rankdata;
 from .Utils import ProgressBar;
+from .Global import RANDOM_SEED;
 from . import HtmlViewer;
 
 #This is used to cache the background distribution used when evaluating
@@ -22,6 +23,7 @@ _bg_dist = np.zeros((0,0));
 def get_bg_dist(N_SAMPLES, NUM_REPLICATES):
     global _bg_dist;
     if(_bg_dist.shape[0] != N_SAMPLES or _bg_dist.shape[1] != NUM_REPLICATES):
+        np.random.seed(RANDOM_SEED);
         _bg_dist = np.random.rand(N_SAMPLES, NUM_REPLICATES);
         _bg_dist = np.argsort(_bg_dist, axis=0);
 
@@ -308,6 +310,7 @@ def sigs_vs_projections(projections, sig_scores_dict, random_sig_scores_dict, NE
         sig_proj_matrix_p: numpy.ndarray, NUM_SIGNATURES x NUM_PROJECTIONS
                         sig_proj dissimilarity p value
     """
+    np.random.seed(RANDOM_SEED);
     sp_row_labels = [];
     sp_row_labels_factors = [];
     sp_row_labels_pnum = [];
