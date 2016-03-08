@@ -6,7 +6,8 @@ This module parses arguments and places in the Global module
 Then launches the main pipeline
 """
 
-import Global;
+from __future__ import absolute_import, print_function, division;
+from . import Global;
 import argparse;
 
 
@@ -90,7 +91,7 @@ def entry():
     args = parseFPArgs();
     Global.args = args;
 
-    from FastProject import Pipelines;
+    from . import Pipelines;
     try:
         Pipelines.FullOutput();
     except:

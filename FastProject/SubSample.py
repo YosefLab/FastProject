@@ -4,7 +4,7 @@
 This process is likely out of date - needs attention
 before re-enabling this feature.
 """
-from __future__ import division, print_function;
+from __future__ import absolute_import, print_function, division;
 from .Utils import ProgressBar;
 from . import Signatures;
 from . import Projections;
@@ -148,7 +148,7 @@ def merge_samples(all_data, Models, sigs, prob_params):
 
         pbar = ProgressBar(len(old_sig_scores_dict));
         for sig in sigs:
-            if(old_sig_scores_dict.has_key(sig.name)):
+            if(sig.name in old_sig_scores_dict):
                 try:
                     sig_scores_dict[sig.name] = data.eval_signature(sig);
                 except ValueError:  #Only thrown when the signature has no genes in the data

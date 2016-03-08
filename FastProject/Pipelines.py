@@ -14,18 +14,18 @@ import time;
 import scipy.stats;
 import logging;
 import random;
-from FastProject import Filters;
-from FastProject import FileIO;
-from FastProject import Transforms;
-from FastProject import Signatures;
-from FastProject import Projections;
-from FastProject import SubSample;
-from FastProject.DataTypes import ExpressionData, ProbabilityData, PCData;
-from FastProject.Utils import ProgressBar;
-from FastProject import HtmlViewer;
-from FastProject.Global import args, FP_Output;
-from FastProject import SigScoreMethods;
-from FastProject import NormalizationMethods;
+from . import Filters;
+from . import FileIO;
+from . import Transforms;
+from . import Signatures;
+from . import Projections;
+from . import SubSample;
+from .DataTypes import ExpressionData, ProbabilityData, PCData;
+from .Utils import ProgressBar;
+from . import HtmlViewer;
+from .Global import args, FP_Output;
+from . import SigScoreMethods;
+from . import NormalizationMethods;
 
 
 def FullOutput():
@@ -283,7 +283,7 @@ def FullOutput():
         model["projectionData"] = [];
         model["sampleLabels"] = data.col_labels;
 
-        for filter_name in data.filters.keys():
+        for filter_name in data.filters:
             projData = dict();
 
             FP_Output("\nFilter-Level:", filter_name);
@@ -400,8 +400,8 @@ def FullOutput():
     #Assemble signatures into an object, then convert to JSON variable and write
     sig_dict = {};
     for sig in sigs:
-        sig_genes = sig.sig_dict.keys();
-        sig_values = sig.sig_dict.values();
+        sig_genes = list(sig.sig_dict.keys());
+        sig_values = list(sig.sig_dict.values());
         sort_i = np.array(sig_values).argsort()[::-1];#Put positive signatures first
         sig_genes = [sig_genes[i] for i in sort_i];
         sig_values = [sig_values[i] for i in sort_i];

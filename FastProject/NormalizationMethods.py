@@ -7,6 +7,7 @@ values are calculated.
 Determined using the command-line argument: --sig_norm_method
 
 """
+from __future__ import absolute_import, print_function, division;
 import numpy as np;
 from scipy.stats import rankdata;
 
@@ -54,7 +55,7 @@ def col_rank_normalization(data):
     Create new version of data that has ranks (column-wise) instead of values
     """
     rdata = np.zeros(data.shape);
-    for i in xrange(data.shape[1]):
+    for i in range(data.shape[1]):
         rdata[:, i] = rankdata(data[:, i], method="min");
 
     return rdata;

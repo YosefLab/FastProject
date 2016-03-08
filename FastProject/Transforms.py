@@ -5,7 +5,7 @@ Originally 'transform' referred to going from
     ExpressionData -> ProbabilityData
 
 """
-from __future__ import division, print_function;
+from __future__ import absolute_import, print_function, division;
 
 
 from .Utils import em_exp_norm_mixture;
@@ -169,7 +169,7 @@ def create_false_neg_map(data, housekeeping_file="", debug=None):
     x_quant = np.zeros(len(q_indices)-1);
     y_quant = np.zeros((len(q_indices)-1, y.shape[1]))
 
-    for i in xrange(len(q_indices)-1):
+    for i in range(len(q_indices)-1):
         start_i = q_indices[i];
         end_i = q_indices[i+1];
 

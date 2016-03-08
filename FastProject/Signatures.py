@@ -6,14 +6,14 @@ Also, the sigs_vs_projections method is here
    Projections so I just picked one)
 
 """
-from __future__ import division, print_function;
+from __future__ import absolute_import, print_function, division;
 
 import numpy as np;
 from sklearn.metrics.pairwise import pairwise_distances;
 from scipy.spatial.distance import cdist;
 from scipy.stats import norm, rankdata;
 from .Utils import ProgressBar;
-import HtmlViewer;
+from . import HtmlViewer;
 
 #This is used to cache the background distribution used when evaluating
 #Signatures vs projections.  No need to regenerate the random indices
@@ -92,7 +92,7 @@ def read_signatures_txt(filename='', match_terms=[]):
                 raise ValueError("Line " + str(i) + " Signature file should contain 2 (unsigned) or 3 (signed) columns");
 
             name = row_data[0];
-            if(not found_signatures.has_key(name)):  ## Add the signature if we haven't seen it yet
+            if(name not in found_signatures):  ## Add the signature if we haven't seen it yet
 
                 ## Only add signatures if they match one of the supplied terms
                 matched = False if len(match_terms) > 0 else True
@@ -138,7 +138,7 @@ def read_signatures_txt(filename='', match_terms=[]):
     finally:
         ff.close();
     
-    return [found_signatures[key] for key in found_signatures.keys()]  #dict to list
+    return [found_signatures[key] for key in found_signatures]  #dict to list
 
 def read_signatures_gmt(filename='', match_terms=[]):
     """Reads in a signature file in GMT format.
@@ -233,7 +233,7 @@ def read_signatures_gmt(filename='', match_terms=[]):
             isSigned = sign == 'plus' or sign == 'minus';
 
             #Check if sig exists, create/insert if not
-            if(found_signatures.has_key(root_name)):
+            if(root_name in found_signatures):
                 sig = found_signatures[root_name];
             else:
                 sig = Signature(dict(), isSigned, filename, root_name);
@@ -251,7 +251,7 @@ def read_signatures_gmt(filename='', match_terms=[]):
             for gene_name in row_data[2:]:
                 sig.sig_dict.update({gene_name.upper(): sig_val});
 
-    return found_signatures.values();  #dict to list
+    return list(found_signatures.values());  #dict to list
 
 def filter_sig_list(signatures, match_terms):
     """
@@ -277,7 +277,7 @@ def filter_sig_list(signatures, match_terms):
     if(type(match_terms) is str):       #So you dont need to wrap a single string in []
         match_terms = [match_terms];    
     
-    match_terms = map(lambda term: term.lower(), match_terms);    
+    match_terms = [term.lower() for term in match_terms];    
     
     filtered_signatures = list();
     for sig in signatures:
@@ -324,7 +324,7 @@ def sigs_vs_projections(projections, sig_scores_dict, random_sig_scores_dict, NE
 
 
 
-    sp_col_labels = projections.keys();
+    sp_col_labels = list(projections.keys());
     sp_col_labels.sort();
 
     N_SAMPLES = len(sig_scores_dict[sp_row_labels[0]].sample_labels);
@@ -351,7 +351,7 @@ def sigs_vs_projections(projections, sig_scores_dict, random_sig_scores_dict, NE
 
     # Build a matrix of random signatures
     random_sig_score_matrix = np.zeros((N_SAMPLES, len(random_sig_scores_dict)));
-    random_sig_score_keys = random_sig_scores_dict.keys();
+    random_sig_score_keys = list(random_sig_scores_dict.keys());
 
     for j, sig in enumerate(random_sig_score_keys):
         random_sig_score_matrix[:, j] = random_sig_scores_dict[sig].ranks;
@@ -416,7 +416,7 @@ def sigs_vs_projections(projections, sig_scores_dict, random_sig_scores_dict, NE
 
         mu = np.zeros(med_dissimilarity.shape);
         sigma = np.zeros(med_dissimilarity.shape);
-        for k in xrange(med_dissimilarity.size):
+        for k in range(med_dissimilarity.size):
             # find background with closest number of genes
             numGenes = sig_scores_dict[sp_row_labels[k]].numGenes;
             row_i = np.argmin(np.abs(numGenes - bg_stat[:, 0]));
@@ -487,7 +487,7 @@ def sigs_vs_projections(projections, sig_scores_dict, random_sig_scores_dict, NE
             rand_factors = np.random.rand(N_SAMPLES, NUM_REPLICATES);
             rand_factors = (rand_factors < column_assignments).astype('int');
             random_predictions = np.dot(weights, rand_factors);
-            for ii in xrange(random_predictions.shape[0]):
+            for ii in range(random_predictions.shape[0]):
                 random_predictions[ii] = np.random.permutation(random_predictions[ii]);
             rand_med_dissimilarity = np.median(1-random_predictions, axis=0);
 
@@ -566,7 +566,7 @@ def load_precomputed(filename, sample_labels):
         target_l = [sl.lower() for sl in sample_labels];
         source_l = [sl.lower() for sl in line1];
         translation_indices = np.zeros(len(target_l), dtype=np.int32);
-        for i in xrange(translation_indices.size):
+        for i in range(translation_indices.size):
             try:
                 translation_indices[i] = source_l.index(target_l[i]);
             except ValueError:
@@ -628,7 +628,7 @@ class Signature:
         out = np.zeros((len(genes), 1), dtype=np.float64);
         
         for i, gene in enumerate(genes):
-            if(self.sig_dict.has_key(gene)):
+            if(gene in self.sig_dict):
                 val = self.sig_dict[gene];
                 if(val == 1 or val == 0):
                     out[i] = 1;

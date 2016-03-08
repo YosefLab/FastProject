@@ -5,7 +5,7 @@ across all modules.
 Right now, mainly command-line arguments, logging
 and resource locations.
 """
-from __future__ import division, print_function;
+from __future__ import absolute_import, print_function, division;
 import logging;
 from collections import namedtuple;
 import sys

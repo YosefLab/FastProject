@@ -5,6 +5,7 @@ This module handles the generation of lower-dimensional
 projections from the higher-dimensional data objects
 
 """
+from __future__ import absolute_import, print_function, division;
 from sklearn.decomposition import PCA
 from sklearn.decomposition import RandomizedPCA
 from sklearn.decomposition import FastICA
@@ -224,11 +225,11 @@ def perform_PCA(data, N=0, variance_proportion=1.0):
     if(N > pca_data.shape[1]): N = pca_data.shape[1];
     
     if(N != 0): #If N is specified, then return top N PC's
-        pca_data = pca_data[:,range(N)];
+        pca_data = pca_data[:, 0:N];
     else: #Otherwise, if variance_proportion is specified, then return top PCs until variance proportion is reached
         total_variance = np.cumsum(pca.explained_variance_ratio_);
         last_i = np.nonzero(total_variance <= variance_proportion)[0][-1];
-        pca_data = pca_data[:,range(last_i+1)];
+        pca_data = pca_data[:, 0:last_i + 1];
 
     pca_data = pca_data.T
 
@@ -321,7 +322,7 @@ def filter_PCA(data, scores=None, N=0, variance_proportion=1.0, min_components =
     if(scores is not None):
         rho = np.zeros(data.shape[0]);
         p = np.zeros(data.shape[0]);
-        for i in xrange(data.shape[0]):
+        for i in range(data.shape[0]):
            rho[i], p[i] = scipy.stats.spearmanr(data[i,:], scores)
 
         good_pcs = np.nonzero(p > 1e-5)[0];
@@ -358,13 +359,13 @@ def define_clusters(projections):
 
     out_clusters = dict();
 
-    for key in projections.keys():
+    for key in projections:
 
         proj_data = projections[key];
         proj_clusters = dict();
 
         # K-means for k = 2-5
-        for k in xrange(2, 6):
+        for k in range(2, 6):
             clust_name = "K-Means, k=" + str(k);
             kmeans = MiniBatchKMeans(n_clusters=k);
             clust_assignments = kmeans.fit_predict(proj_data.T);
@@ -423,8 +424,8 @@ def permutation_wPCA(data, weights, components=50, p_threshold=0.05, verbose=Fal
     bg_data = np.zeros(data.shape);
     bg_weights = np.zeros(data.shape);
 
-    for i in xrange(NUM_REPEATS):
-        for j in xrange(data.shape[0]):
+    for i in range(NUM_REPEATS):
+        for j in range(data.shape[0]):
             random_i = np.random.permutation(data.shape[1]);
             bg_data[j,:] = data[j,random_i];
             bg_weights[j,:] = weights[j,random_i];

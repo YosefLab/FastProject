@@ -7,9 +7,9 @@ distributions
 Derived from Nir Yosef's MATLAB code
 
 """
-from __future__ import division, print_function;
+from __future__ import absolute_import, print_function, division;
 import numpy as np;
-from FastProject.Utils import ProgressBar
+from . import ProgressBar
 
 #zmat is Genes x Samples
 #cutoff is Genes x 1 - represents the initial cutoff between normal and exponential distributions
@@ -37,7 +37,7 @@ def em_exp_norm_mixture(zmat, cutoff, progressbar = True):
         mu_h=weighted_mean(zmat,gamma);
         st_h=weighted_std(zmat,gamma, mu_h);
 
-        for niter in xrange(max_iter):
+        for niter in range(max_iter):
             #E
             prev_gamma = gamma;
             p_low = np.exp(-1*zmat/mu_l)/mu_l;

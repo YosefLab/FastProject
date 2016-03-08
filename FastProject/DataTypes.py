@@ -12,9 +12,8 @@ ProbabilityData is no longer being used
 
 """
 
+from __future__ import absolute_import, print_function, division;
 import numpy as np;
-from .Signatures import SignatureScores;
-import Global;
 
 
 class ExpressionData(np.ndarray):
@@ -200,9 +199,9 @@ class ExpressionData(np.ndarray):
 
         #For Filters, combine sets preferring self over other
         filters_merge = self.filters.copy();
-        for key,value in other.filters.items():
-            if(not filters_merge.has_key(key)):
-                filters_merge.update({key: value});
+        for key in other.filters:
+            if(key not in filters_merge):
+                filters_merge.update({key: other.filters[key]});
 
         weights_merge = np.concatenate((self.weights, other.weights), axis=1);
         col_labels_merge = self.col_labels + other.col_labels;

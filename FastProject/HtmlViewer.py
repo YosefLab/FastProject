@@ -68,7 +68,7 @@ def toJS(obj, level=0):
     if(type(obj) is dict):
         pairs = list();
         indentation = "".join(["\t"]*(level+1));
-        for key in obj.keys():
+        for key in obj:
             if(type(key) is str or type(key) is int or type(key) is float):
                 pairs.append("\n"+indentation+toJS(key, level+1)+':'+toJS(obj[key], level+1));
             else:
@@ -114,7 +114,7 @@ def dict_to_JS(py_dict, object_name, transpose_arrays = False):
     lines = list();
     lines.append("var " + object_name + " = {};"); #Initialize empty JS object
 
-    for key in py_dict.keys():
+    for key in py_dict:
         line_start = object_name + "['" + key + "'] = ";
         np_array = py_dict[key];
         if(transpose_arrays):

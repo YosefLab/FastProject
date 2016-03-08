@@ -7,6 +7,7 @@ in another module
   For example: reading Signatures is handled in the Signatures module
 
 """
+from __future__ import absolute_import, print_function, division;
 import os;
 import numpy as np;
 import shutil;
@@ -85,7 +86,7 @@ def read_matrix(filename='', delimiter = '\t'):
     data = np.loadtxt(filename,delimiter=delimiter,skiprows=1,usecols=cols_to_read);
     
     if(data.std() > 10 or data.mean() > 10):
-        print "Log-Transforming data..."
+        print("Log-Transforming data...");
         data = np.log(data + 1);
     
     #read in gene names
@@ -133,7 +134,7 @@ def _uniquify(labels):
 
     count_dict = dict();
     for label in labels:
-        if(not count_dict.has_key(label)):
+        if(label not in count_dict):
             count_dict.update({label: 0});
 
         count_dict[label] = count_dict[label] + 1;
@@ -173,8 +174,8 @@ def read_matrix_nolabels(filename = '', delimiter = '\t'):
     num_rows = data.shape[0];
     num_cols = data.shape[1];
     
-    row_labels = [str(i) for i in xrange(num_rows)];
-    col_labels = [str(i) for i in xrange(num_cols)];
+    row_labels = [str(i) for i in range(num_rows)];
+    col_labels = [str(i) for i in range(num_cols)];
     
     return (data, row_labels, col_labels);
     
@@ -184,7 +185,8 @@ def write_signature_scores(filename, sig_scores_dict, col_labels):
         ff.write('\t' + '\t'.join(col_labels) + '\n');
 
         #Iterate over signatures and write scores
-        for name, sig_scores in sig_scores_dict.items():
+        for name in sig_scores_dict:
+            sig_scores = sig_scores_dict[name]
             if(sig_scores.isFactor):
                 row = [name] + sig_scores.scores;
             else:
@@ -210,7 +212,7 @@ def write_projection_file(filename, sample_labels, projections):
 
     ff = open(filename,'w');
 
-    for proj in projections.keys():
+    for proj in projections:
         coordinates = projections[proj];
         for i in range(coordinates.shape[1]):
             ff.write(proj + '\t');
@@ -239,9 +241,9 @@ def write_cluster_file(filename, sample_labels, clusters):
     with open(filename, 'w') as fout:
         fout.write('\t'.join(sample_labels) + '\n');
 
-        for proj in clusters.keys():
+        for proj in clusters:
             proj_clusters = clusters[proj];
-            for cluster in proj_clusters.keys():
+            for cluster in proj_clusters:
                 assignments = proj_clusters[cluster];
                 fout.write(proj + " " + cluster + "\t");
                 fout.write('\t'.join([str(x) for x in assignments]));
@@ -270,7 +272,8 @@ def write_models(directory, Models):
     :return:
     """
 
-    for name, model in Models.items():
+    for name in Models:
+        model = Models[name];
         model_dir = os.path.join(directory, name);
 
         #Sig Scores

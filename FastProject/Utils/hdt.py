@@ -6,11 +6,11 @@ HDT_Sig_batch has been augmented to calculate
 significance more quickly when running on many rows
 
 """
-from __future__ import print_function, division;
+from __future__ import absolute_import, print_function, division;
 
 import numpy as np;
-from FastProject.Utils import ProgressBar;
-from FastProject.Global import RANDOM_SEED;
+from . import ProgressBar;
+from ..Global import RANDOM_SEED;
 import logging;
 
 def HDT_Sig_batch(xpdf_matrix, nboot, progressbar=True):
@@ -33,7 +33,7 @@ def HDT_Sig_batch(xpdf_matrix, nboot, progressbar=True):
 
     if(progressbar): pbar = ProgressBar(xpdf_matrix.shape[0] + nboot);
 
-    for i in xrange(xpdf_matrix.shape[0]):
+    for i in range(xpdf_matrix.shape[0]):
         (dip, xlow, xup, ifault, gcm, lcm, mn, mj) = DipTest(xpdf_matrix[i,:]);
         dips[i] = dip;
         xlows[i] = xlow;
@@ -223,7 +223,7 @@ def DipTest(xpdf):
         iv=2
         d=0.0
         
-        if not (icx<>2 or icv<>2):
+        if not (icx!=2 or icv!=2):
             d=1./fn
         else:
             iterate_BP50=True
@@ -270,7 +270,7 @@ def DipTest(xpdf):
                 if goto60:
                     if ix<1 : ix=1
                     if iv>icv : iv=icv
-                    iterate_BP50 = gcm[ix-1] <> lcm[iv-1]
+                    iterate_BP50 = gcm[ix-1] != lcm[iv-1]
 
         itarate_flag= not d<dip
         if itarate_flag:
@@ -284,7 +284,7 @@ def DipTest(xpdf):
 
             #the DIP for the convex minorant
             dl=0.
-            if ig <>icx:
+            if ig !=icx:
                 icxa=icx-1
                 for j in range(ig,icxa+1):
                     temp=1./fn

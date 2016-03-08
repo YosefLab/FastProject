@@ -6,7 +6,7 @@ of genes to a more manageable size - ideally extracting the
 genes that are more biologically informative.
 
 """
-from __future__ import print_function, division;
+from __future__ import absolute_import, print_function, division;
 
 import numpy as np
 from . import Utils
@@ -47,7 +47,7 @@ def apply_filters(data):
             'Threshold': set(data.row_labels),
         });
 
-        for name, method in _filter_methods.iteritems():
+        for name, method in _filter_methods.items():
             FP_Output("Applying filter method:", name);
 
             mask = method(data);
@@ -121,7 +121,7 @@ def filter_genes_fano(data, num_mad=2):
 
     gene_passes = np.zeros(data.shape[0]) == 1;
 
-    for i in xrange(N_QUANTS):
+    for i in range(N_QUANTS):
         if(i == N_QUANTS - 1):
             rr = np.arange(i * m, mu_sort.size)
         else:
