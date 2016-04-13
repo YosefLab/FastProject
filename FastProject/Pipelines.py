@@ -146,13 +146,17 @@ def FullOutput():
 
         #If specified, remove items that did not pass qc check
         if(args.qc):
-            for name, dataMatrix in Models.items():
-                Models[name] = dataMatrix.subset_samples(sample_passes_qc);
+            for name, model in Models.items():
+                dataMatrix = model["Data"];
+                model["Data"] = dataMatrix.subset_samples(sample_passes_qc);
 
             sample_qc_scores = sample_qc_scores[sample_passes_qc];
     else:
         sample_qc_scores = None;
         prob_params = None;
+
+    # Necessary because the matrix might be modified when data failing qc is removed
+    edata = Models["Expression"]["Data"];
 
     # Make an extra quality score of just the zero proportion in each sample
     zeros_qscore = (edata.base == 0).sum(axis=0) / edata.shape[0];
