@@ -1,12 +1,17 @@
 import ez_setup
 ez_setup.use_setuptools()
 
+# Parse version string
+import os;
+this_directory = os.path.dirname(os.path.abspath(__file__));
+version_file = os.path.join(this_directory, "FastProject", "_version.py");
+exec(open(version_file).read());
 
 from setuptools import setup, find_packages
 
 setup(
 	name = "FastProject",
-	version = "1.0.4",
+	version = __version__,
 	packages = find_packages(),
 
 	entry_points = { 'console_scripts': ['fastproject = FastProject.__main__:entry']},
