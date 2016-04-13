@@ -46,6 +46,8 @@ def FP_Output(*args):
     """
     print(*args);
     logmessage = ' '.join([str(a) for a in args]);
+    if(logmessage.startswith("\n")):
+        logmessage = logmessage[1:];
     logging.info(logmessage);
 
 # This section for finding resource files
