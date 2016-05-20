@@ -305,7 +305,7 @@ def write_models(directory, Models):
                                projData["clusters"])
 
             #Output matrix of p-values for conformity scores
-            write_matrix(os.path.join(filter_dir, "DissimilarityMatrix.txt"),
+            write_matrix(os.path.join(filter_dir, "ConsistencyMatrix.txt"),
                          projData["sigProjMatrix"],
                          projData["signatureKeys"],
                          projData["projectionKeys"]);
