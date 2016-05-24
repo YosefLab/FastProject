@@ -335,9 +335,14 @@ function order_cluster_group_rows(cluster_group)
 
 function order_cluster_group_cols(self, cluster_group_plus, cluster_group_minus, TOTAL_SAMPLES)
 {
-    if(cluster_group_plus[0].data.length === 0)
+    // Cluster the columns in the heatmap
+    // First, merge the + and - sets into a single column
+    // Then, use that column to calculate a new column order
+    // Lastly, use the new column order to modify the cluster_group_plus(minus) objects
+    
+    if(cluster_group_plus[0].data.length === 0 && cluster_group_minus[0].data.length === 0)
     {
-        return;
+        return [cluster_group_plus, cluster_group_minus];
     }
     //create data matrix from cluster_group
     var data = [];
@@ -346,7 +351,7 @@ function order_cluster_group_cols(self, cluster_group_plus, cluster_group_minus,
         var col_obj_p = cluster_group_plus[i];
         var col_obj_m = cluster_group_minus[i];
         var row = col_obj_p.data.map(function(x){return x.value;});
-        row = row + col_obj_m.data.map(function(x){return x.value;});
+        row = row.concat(col_obj_m.data.map(function(x){return x.value;}));
         data.push(row);
     }
 
