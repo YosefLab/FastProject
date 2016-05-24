@@ -565,8 +565,11 @@ def apply_spectral_embedding(proj_data, proj_weights=None):
 _proj_methods = dict();
 
 _proj_methods['ICA'] = apply_ICA;
-_proj_methods['Spectral Embedding'] = apply_spectral_embedding;
-_proj_methods['MDS'] = apply_MDS;
+
+if(not args.bigdata):  # These methods don't scale well.  Don't include when `bigdata` is set
+    _proj_methods['Spectral Embedding'] = apply_spectral_embedding;
+    _proj_methods['MDS'] = apply_MDS;
+
 _proj_methods['RBF Kernel PCA'] = apply_rbf_PCA;
 _proj_methods['ISOMap'] = apply_ISOMap;
 _proj_methods['tSNE30'] = apply_tSNE30;
@@ -575,8 +578,10 @@ _proj_methods['tSNE10'] = apply_tSNE10;
 # Methods to apply to data that has already been filtered with PCA
 _proj_methods_pca = dict();
 
-_proj_methods_pca['Spectral Embedding'] = apply_spectral_embedding;
-_proj_methods_pca['MDS'] = apply_MDS;
 _proj_methods_pca['ISOMap'] = apply_ISOMap;
 _proj_methods_pca['tSNE30'] = apply_tSNE30;
 _proj_methods_pca['tSNE10'] = apply_tSNE10;
+
+if(not args.bigdata):
+    _proj_methods_pca['Spectral Embedding'] = apply_spectral_embedding;
+    _proj_methods_pca['MDS'] = apply_MDS;

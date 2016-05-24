@@ -53,6 +53,9 @@ def parseFPArgs():
     parser.add_argument("--debug",         action="store_true",
             help="Run FastProject in Debug mode");
 
+    parser.add_argument("--bigdata",         action="store_true",
+            help="Run FastProject in BigData mode - subset of analyses to reduce runtime on large data sets");
+
     parser.add_argument("--subsample_size", type=int, metavar="N", default=1000,
             help="Planned Feature: Number of samples to use when sub_sampling");
 
