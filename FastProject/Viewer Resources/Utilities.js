@@ -77,7 +77,8 @@ function exportSigProj()
             heat_table.push(heat_data[i].data.map(function(x){return x.value;}));
         }
 
-        heat_table = [global_heatmap.row_labels].concat(heat_table);
+        var row_labels = heat_data[0].data.map(function(x){return x.gene});
+        heat_table = [row_labels].concat(heat_table);
 
         heat_table = d3.transpose(heat_table);
 
@@ -95,6 +96,7 @@ function exportSigProj()
     var svg2 = svgCopy(svg.node());
 
     var html_data = svg2.parentNode.innerHTML;
+    zip.file("Scatter.svg", html_data);
 
     var imgsrc = "data:image/svg+xml;base64," + btoa(html_data);
 
@@ -156,7 +158,6 @@ function svgCopy(svg)
  */
 function apply_styles(original_node, unstyled_node)
 {
-    console.log(original_node.toString());
     var cssStyles = getComputedStyle(original_node);
     var unstyledStyles = getComputedStyle(unstyled_node);
     var computedStyleStr = unstyled_node.getAttribute("style");
