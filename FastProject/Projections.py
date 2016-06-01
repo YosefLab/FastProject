@@ -566,7 +566,7 @@ _proj_methods = dict();
 
 _proj_methods['ICA'] = apply_ICA;
 
-if(not args.bigdata):  # These methods don't scale well.  Don't include when `bigdata` is set
+if(not args.lean):  # These methods don't scale well.  Don't include when `lean` is set
     _proj_methods['Spectral Embedding'] = apply_spectral_embedding;
     _proj_methods['MDS'] = apply_MDS;
 
@@ -582,6 +582,6 @@ _proj_methods_pca['ISOMap'] = apply_ISOMap;
 _proj_methods_pca['tSNE30'] = apply_tSNE30;
 _proj_methods_pca['tSNE10'] = apply_tSNE10;
 
-if(not args.bigdata):
+if(not args.lean):
     _proj_methods_pca['Spectral Embedding'] = apply_spectral_embedding;
     _proj_methods_pca['MDS'] = apply_MDS;

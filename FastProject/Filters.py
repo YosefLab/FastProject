@@ -47,7 +47,7 @@ def apply_filters(data):
             'Threshold': set(data.row_labels),
         });
 
-        if(not args.bigdata):
+        if(not args.lean):
             for name, method in _filter_methods.items():
                 FP_Output("Applying filter method:", name);
 
