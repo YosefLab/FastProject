@@ -47,15 +47,16 @@ def apply_filters(data):
             'Threshold': set(data.row_labels),
         });
 
-        for name, method in _filter_methods.items():
-            FP_Output("Applying filter method:", name);
+        if(not args.lean):
+            for name, method in _filter_methods.items():
+                FP_Output("Applying filter method:", name);
 
-            mask = method(data);
+                mask = method(data);
 
-            if(np.array(mask).sum() > 10):  # Only add these filters if they have enough genes
-                filter_dict.update({
-                    name: set([data.row_labels[i] for i, x in enumerate(mask) if x]),
-                });
+                if(np.array(mask).sum() > 10):  # Only add these filters if they have enough genes
+                    filter_dict.update({
+                        name: set([data.row_labels[i] for i, x in enumerate(mask) if x]),
+                    });
 
         data.filters = filter_dict;
 
