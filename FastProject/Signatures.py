@@ -501,7 +501,7 @@ def sigs_vs_projections(projections, sig_scores_dict, random_sig_scores_dict, NE
             else:
                 p_value = norm.cdf((med_dissimilarity - mu)/sigma);
 
-            factor_sig_proj_matrix[j,i] = 1 - med_dissimilarity / N_SAMPLES;
+            factor_sig_proj_matrix[j,i] = 1 - med_dissimilarity;
             factor_sig_proj_matrix_p[j,i] = p_value;
 
 
