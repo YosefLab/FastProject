@@ -12,7 +12,9 @@ import os;
 import numpy as np;
 import shutil;
 from . import HtmlViewer;
+from .Global import FP_Output;
 import pandas as pd;
+from pandas.parser import CParserError;
 
 
 def make_dirs(root_directory):
@@ -276,6 +278,11 @@ def write_models(directory, Models):
         model = Models[name];
         model_dir = os.path.join(directory, name);
 
+        try:
+            os.makedirs(model_dir);
+        except OSError:
+            pass;
+
         #Sig Scores
         out_file = 'SignatureScores.txt';
         write_signature_scores(os.path.join(model_dir, out_file), model["signatureScores"], model["sampleLabels"]);
@@ -340,21 +347,22 @@ def write_weights(directory, data):
     weight_frame.to_csv(out_file, sep="\t");
 
 
+def write_qc_file(directory, qc_info):
+    """ Outputs a file with Quality Report information for the samples
 
-def write_qc_file(directory, sample_passes, sample_scores, sample_labels):
-    """
-    Outputs a file with Quality Report information for the samples
-
-    :param directory: String
+    Parameters
+    ----------
+    directory : str
         Output directory to use
-    :param sample_passes: np.ndarray, dtype=bool, size=NUM_SAMPLES
-        Whether or not the sample passes the quality check
-    :param sample_scores: np.ndarray, dtype=float, size=NUM_SAMPLES
-        A samples quality score
-    :param sample_labels: list(String)
-        Labels for each sample
-    :return: None
+    qc_info : pandas.DataFrame
+        Columns are "Scores" and "Passes"
+        "Score": quality score
+        "Passes": bool, whether or not the sample passed
+        Index: sample label
+
     """
+
+    sample_scores = qc_info["Score"].values
 
     # Compute MAD
     med = np.median(sample_scores);
@@ -365,10 +373,7 @@ def write_qc_file(directory, sample_passes, sample_scores, sample_labels):
     values = HtmlViewer.toJS_variable("values", sample_scores);
 
     # Build html Table
-    ii = np.argsort(sample_scores);
-
-    sample_scores = sample_scores[ii];
-    sample_labels = [sample_labels[i] for i in ii];
+    qc_info = qc_info.sort_values("Score");
 
     out_table = [];
     out_table.append("<table>");
@@ -377,7 +382,8 @@ def write_qc_file(directory, sample_passes, sample_scores, sample_labels):
     out_table.append("<th>Score</th>");
     out_table.append("</tr>");
 
-    for score, label in zip(sample_scores, sample_labels):
+    for label in qc_info.index:
+        score = qc_info.loc[label, "Score"];
         if(score < cutoff):
             out_table.append('<tr class="failed_row">');
         else:
@@ -388,11 +394,10 @@ def write_qc_file(directory, sample_passes, sample_scores, sample_labels):
 
     out_table.append("</table>");
 
+    # Output Html File
+    out_html = os.path.join(directory, "QC_Report.html");
 
-    #Output Html File
-    out_html = os.path.join(directory,"QC_Report.html");
-
-    shutil.copy(HtmlViewer.RESOURCE_DIR + os.sep + "QC_Report.html",out_html);
+    shutil.copy(HtmlViewer.RESOURCE_DIR + os.sep + "QC_Report.html", out_html);
 
     with open(out_html, "r") as fin:
         contents = fin.read();
@@ -405,6 +410,135 @@ def write_qc_file(directory, sample_passes, sample_scores, sample_labels):
         fout.write(contents);
 
 
+def load_input_projections(projection_files, sample_names):
+    """
+    Loads input projection coordinates into module variable _input_projections
+
+    :param projection_files: List of file locations (str) that contain projection coordinates
+    :param sample_names: List of sample names.  Used to validate input
+
+    Returns
+    -------
+    input_projections : dict or None
+        Keys are of type str, representing projection names
+        Values are of type 2xN pandas.DataFrame with column names matching
+        sample names in `expressionMatrix`
+    """
+    input_projections = {};
+
+    sample_names_norm = [x.upper() for x in sample_names];
+
+    for projection_file in projection_files:
+        if(not os.path.isfile(projection_file)):
+            raise ValueError("Option Error: projection file " + projection_file + " not found.");
+
+        try:
+            loaded_coords = pd.read_table(projection_file, header=None);
+        except CParserError:
+            # if Header row has 2 entries and rest has 3, get this error
+            # Try to load data anyway and rework it back into the correct initial format
+            loaded_coords = pd.read_table(projection_file);
+            loaded_coords = pd.DataFrame({0: loaded_coords.index,
+                                          1: loaded_coords.iloc[:, 0].values,
+                                          2: loaded_coords.iloc[:, 1].values},
+                                         index=np.arange(loaded_coords.shape[0]));
+
+        # Verify the file
+        # Check for 3 columns
+        if(loaded_coords.shape[1] != 3):
+            raise ValueError("Format Error: projection file " + projection_file +
+                             " should have 3 columns (sample name, x coordinate, y coordinate).");
+
+        # Fix in case header was included with first cell empty
+        if(pd.isnull(loaded_coords.iloc[0, 0])):
+            loaded_coords.iloc[0, 0] = "_____";  # Dummy value, won't match gene
+
+        # Normalize names to upper-case temporarily
+        loaded_coords[0] = [x.upper() for x in loaded_coords[0]];
+
+        # Did they accidentally include a heading?
+        if(loaded_coords.iloc[0, 0] not in sample_names_norm):
+            loaded_coords = loaded_coords.drop(loaded_coords.index[0], axis='index');  # drop first row
+
+        # Check for duplicate names
+        if(loaded_coords[0].duplicated().any()):
+            duplicated_names = loaded_coords.loc[loaded_coords[0].duplicated(), 0].values;
+            raise ValueError("Format Error: projection file " + projection_file +
+                             " contains duplicate sample names:\n" + "\n".join(duplicated_names));
+
+        # Set as the index
+        loaded_coords = loaded_coords.set_index(0);
+
+        # Check that all data matrix sample names are in the projection file
+        not_matched = np.array([x not in loaded_coords.index for x in sample_names_norm]);
+        if(not_matched.any()):
+            missing_samples = [sample_names[i] for i in np.nonzero(not_matched)[0]];
+            raise ValueError("Format Error: projection file " + projection_file +
+                             " missing entries for:\n" + "\n".join(missing_samples));
+
+        # If we got here, it's safe to re-order the file
+        loaded_coords = loaded_coords.loc[sample_names_norm, :];
+        loaded_coords.index = sample_names;  # Restore original case
+        loaded_coords["X"] = loaded_coords[1];
+        loaded_coords["Y"] = loaded_coords[2];
+        loaded_coords = loaded_coords.drop(1, axis="columns").drop(2, axis="columns");
+
+        # Check for null values and throw error
+        if(loaded_coords.isnull().any().any()):
+            bad_rows = loaded_coords.index[loaded_coords.isnull().any(axis=1)];
+            raise ValueError("Format Error: projection file " + projection_file +
+                             " contains NaNs for samples:\n" + "\n".join(bad_rows));
+
+        proj_name = os.path.splitext(projection_file)[0];
+        input_projections.update({proj_name: loaded_coords});
+
+    return input_projections;
 
 
+def load_input_weights(weight_file, genes, cells):
+    """
+    Used to pre-load an input weight matrix
 
+    Parameters
+    ----------
+    weight_file : str
+        File to load weights from
+    genes : list of str
+        Names of genes in data matrix (for validation)
+    cells : list of str
+        Names of cells in data matrix (for validation)
+
+    Returns
+    -------
+    input_weights : pandas.DataFrame
+        Shape is len(`genes`) x len(`cells`)
+        Values are floats from 0.0 to 1.0
+
+    """
+
+    if(not os.path.isfile(weight_file)):
+        raise ValueError("Option Error: weights file " + weight_file + " not found.");
+
+    weights = pd.read_table(weight_file, header=0, index_col=0);
+    weights.index = [x.upper() for x in weights.index];  # Normalize gene names to upper-case
+
+    # Correct any NaNs
+    if(pd.isnull(weights).any().any()):
+        FP_Output("NaN's found in input weight matrix.  Replacing with zeros...");
+        weights[pd.isnull(weights)] = 0.0;
+
+    # Check that we have a gene/sample pair for everyone
+    missing_genes = np.array([x not in weights.index for x in genes]);
+    missing_samples = np.array([x not in weights.columns for x in cells]);
+
+    if(missing_genes.any()):
+        missing_gene_labels = [x for i, x in enumerate(genes) if missing_genes[i]];
+        raise ValueError("Format Error: weights file " + weight_file +
+                         " missing entries for:\n" + "\n".join(missing_gene_labels));
+
+    if(missing_samples.any()):
+        missing_sample_labels = [x for i, x in enumerate(cells) if missing_samples[i]];
+        raise ValueError("Format Error: weights file " + weight_file +
+                         " missing entries for:\n" + "\n".join(missing_sample_labels));
+
+    return weights;

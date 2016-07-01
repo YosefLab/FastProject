@@ -10,7 +10,7 @@ from . import Signatures;
 from . import Projections;
 from . import Transforms;
 from .DataTypes import ProbabilityData, ExpressionData;
-from .Global import args, FP_Output, RANDOM_SEED;
+from .Global import FP_Output, RANDOM_SEED;
 from scipy.spatial.distance import cdist;
 import numpy as np;
 
@@ -24,7 +24,7 @@ def split_samples(data, subsample_size):
 
     return holdouts, subset;
 
-def merge_samples(all_data, Models, sigs, prob_params):
+def merge_samples(all_data, Models, sigs, prob_params, args):
     #Remove genes that aren't in the Expression data set
 
     edata = Models["Expression"]["Data"];

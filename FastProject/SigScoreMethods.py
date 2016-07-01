@@ -11,9 +11,9 @@ Specified by the command-line argument: --sig_score_method
 
 from .Signatures import SignatureScores;
 import numpy as np;
-from .Global import args;
 
-def naive_eval_signature(self, signature, zeros=None):
+
+def naive_eval_signature(self, signature, zeros, min_signature_genes):
     """
     Naive eval signature just sums the columns * sign
     Equivalent to all weights = 1
@@ -26,7 +26,7 @@ def naive_eval_signature(self, signature, zeros=None):
     if(num_matched_genes == 0):
         raise ValueError("No genes match signature");
 
-    if(num_matched_genes < args.min_signature_genes):
+    if(num_matched_genes < min_signature_genes):
         raise ValueError("Too few genes match signature");
 
     data = self.base[ii, :];
@@ -44,7 +44,7 @@ def naive_eval_signature(self, signature, zeros=None):
     return sig_obj;
 
 
-def weighted_eval_signature(self, signature, zeros):
+def weighted_eval_signature(self, signature, zeros, min_signature_genes):
     """
     Weighted average using weights in self.weights
     """
@@ -56,7 +56,7 @@ def weighted_eval_signature(self, signature, zeros):
     if(num_matched_genes == 0):
         raise ValueError("No genes match signature");
 
-    if(num_matched_genes < args.min_signature_genes):
+    if(num_matched_genes < min_signature_genes):
         raise ValueError("Too few genes match signature");
 
     weights = self.weights[ii, :];
@@ -76,7 +76,7 @@ def weighted_eval_signature(self, signature, zeros):
     return sig_obj;
 
 
-def imputed_eval_signature(self, signature, zeros):
+def imputed_eval_signature(self, signature, zeros, min_signature_genes):
     """
     Imputes likely values for zeros using the weight
     Weights represent p(not expressed | not detected)
@@ -89,7 +89,7 @@ def imputed_eval_signature(self, signature, zeros):
     if(num_matched_genes == 0):
         raise ValueError("No genes match signature");
 
-    if(num_matched_genes < args.min_signature_genes):
+    if(num_matched_genes < min_signature_genes):
         raise ValueError("Too few genes match signature");
 
     weights = self.weights[ii, :];
@@ -115,9 +115,9 @@ def imputed_eval_signature(self, signature, zeros):
     return sig_obj;
 
 
-def fuckit_eval_signature(self, signature, zeros):
+def nonzero_eval_signature(self, signature, zeros, min_signature_genes):
     """
-    Fuck it - evalute the signature scores sans zero entries
+    Evalute the signature scores using only nonzero entries
     Sum columns and normalize by # of nonzero items
     """
     sig_vector = signature.sig_indices(self.row_labels);
@@ -128,7 +128,7 @@ def fuckit_eval_signature(self, signature, zeros):
     if(num_matched_genes == 0):
         raise ValueError("No genes match signature");
 
-    if(num_matched_genes < args.min_signature_genes):
+    if(num_matched_genes < min_signature_genes):
         raise ValueError("Too few genes match signature");
 
     data = self.base[ii, :];

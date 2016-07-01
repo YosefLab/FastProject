@@ -11,55 +11,8 @@ from __future__ import absolute_import, print_function, division;
 from .Utils import em_exp_norm_mixture;
 from . import Filters;
 from .DataTypes import ExpressionData, ProbabilityData, PCData;
-from .Global import args, FP_Output, get_housekeeping_dir;
 import numpy as np;
-import pandas as pd;
 import os;
-
-
-# Input projection coordinates are read once (at start) and cached here
-# Variable stores a list of pandas.DataFrame objects
-_input_weights = None;
-def load_input_weights(data):
-    """
-    Used to pre-load an input weight matrix
-
-    :param data: Used to validate input matrix.  Input file must have a corresponding row and column for each
-                gene/sample in data
-    :return: None
-    """
-    global _input_weights;
-
-    if(args.weights):
-        if(not os.path.isfile(args.weights)):
-            raise ValueError("Option Error: weights file " + args.weights + " not found.");
-
-        weights = pd.read_table(args.weights, header=0, index_col=0);
-        weights.index = [x.upper() for x in weights.index]; # Normalize gene names to upper-case
-
-        # Correct any NaNs
-        if(pd.isnull(weights).any().any()):
-            FP_Output("NaN's found in input weight matrix.  Replacing with zeros...");
-            weights[pd.isnull(weights)] = 0.0;
-
-        # Check that we have a gene/sample pair for everyone
-        missing_genes = np.array([x not in weights.index for x in data.row_labels]);
-        missing_samples = np.array([x not in weights.columns for x in data.col_labels]);
-
-        if(missing_genes.any()):
-            missing_gene_labels = [x for i,x in enumerate(data.row_labels) if missing_genes[i]];
-            raise ValueError("Format Error: weights file " + args.weights +
-                             " missing entries for:\n" + "\n".join(missing_gene_labels));
-
-        if(missing_samples.any()):
-            missing_sample_labels = [x for i,x in enumerate(data.col_labels) if missing_samples[i]];
-            raise ValueError("Format Error: weights file " + args.weights +
-                             " missing entries for:\n" + "\n".join(missing_sample_labels));
-
-        _input_weights = weights;
-
-
-
 
 def probability_of_expression(data):
     cutoffs = np.mean(data,axis=1)/4;  #Empirically found to be good most of the time
@@ -88,13 +41,9 @@ def make_monotonic(gamma, data):
     return gamma;        
     
 
-def create_false_neg_map(data, housekeeping_file="", debug=None):
-    """Uses gene names in <filename> to create a mapping of false negatives.
+def create_false_neg_map(data, housekeeping_genes, debug=None):
+    """Uses gene names in `housekeeping_genes` to create a mapping of false negatives.
         
-    This assumes all genes in <filename> are actually active, despite measured
-    expression level.  Should use housekeeping genes.  If filename is blank,
-    use all stored housekeeping gene names
-    
     Creates a functional fit for each sample based on that samples HK genes
 
     debug (if supplied), should be an int representing a particular sample
@@ -109,25 +58,16 @@ def create_false_neg_map(data, housekeeping_file="", debug=None):
 
     """
     
-    housekeeping_dir = get_housekeeping_dir();
-    
-    housekeeping_files = list();
-    
-    if(housekeeping_file != ""): #If file specified, use that file
-        housekeeping_files.append(housekeeping_file);
-    else:  #Otherwise, use all the files in housekeeping directory
-        files = os.listdir(housekeeping_dir);
-        for ff in files:
-            housekeeping_files.append(os.path.join(housekeeping_dir, ff));
-    
-    data_hk = np.zeros((0, data.shape[1]));
-    genes_hk = list();
-    for hkf in housekeeping_files:
-        data_t = _load_from_file(data, hkf);        
-        data_hk = np.vstack((data_hk, data_t));
-        genes_hk.extend(data_t.row_labels);
+    keep_indices = list();
 
-    data_hk = ExpressionData(data_hk, genes_hk, data.col_labels);
+    for hkgene in housekeeping_genes:
+        for i, gene in enumerate(data.row_labels):
+            if(gene.upper() == hkgene.upper()):
+                keep_indices.append(i);
+                continue;
+
+    data_hk = data.subset_genes(keep_indices);
+
 
     data_hk = Filters.filter_genes_novar(data_hk);
         
@@ -334,32 +274,28 @@ def compute_weights(fit_func, params, data):
         Ranges from 0 to 1.
     """
 
-    if(_input_weights is None):
-        fn_prob = np.zeros(data.shape)
-        count_nonzero = (data.base > 0).sum(axis=1);
-        count_nonzero[count_nonzero == 0] = 1;  # Protect agains NaN
-        mu_h = data.base.sum(axis=1) / count_nonzero;
+    fn_prob = np.zeros(data.shape)
+    count_nonzero = (data.base > 0).sum(axis=1);
+    count_nonzero[count_nonzero == 0] = 1;  # Protect agains NaN
+    mu_h = data.base.sum(axis=1) / count_nonzero;
 
-        for i in range(fn_prob.shape[1]):
-            fn_prob[:, i] = fit_func(mu_h, *params[:, i]).ravel();
+    for i in range(fn_prob.shape[1]):
+        fn_prob[:, i] = fit_func(mu_h, *params[:, i]).ravel();
 
-        pd_e = 1 - fn_prob;
+    pd_e = 1 - fn_prob;
 
-        pnd = (data == 0).sum(axis=1, keepdims=True) / data.shape[1];
-        pe = (1 - pnd) / (pd_e).mean(axis=1, keepdims=True);
+    pnd = (data == 0).sum(axis=1, keepdims=True) / data.shape[1];
+    pe = (1 - pnd) / (pd_e).mean(axis=1, keepdims=True);
 
-        pe[np.isnan(pe)] == 1.0;  # Set to 1 if all expressed
+    pe[np.isnan(pe)] == 1.0;  # Set to 1 if all expressed
 
-        pne_nd = 1 - (1 - pd_e) * pe / pnd;
+    pne_nd = 1 - (1 - pd_e) * pe / pnd;
 
-        pne_nd[pne_nd < 0] = 0.0;
-        pne_nd[pne_nd > 1] = 1.0;
+    pne_nd[pne_nd < 0] = 0.0;
+    pne_nd[pne_nd > 1] = 1.0;
 
-        weights = pne_nd;
-        weights[data > 0] = 1.0;
-
-    else:
-        weights = _input_weights.loc[data.row_labels, data.col_labels].values;  # Use data to align
+    weights = pne_nd;
+    weights[data > 0] = 1.0;
 
     return weights;
 
@@ -409,33 +345,3 @@ def z_normalize(data):
     #Note, operations are in place, no return needed
     data -= mu;
     data /= sigma;
-
-
-def _load_from_file(data, filename):
-    """
-    Helper Method for Creating False-Neg Maps
-
-    Subsets the data matrix with only genes whose identifiers
-    were found in `filename`
-
-    Returns the subsetted version of `data`
-    """
-
-    loaded_genes = list();
-
-    ff = open(filename, 'rU')
-    for line in ff.readlines():
-        loaded_genes.append(line.strip().lower());
-
-    ff.close();
-
-    keep_indices = list();
-    for lgene in loaded_genes:
-        for i, gene in enumerate(data.row_labels):
-            if(gene.lower() == lgene):
-                keep_indices.append(i);
-                continue;
-
-    data = data.subset_genes(keep_indices);
-
-    return data;

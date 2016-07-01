@@ -7,122 +7,108 @@ order in which it is done, the goal should be to organize
 as much of that off into other modules.
 """
 from __future__ import division, print_function;
-import os;
 import numpy as np;
 import pandas as pd;
 import time;
-import scipy.stats;
-import logging;
 import random;
-import FastProject #Just for the __version__
 from . import Filters;
-from . import FileIO;
 from . import Transforms;
 from . import Signatures;
 from . import Projections;
 from . import SubSample;
-from .DataTypes import ExpressionData, ProbabilityData, PCData;
+from .DataTypes import ExpressionData, ProbabilityData;
 from .Utils import ProgressBar;
-from . import HtmlViewer;
-from .Global import args, FP_Output;
+from .Global import FP_Output;
 from . import SigScoreMethods;
 from . import NormalizationMethods;
 
 
-def FullOutput():
+def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_genes, input_projections, input_weights, kwargs):
+    """Run the full FastProject analysis pipeline
 
-    #Create directory for all outputs
-    if(args.output):
-        dir_name = args.output;
-    else:
-        default_dir_name = 'FastProject_Output';
-        if(os.path.isdir(default_dir_name)):
-            i = 1;
-            while(True):
-                dir_name = default_dir_name + str(i);
-                if(not os.path.isdir(dir_name)):
-                    break;
-                else:
-                    i = i+1;
-        else:
-            dir_name = default_dir_name;
+    Parameters
+    ----------
+    expressionMatrix : ExpressionData
+    signatures : list of Signatures.Signature
+    precomputed_signatures : dict
+        Keys are precomputed signature names (str)
+        Values are signature levels/scores (Signatures.SignatureScores)
+    housekeeping_genes : list of str
+    input_projections : dict
+        Keys are of type str, representing projection names
+        Values are of type 2xN pandas.DataFrame with column names matching
+        sample names in `expressionMatrix`
+    input_weights : pandas.DataFrame or None
+        Same size as expressionMatrix
+        Values are floats from 0.0 to 1.0
+    **kwargs : dict
+        Additional options
 
-    FileIO.make_dirs(dir_name);
-    logging.basicConfig(format='%(asctime)s %(message)s', filename=os.path.join(dir_name, 'fastproject.log'), level=logging.INFO);
-    logging.info("Running FastProject version " + FastProject.__version__);
-    logging.info("Using numpy version " + np.__version__);
-    for key in args.__dict__:
-        logging.info(key + ": " + str(args.__dict__[key]));
+    Returns
+    -------
+    Models : dict
+        An object containing all analysis results
+        modelName(str) -> modelData(dict)
+            "Data" -> ExpressionData
+            "signatureScores" -> list of Signatures.SignatureScores
+            "sampleLabels" -> list of str, labels for each sample
+            "projectionData" -> list of dict
+                "filter" -> str, name of filter used
+                "genes" -> list of str, list of genes that passed filter
+                "pca" -> bool, whether or not PCA performed before project
+                "projections" -> dict
+                    projection name (str) -> 2xN numpy.ndarray projection coords
+                "sigProjMatrix" -> np.ndarray, (sig, proj) consistency scores
+                "sigProjMatrix_p" -> np.ndarray, (sig, proj) p-values
+                "projectionKeys" -> list of str, column labels for sigProjMatrix
+                "signatureKeys" -> list of str, row labels for sigProjMatrix
+                "clusters" -> dict
+                    projection name (str) -> projection cluster assignments (dict)
+                        cluster method (str) -> cluster assignments (1D np.ndarray)
+                "loadings" -> np.ndarray
+                    np.ndarray, shape [num_genes x 3], first 3 PCA loadings
+                    only present if 'pca' is true
+
+    qc_info : pandas.DataFrame
+        Columns are "Scores" and "Passes"
+        "Score": quality score
+        "Passes": bool, whether or not the sample passed
+        Index: sample label
+
+    """
 
     start_time = time.time();
-    housekeeping_filename = args.housekeeping;
-
-
-    #%% Read expression data from file
-    filename = args.data_file;
-
-    if(not os.path.isfile(filename)):
-        raise ValueError("\n", filename, "not found.\nExiting...");
-
-    (edata, genes, cells) = FileIO.read_matrix(filename);
-
-    FP_Output("Imported ", edata.shape[0], " genes across ", edata.shape[1], " samples");
-
-    #%% Load Signature file
-    sigs = [];
-    if(args.signatures):
-        for sig_file in args.signatures:
-            if(not os.path.isfile(sig_file)):
-                raise ValueError("Option Error: signature file " + sig_file + " not found.\nExiting...");
-
-            sigs += Signatures.read_signatures(sig_file);
-
-    #%% Load Precomputed Sig file
-    if(args.precomputed):
-        for precomputed_sig_file in args.precomputed:
-            if(not os.path.isfile(precomputed_sig_file)):
-                raise ValueError("Option Error: precomputed signature file " + precomputed_sig_file + " not found.\nExiting...");
-            _throwaway = Signatures.load_precomputed(precomputed_sig_file, cells);
-
-    if(not args.signatures and not args.precomputed): #Need one or the other here
-        raise ValueError("Option Error: Must specify either a signature file or a pre-computed signature file.\nExiting...");
-
-    #%% Load projection coordinates (if provided)
-    Projections.load_input_projections(cells);
-
 
     #Wrap data in ExpressionData object, add as a Model
-    all_data = ExpressionData(edata, genes, cells); #TODO: Does this need to be copied?
-    edata = ExpressionData(edata, genes, cells);
+    all_data = expressionMatrix;
+    edata = expressionMatrix;
 
-    #%% Load input weights (if provided)
-    Transforms.load_input_weights(edata)
-
-    # if(args.subsample_size > edata.shape[1]):
-    #     args.subsample_size = None;
-    args.subsample_size = None;
+    # if(kwargs.subsample_size > edata.shape[1]):
+    #     kwargs.subsample_size = None;
+    kwargs.subsample_size = None;
 
     holdouts = None;
-    if(args.subsample_size):
-        holdouts, edata = SubSample.split_samples(edata, args.subsample_size);
+    if(kwargs.subsample_size):
+        holdouts, edata = SubSample.split_samples(edata, kwargs.subsample_size);
 
-    if(args.threshold is None):
+    if(kwargs.threshold is None):
         # Default threshold is 20% of samples - post sub-sampling
-        args.threshold = int(0.2 * edata.shape[1]);
+        kwargs.threshold = int(0.2 * edata.shape[1]);
 
+    Projections.register_methods(kwargs.lean); # Removes some projection methods if 'lean' is enabled
 
     #Hold on to originals so we don't lose data after filtering in case it's needed later
     original_data = edata.copy();
 
     #Filtering
-    edata = Filters.apply_filters(edata);
+    edata = Filters.apply_filters(edata, kwargs.threshold, kwargs.nofilter, kwargs.lean);
 
     Models = dict();
     emodel = dict({"Data": edata});
     Models.update({"Expression": emodel});
 
     #%% Probability transform
-    if(not args.nomodel):
+    if(not kwargs.nomodel):
 
         FP_Output('\nFitting expression data to exp/norm mixture model');
         (pdata, mu_h, mu_l, st_h, Pi) = Transforms.probability_of_expression(edata);
@@ -130,8 +116,12 @@ def FullOutput():
 
 
         FP_Output('\nCorrecting for false-negatives using housekeeping gene levels');
-        (fit_func, params) = Transforms.create_false_neg_map(original_data, housekeeping_filename);
-        weights = Transforms.compute_weights(fit_func, params, edata);
+        (fit_func, params) = Transforms.create_false_neg_map(original_data, housekeeping_genes);
+
+        if(input_weights is None):
+            weights = Transforms.compute_weights(fit_func, params, edata);
+        else:
+            weights = input_weights.loc[edata.row_labels, edata.col_labels];
 
         pdata = Transforms.adjust_pdata(pdata, weights);
 
@@ -143,10 +133,10 @@ def FullOutput():
         pdata.weights = weights;
 
         sample_passes_qc, sample_qc_scores = Transforms.quality_check(params);
-        FileIO.write_qc_file(dir_name, sample_passes_qc, sample_qc_scores, edata.col_labels);
+        qc_info = pd.DataFrame({"Score": sample_qc_scores, "Passes": sample_passes_qc}, index=edata.col_labels);
 
         #If specified, remove items that did not pass qc check
-        if(args.qc):
+        if(kwargs.qc):
             for name, model in Models.items():
                 dataMatrix = model["Data"];
                 model["Data"] = dataMatrix.subset_samples(sample_passes_qc);
@@ -201,15 +191,9 @@ def FullOutput():
             new_sig = Signatures.Signature(new_sig_dict, True, 'x', "RANDOM_BG_" + str(size) + "_" + str(j));
             random_sigs.append(new_sig);
 
-    fout_js = HtmlViewer.get_output_js_handle(dir_name);
-
     for name, model in Models.items():
-        model_dir = os.path.join(dir_name, name);
+
         data = model["Data"];
-        try:
-            os.makedirs(model_dir);
-        except OSError:
-            pass;
 
         FP_Output('\nModel: ', name)
 
@@ -219,15 +203,15 @@ def FullOutput():
         # Determine normalization method
         if(type(data) is ExpressionData):
 
-            if(args.sig_norm_method == "none"):
+            if(kwargs.sig_norm_method == "none"):
                 sig_norm_method = NormalizationMethods.no_normalization;
-            elif(args.sig_norm_method == "znorm_columns"):
+            elif(kwargs.sig_norm_method == "znorm_columns"):
                 sig_norm_method = NormalizationMethods.col_normalization;
-            elif(args.sig_norm_method == "znorm_rows"):
+            elif(kwargs.sig_norm_method == "znorm_rows"):
                 sig_norm_method = NormalizationMethods.row_normalization;
-            elif(args.sig_norm_method == "znorm_rows_then_columns"):
+            elif(kwargs.sig_norm_method == "znorm_rows_then_columns"):
                 sig_norm_method = NormalizationMethods.row_and_col_normalization;
-            elif(args.sig_norm_method == "rank_norm_columns"):
+            elif(kwargs.sig_norm_method == "rank_norm_columns"):
                 sig_norm_method = NormalizationMethods.col_rank_normalization;
 
             sig_data = data.get_normalized_copy(sig_norm_method);
@@ -237,14 +221,14 @@ def FullOutput():
 
         # Determine signature score evaluation method
         if(type(data) is ExpressionData):
-            if(args.sig_score_method == "naive"):
+            if(kwargs.sig_score_method == "naive"):
                 sig_score_method = SigScoreMethods.naive_eval_signature;
-            elif(args.sig_score_method == "weighted_avg"):
+            elif(kwargs.sig_score_method == "weighted_avg"):
                 sig_score_method = SigScoreMethods.weighted_eval_signature;
-            elif(args.sig_score_method == "imputed"):
+            elif(kwargs.sig_score_method == "imputed"):
                 sig_score_method = SigScoreMethods.imputed_eval_signature;
-            elif(args.sig_score_method == "only_nonzero"):
-                sig_score_method = SigScoreMethods.fuckit_eval_signature;
+            elif(kwargs.sig_score_method == "only_nonzero"):
+                sig_score_method = SigScoreMethods.nonzero_eval_signature;
 
         elif(type(data) is ProbabilityData):
             sig_score_method = SigScoreMethods.naive_eval_signature;
@@ -252,10 +236,10 @@ def FullOutput():
 
         sig_scores_dict = dict();
 
-        pbar = ProgressBar(len(sigs));
-        for sig in sigs:
+        pbar = ProgressBar(len(signatures));
+        for sig in signatures:
             try:
-                sig_scores_dict[sig.name] = sig_score_method(sig_data, sig, zero_locations);
+                sig_scores_dict[sig.name] = sig_score_method(sig_data, sig, zero_locations, kwargs.min_signature_genes);
             except ValueError:  #Only thrown when the signature has no genes in the data
                 pass #Just discard the signature then
             pbar.update();
@@ -266,16 +250,13 @@ def FullOutput():
         random_sig_scores_dict = dict();
         for sig in random_sigs:
             try:
-                random_sig_scores_dict[sig.name] = sig_score_method(sig_data, sig, zero_locations);
+                random_sig_scores_dict[sig.name] = sig_score_method(sig_data, sig, zero_locations, kwargs.min_signature_genes);
             except ValueError:  # Only thrown when the signature has no genes in the data
                 pass  # Just discard the signature then
             pbar.update();
         pbar.complete();
 
-        if(args.precomputed):
-            for precomputed_file in args.precomputed:
-                precomputed_sig_scores = Signatures.load_precomputed(precomputed_file, data.col_labels);
-                sig_scores_dict.update(precomputed_sig_scores);
+        sig_scores_dict.update(precomputed_signatures);
 
         #Adds in quality score as a pre-computed signature
         if(sample_qc_scores is not None): #Might be None if --nomodel option is selected
@@ -295,7 +276,7 @@ def FullOutput():
             #%% Dimensional Reduction procedures
             FP_Output("\nProjecting data into 2 dimensions");
 
-            projections, pcdata = Projections.generate_projections(data, filter_name);
+            projections, pcdata = Projections.generate_projections(data, filter_name, input_projections);
 
             #Evaluate Clusters
             FP_Output("Evaluating Clusters...");
@@ -319,7 +300,7 @@ def FullOutput():
 
 
             #Now do it all again using the principal component data
-            # if(args.pca_filter):
+            # if(kwargs.pca_filter):
             #     pcdata = Projections.filter_PCA(pcdata, scores=sample_qc_scores, variance_proportion=0.25);
             # else:
             #     pcdata = Projections.filter_PCA(pcdata, variance_proportion=0.25, min_components = 30);
@@ -363,7 +344,7 @@ def FullOutput():
 
         #Determine a threshold of significance
         #If too many samples, hard limit the number of output signatures to conserve file size
-        if(args.all_sigs): # Keep all sigs if this flag is set
+        if(kwargs.all_sigs): # Keep all sigs if this flag is set
             threshold = 1e99; 
         else:
             OUTPUT_SIGNATURE_LIMIT = min(200, signature_significance.size);
@@ -400,52 +381,21 @@ def FullOutput():
             projData["signatureKeys"] = [x for x in projData["signatureKeys"] if keep_sig[x]];
 
 
-
-    #Write signatures to file
-    #Assemble signatures into an object, then convert to JSON variable and write
-    sig_dict = {};
-    for sig in sigs:
-        sig_genes = list(sig.sig_dict.keys());
-        sig_values = list(sig.sig_dict.values());
-        sort_i = np.array(sig_values).argsort()[::-1];#Put positive signatures first
-        sig_genes = [sig_genes[i] for i in sort_i];
-        sig_values = [sig_values[i] for i in sort_i];
-        sig_dict.update({sig.name: {'Genes':sig_genes, 'Signs':sig_values}});
-    fout_js.write(HtmlViewer.toJS_variable("FP_Signatures", sig_dict));
-
     #Merge all the holdouts back into the model
-    if(args.subsample_size is not None):
+    if(kwargs.subsample_size is not None):
         FP_Output("Merging held-out samples back in")
-        SubSample.merge_samples(all_data, Models, sigs, prob_params);
+        SubSample.merge_samples(all_data, Models, signatures, prob_params, kwargs);
 
-    #Write the original data matrix to the javascript file.
-    #First, cluster genes
+    # Cluster genes
     from scipy.cluster.hierarchy import leaves_list, linkage;
     edata = Models["Expression"]["Data"];
     linkage_matrix = linkage(edata);
     leaves_i = leaves_list(linkage_matrix);
-    edata_clustered = edata[leaves_i, :];
-    edata_clustered.row_labels = [edata.row_labels[i] for i in leaves_i];
+    edata = edata.subset_genes(leaves_i);
+    Models["Expression"]["Data"] = edata;
 
-    data_json = dict({
-        'data': edata_clustered,
-        'gene_labels': edata_clustered.row_labels,
-        'sample_labels': edata_clustered.col_labels,
-    });
-    fout_js.write(HtmlViewer.toJS_variable("FP_ExpressionMatrix", data_json));
-
-    FileIO.write_models(dir_name, Models);
-    FileIO.write_weights(dir_name, Models["Expression"]["Data"]);
-
-    #Remove model["Data"] since only the expression data is written for JS
-    #  and it's already written above in FP_ExpressionMatrix
-    for name, model in Models.items():
-        model.pop("Data");
-
-    fout_js.write(HtmlViewer.toJS_variable("FP_Models", Models));
-
-    fout_js.close();
-    HtmlViewer.copy_html_files(dir_name);
     FP_Output("\nFastProject Analysis Complete")
     elapsed_time = time.time() - start_time;
     FP_Output("Elapsed Time {:.2f} seconds".format(elapsed_time));
+
+    return Models, qc_info;
