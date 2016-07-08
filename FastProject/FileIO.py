@@ -542,3 +542,46 @@ def load_input_weights(weight_file, genes, cells):
                          " missing entries for:\n" + "\n".join(missing_sample_labels));
 
     return weights;
+
+
+def saveResultstoDisk(models, signatures, qc_info, dir_name):
+    """
+    Save the results of a FastProject analysis to a directory structure in `dir_name`
+    """
+
+    fout_js = HtmlViewer.get_output_js_handle(dir_name);
+
+    # Write signatures to file
+    # Assemble signatures into an object, then convert to JSON variable and write
+    sig_dict = {};
+    for sig in signatures:
+        sig_genes = list(sig.sig_dict.keys());
+        sig_values = list(sig.sig_dict.values());
+        sort_i = np.array(sig_values).argsort()[::-1];  # Put positive signatures first
+        sig_genes = [sig_genes[i] for i in sort_i];
+        sig_values = [sig_values[i] for i in sort_i];
+        sig_dict.update({sig.name: {'Genes': sig_genes, 'Signs': sig_values}});
+    fout_js.write(HtmlViewer.toJS_variable("FP_Signatures", sig_dict));
+
+    edata = models["Expression"]["Data"];
+    data_json = dict({
+        'data': edata,
+        'gene_labels': edata.row_labels,
+        'sample_labels': edata.col_labels,
+    });
+    fout_js.write(HtmlViewer.toJS_variable("FP_ExpressionMatrix", data_json));
+
+    write_models(dir_name, models);
+    write_weights(dir_name, models["Expression"]["Data"]);
+
+    # Remove model["Data"] since only the expression data is written for JS
+    #  and it's already written above in FP_ExpressionMatrix
+    for name, model in models.items():
+        model.pop("Data");
+
+    fout_js.write(HtmlViewer.toJS_variable("FP_Models", models));
+
+    fout_js.close();
+    HtmlViewer.copy_html_files(dir_name);
+
+    write_qc_file(dir_name, qc_info);

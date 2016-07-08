@@ -219,57 +219,20 @@ def createOutputDirectories(args):
             dir_name = default_dir_name;
 
     FileIO.make_dirs(dir_name);
-    logging.basicConfig(format='%(asctime)s %(message)s', filename=os.path.join(
-        dir_name, 'fastproject.log'), level=logging.INFO);
-    logging.info("Running FastProject version " + FastProject.__version__);
-    logging.info("Using numpy version " + np.__version__);
-    for key in args.__dict__:
-        logging.info(key + ": " + str(args.__dict__[key]));
+
+    logger = logging.getLogger("FastProject")
+    logger.setLevel(logging.INFO);
+    fh = logging.FileHandler(os.path.join(dir_name, 'fastproject.log'))
+    fh.setFormatter(logging.Formatter('%(asctime)s %(message)s'))
+    logger.addHandler(fh)
+
+    logger.info("Running FastProject version " + FastProject.__version__);
+    logger.info("Using numpy version " + np.__version__);
+
+    for key in args:
+        logger.info(key + ": " + str(args[key]));
 
     return dir_name;
-
-
-def saveResultstoDisk(models, signatures, qc_info, dir_name):
-    """
-    Save the results of a FastProject analysis to a directory structure in `dir_name`
-    """
-
-    fout_js = HtmlViewer.get_output_js_handle(dir_name);
-
-    # Write signatures to file
-    # Assemble signatures into an object, then convert to JSON variable and write
-    sig_dict = {};
-    for sig in signatures:
-        sig_genes = list(sig.sig_dict.keys());
-        sig_values = list(sig.sig_dict.values());
-        sort_i = np.array(sig_values).argsort()[::-1];  # Put positive signatures first
-        sig_genes = [sig_genes[i] for i in sort_i];
-        sig_values = [sig_values[i] for i in sort_i];
-        sig_dict.update({sig.name: {'Genes': sig_genes, 'Signs': sig_values}});
-    fout_js.write(HtmlViewer.toJS_variable("FP_Signatures", sig_dict));
-
-    edata = models["Expression"]["Data"];
-    data_json = dict({
-        'data': edata,
-        'gene_labels': edata.row_labels,
-        'sample_labels': edata.col_labels,
-    });
-    fout_js.write(HtmlViewer.toJS_variable("FP_ExpressionMatrix", data_json));
-
-    FileIO.write_models(dir_name, models);
-    FileIO.write_weights(dir_name, models["Expression"]["Data"]);
-
-    # Remove model["Data"] since only the expression data is written for JS
-    #  and it's already written above in FP_ExpressionMatrix
-    for name, model in models.items():
-        model.pop("Data");
-
-    fout_js.write(HtmlViewer.toJS_variable("FP_Models", models));
-
-    fout_js.close();
-    HtmlViewer.copy_html_files(dir_name);
-
-    FileIO.write_qc_file(dir_name, qc_info);
 
 
 def entry():
@@ -288,7 +251,7 @@ def entry():
         models, qc_info = Pipelines.Analysis(expressionMatrix, signatures, precomputed_signatures,
             housekeeping_genes, input_projections, input_weights, args);
 
-        saveResultstoDisk(models, signatures, qc_info, dir_name);
+        FileIO.saveResultstoDisk(models, signatures, qc_info, dir_name);
     except:
         import traceback;
         import sys;

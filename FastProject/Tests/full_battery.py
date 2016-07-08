@@ -1,7 +1,8 @@
 from __future__ import print_function, division;
 import os;
 from ..Pipelines import Analysis;
-from ..CLI import loadFilesFromDisk, createOutputDirectories, saveResultstoDisk;
+from ..CLI import loadFilesFromDisk, createOutputDirectories;
+from ..FileIO import saveResultstoDisk;
 
 this_directory = os.path.dirname(os.path.abspath(__file__));
 TEST_FILE_DIR = os.path.join(this_directory, "TestFiles");

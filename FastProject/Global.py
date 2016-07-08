@@ -39,6 +39,7 @@ import random;
 # args.threshold = None;
 
 
+logger = logging.getLogger("FastProject");
 def FP_Output(*args):
     """
     Used to have finer control over outputs.
@@ -47,7 +48,7 @@ def FP_Output(*args):
     logmessage = ' '.join([str(a) for a in args]);
     if(logmessage.startswith("\n")):
         logmessage = logmessage[1:];
-    logging.info(logmessage);
+    logger.info(logmessage);
 
 # This section for finding resource files
 # Behavior is different depending on whether or not we are running frozen
