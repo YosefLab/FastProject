@@ -17,31 +17,33 @@ SAMPLE_EXPRESSION_DATA_JSON = """
 """
 
 SAMPLE_SIGNATURE_JSON = """
-{
+[{
     "sig_dict": {"gene1": 1, "gene2": -1, "gene3": 1},
     "signed": true,
     "source": "mysignaturefile.gmt",
     "name": "sample signature"
-}"""
+}]"""
 
 SAMPLE_PRECOMPUTED_SIGNATURE_JSON = """
-{
-    "scores": [3.42, 5.04, 5.00],
-    "name": "sample precomputed",
-    "sample_labels": ["sample1", "sample2", "sample3"],
-    "isFactor": false,
-    "isPrecomputed": true,
-    "numGenes": 0
+{"sample precomputed": {
+        "scores": [3.42, 5.04, 5.00],
+        "name": "sample precomputed",
+        "sample_labels": ["sample1", "sample2", "sample3"],
+        "isFactor": false,
+        "isPrecomputed": true,
+        "numGenes": 0
+    }
 }"""
 
 SAMPLE_PRECOMPUTED_SIGNATURE2_JSON = """
-{
+{"sample precomputed": {
     "scores": ["level1", "level2", "level1"],
     "name": "sample precomputed",
     "sample_labels": ["sample1", "sample2", "sample3"],
     "isFactor": true,
     "isPrecomputed": true,
     "numGenes": 0
+    }
 }"""
 
 
@@ -93,15 +95,18 @@ class TestJsonIO(unittest.TestCase):
 
         testSig = Signature(sig_dict, signed, source, name);
 
-        testJson = jsonIO.signature_to_JSON(testSig);
+        testSigs = [testSig];
 
-        resultSig = jsonIO.JSON_to_Signature(testJson);
+        testJson = jsonIO.signatures_to_JSON(testSigs);
 
-        self.assertEqual(signed, resultSig.signed)
-        self.assertEqual(source, resultSig.source)
-        self.assertEqual(name, resultSig.name)
+        resultSigs = jsonIO.JSON_to_Signatures(testJson);
 
-        self.assertEqual(sig_dict, resultSig.sig_dict);
+        for a, b in zip(testSigs, resultSigs):
+            self.assertEqual(a.signed, b.signed)
+            self.assertEqual(a.source, b.source)
+            self.assertEqual(a.name, b.name)
+
+            self.assertEqual(a.sig_dict, b.sig_dict);
 
     def testJSON_to_SignatureScore_roundTrip(self):
         """
@@ -118,16 +123,21 @@ class TestJsonIO(unittest.TestCase):
         testSigScores = SignatureScores(scores, name, sample_labels,
                 isFactor, isPrecomputed, numGenes);
 
-        testJson = jsonIO.precomputed_signature_to_JSON(testSigScores);
+        testSigScoresDict = {name: testSigScores};
 
-        resultSigScores = jsonIO.JSON_to_SignatureScore(testJson);
+        testJson = jsonIO.precomputed_signatures_to_JSON(testSigScoresDict);
 
-        self.assertEqual(scores, resultSigScores.scores);
-        self.assertEqual(name, resultSigScores.name);
-        self.assertEqual(sample_labels, resultSigScores.sample_labels);
-        self.assertEqual(isFactor, resultSigScores.isFactor);
-        self.assertEqual(isPrecomputed, resultSigScores.isPrecomputed);
-        self.assertEqual(numGenes, resultSigScores.numGenes);
+        resultSigScoresDict = jsonIO.JSON_to_SignatureScores(testJson);
+
+        for key in testSigScoresDict:
+            orig = testSigScoresDict[key];
+            result = resultSigScoresDict[key]
+            self.assertEqual(orig.scores, result.scores);
+            self.assertEqual(orig.name, result.name);
+            self.assertEqual(orig.sample_labels, result.sample_labels);
+            self.assertEqual(orig.isFactor, result.isFactor);
+            self.assertEqual(orig.isPrecomputed, result.isPrecomputed);
+            self.assertEqual(orig.numGenes, result.numGenes);
 
     def testJSON_to_ExpressionData(self):
 
@@ -141,22 +151,25 @@ class TestJsonIO(unittest.TestCase):
 
         json_str = SAMPLE_SIGNATURE_JSON;
 
-        result = jsonIO.JSON_to_Signature(json_str);
+        result = jsonIO.JSON_to_Signatures(json_str);
 
-        self.assertIsInstance(result, Signature);
+        self.assertIsInstance(result, list);
+        self.assertIsInstance(result[0], Signature);
 
     def testJSON_to_SignatureScore(self):
 
         # Test first example str
         json_str = SAMPLE_PRECOMPUTED_SIGNATURE_JSON;
 
-        result = jsonIO.JSON_to_SignatureScore(json_str);
+        result = jsonIO.JSON_to_SignatureScores(json_str);
 
-        self.assertIsInstance(result, SignatureScores);
+        self.assertIsInstance(result, dict);
+        self.assertIsInstance(result.values()[0], SignatureScores);
 
         # Test second example string (for a factor precomputed sig)
         json_str = SAMPLE_PRECOMPUTED_SIGNATURE2_JSON;
 
-        result = jsonIO.JSON_to_SignatureScore(json_str);
+        result = jsonIO.JSON_to_SignatureScores(json_str);
 
-        self.assertIsInstance(result, SignatureScores);
+        self.assertIsInstance(result, dict);
+        self.assertIsInstance(result.values()[0], SignatureScores);
