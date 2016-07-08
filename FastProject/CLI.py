@@ -97,6 +97,8 @@ def parseFPArgs():
 
     args = parser.parse_args();
 
+    args = vars(args);  # Convert to a Dictionary
+
     return args;
 
 
@@ -128,7 +130,7 @@ def loadFilesFromDisk(args):
 
     """
     # Read expression data from file
-    filename = args.data_file;
+    filename = args["data_file"];
 
     if(not os.path.isfile(filename)):
         raise ValueError("\n", filename, "not found.\nExiting...");
@@ -140,8 +142,8 @@ def loadFilesFromDisk(args):
 
     # Load Signature files
     signatures = [];
-    if(args.signatures):
-        for sig_file in args.signatures:
+    if(args["signatures"]):
+        for sig_file in args["signatures"]:
             if(not os.path.isfile(sig_file)):
                 raise ValueError("Option Error: signature file " + sig_file + " not found.\nExiting...");
 
@@ -149,13 +151,13 @@ def loadFilesFromDisk(args):
 
     # Load Precomputed Sig file
     precomputed_signatures = {};
-    if(args.precomputed):
-        for precomputed_sig_file in args.precomputed:
+    if(args["precomputed"]):
+        for precomputed_sig_file in args["precomputed"]:
             if(not os.path.isfile(precomputed_sig_file)):
                 raise ValueError("Option Error: precomputed signature file " + precomputed_sig_file + " not found.\nExiting...");
             precomputed_signatures.update(Signatures.load_precomputed(precomputed_sig_file, cells));
 
-    if(not args.signatures and not args.precomputed):  # Need one or the other here
+    if(not args["signatures"] and not args["precomputed"]):  # Need one or the other here
         raise ValueError(
             "Option Error: Must specify either a signature file or a pre-computed signature file.\nExiting...");
 
@@ -167,8 +169,8 @@ def loadFilesFromDisk(args):
 
     housekeeping_files = list();
 
-    if(args.housekeeping != ""):  # If file specified, use that file
-        housekeeping_files.append(args.housekeeping);
+    if(args["housekeeping"] != ""):  # If file specified, use that file
+        housekeeping_files.append(args["housekeeping"]);
     else:  # Otherwise, use all the files in housekeeping directory
         housekeeping_dir = get_housekeeping_dir();
         files = os.listdir(housekeeping_dir);
@@ -183,13 +185,13 @@ def loadFilesFromDisk(args):
 
     # Load projection coordinates (if provided)
     input_projections = {};
-    if(args.projections):
-        input_projections = FileIO.load_input_projections(args.projections, cells);
+    if(args["projections"]):
+        input_projections = FileIO.load_input_projections(args["projections"], cells);
 
     # Load input weights (if provided)
     input_weights = None;
-    if(args.weights):
-        input_weights = FileIO.load_input_weights(args.weights, genes, cells);
+    if(args["weights"]):
+        input_weights = FileIO.load_input_weights(args["weights"], genes, cells);
 
     return (expressionMatrix, signatures, precomputed_signatures,
             housekeeping_genes, input_projections, input_weights);
@@ -201,8 +203,8 @@ def createOutputDirectories(args):
     """
 
     # Create directory for all outputs
-    if(args.output):
-        dir_name = args.output;
+    if(args["output"]):
+        dir_name = args["output"];
     else:
         default_dir_name = 'FastProject_Output';
         if(os.path.isdir(default_dir_name)):

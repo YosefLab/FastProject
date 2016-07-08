@@ -83,32 +83,32 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
     all_data = expressionMatrix;
     edata = expressionMatrix;
 
-    # if(kwargs.subsample_size > edata.shape[1]):
-    #     kwargs.subsample_size = None;
-    kwargs.subsample_size = None;
+    # if(kwargs["subsample_size"] > edata.shape[1]):
+    #     kwargs["subsample_size"] = None;
+    kwargs["subsample_size"] = None;
 
     holdouts = None;
-    if(kwargs.subsample_size):
-        holdouts, edata = SubSample.split_samples(edata, kwargs.subsample_size);
+    if(kwargs["subsample_size"]):
+        holdouts, edata = SubSample.split_samples(edata, kwargs["subsample_size"]);
 
-    if(kwargs.threshold is None):
+    if(kwargs["threshold"] is None):
         # Default threshold is 20% of samples - post sub-sampling
-        kwargs.threshold = int(0.2 * edata.shape[1]);
+        kwargs["threshold"] = int(0.2 * edata.shape[1]);
 
-    Projections.register_methods(kwargs.lean); # Removes some projection methods if 'lean' is enabled
+    Projections.register_methods(kwargs["lean"]); # Removes some projection methods if 'lean' is enabled
 
     #Hold on to originals so we don't lose data after filtering in case it's needed later
     original_data = edata.copy();
 
     #Filtering
-    edata = Filters.apply_filters(edata, kwargs.threshold, kwargs.nofilter, kwargs.lean);
+    edata = Filters.apply_filters(edata, kwargs["threshold"], kwargs["nofilter"], kwargs["lean"]);
 
     Models = dict();
     emodel = dict({"Data": edata});
     Models.update({"Expression": emodel});
 
     #%% Probability transform
-    if(not kwargs.nomodel):
+    if(not kwargs["nomodel"]):
 
         FP_Output('\nFitting expression data to exp/norm mixture model');
         (pdata, mu_h, mu_l, st_h, Pi) = Transforms.probability_of_expression(edata);
@@ -136,7 +136,7 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
         qc_info = pd.DataFrame({"Score": sample_qc_scores, "Passes": sample_passes_qc}, index=edata.col_labels);
 
         #If specified, remove items that did not pass qc check
-        if(kwargs.qc):
+        if(kwargs["qc"]):
             for name, model in Models.items():
                 dataMatrix = model["Data"];
                 model["Data"] = dataMatrix.subset_samples(sample_passes_qc);
@@ -203,15 +203,15 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
         # Determine normalization method
         if(type(data) is ExpressionData):
 
-            if(kwargs.sig_norm_method == "none"):
+            if(kwargs["sig_norm_method"] == "none"):
                 sig_norm_method = NormalizationMethods.no_normalization;
-            elif(kwargs.sig_norm_method == "znorm_columns"):
+            elif(kwargs["sig_norm_method"] == "znorm_columns"):
                 sig_norm_method = NormalizationMethods.col_normalization;
-            elif(kwargs.sig_norm_method == "znorm_rows"):
+            elif(kwargs["sig_norm_method"] == "znorm_rows"):
                 sig_norm_method = NormalizationMethods.row_normalization;
-            elif(kwargs.sig_norm_method == "znorm_rows_then_columns"):
+            elif(kwargs["sig_norm_method"] == "znorm_rows_then_columns"):
                 sig_norm_method = NormalizationMethods.row_and_col_normalization;
-            elif(kwargs.sig_norm_method == "rank_norm_columns"):
+            elif(kwargs["sig_norm_method"] == "rank_norm_columns"):
                 sig_norm_method = NormalizationMethods.col_rank_normalization;
 
             sig_data = data.get_normalized_copy(sig_norm_method);
@@ -221,13 +221,13 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
 
         # Determine signature score evaluation method
         if(type(data) is ExpressionData):
-            if(kwargs.sig_score_method == "naive"):
+            if(kwargs["sig_score_method"] == "naive"):
                 sig_score_method = SigScoreMethods.naive_eval_signature;
-            elif(kwargs.sig_score_method == "weighted_avg"):
+            elif(kwargs["sig_score_method"] == "weighted_avg"):
                 sig_score_method = SigScoreMethods.weighted_eval_signature;
-            elif(kwargs.sig_score_method == "imputed"):
+            elif(kwargs["sig_score_method"] == "imputed"):
                 sig_score_method = SigScoreMethods.imputed_eval_signature;
-            elif(kwargs.sig_score_method == "only_nonzero"):
+            elif(kwargs["sig_score_method"] == "only_nonzero"):
                 sig_score_method = SigScoreMethods.nonzero_eval_signature;
 
         elif(type(data) is ProbabilityData):
@@ -239,7 +239,7 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
         pbar = ProgressBar(len(signatures));
         for sig in signatures:
             try:
-                sig_scores_dict[sig.name] = sig_score_method(sig_data, sig, zero_locations, kwargs.min_signature_genes);
+                sig_scores_dict[sig.name] = sig_score_method(sig_data, sig, zero_locations, kwargs["min_signature_genes"]);
             except ValueError:  #Only thrown when the signature has no genes in the data
                 pass #Just discard the signature then
             pbar.update();
@@ -250,7 +250,7 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
         random_sig_scores_dict = dict();
         for sig in random_sigs:
             try:
-                random_sig_scores_dict[sig.name] = sig_score_method(sig_data, sig, zero_locations, kwargs.min_signature_genes);
+                random_sig_scores_dict[sig.name] = sig_score_method(sig_data, sig, zero_locations, kwargs["min_signature_genes"]);
             except ValueError:  # Only thrown when the signature has no genes in the data
                 pass  # Just discard the signature then
             pbar.update();
@@ -300,7 +300,7 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
 
 
             #Now do it all again using the principal component data
-            # if(kwargs.pca_filter):
+            # if(kwargs["pca_filter"]):
             #     pcdata = Projections.filter_PCA(pcdata, scores=sample_qc_scores, variance_proportion=0.25);
             # else:
             #     pcdata = Projections.filter_PCA(pcdata, variance_proportion=0.25, min_components = 30);
@@ -344,7 +344,7 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
 
         #Determine a threshold of significance
         #If too many samples, hard limit the number of output signatures to conserve file size
-        if(kwargs.all_sigs): # Keep all sigs if this flag is set
+        if(kwargs["all_sigs"]): # Keep all sigs if this flag is set
             threshold = 1e99; 
         else:
             OUTPUT_SIGNATURE_LIMIT = min(200, signature_significance.size);
@@ -382,7 +382,7 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
 
 
     #Merge all the holdouts back into the model
-    if(kwargs.subsample_size is not None):
+    if(kwargs["subsample_size"] is not None):
         FP_Output("Merging held-out samples back in")
         SubSample.merge_samples(all_data, Models, signatures, prob_params, kwargs);
 

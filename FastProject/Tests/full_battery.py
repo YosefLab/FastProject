@@ -1,6 +1,5 @@
 from __future__ import print_function, division;
 import os;
-from collections import namedtuple;
 from ..Pipelines import Analysis;
 from ..CLI import loadFilesFromDisk, createOutputDirectories, saveResultstoDisk;
 
@@ -9,36 +8,26 @@ TEST_FILE_DIR = os.path.join(this_directory, "TestFiles");
 
 
 def get_default_args():
-    args = namedtuple("defalt_args",  ["data_file",  "housekeeping",
-                                       "signatures",  "precomputed",  "output",
-                                       "nofilter",  "nomodel",  "pca_filter",
-                                       "qc",  "subsample_size",
-                                       "min_signature_genes",  "projections",
-                                       "weights",  "threshold"
-                                       "all_sigs", "debug", "lean",
-                                       "sig_norm_method", "sig_score_method"]);
-
-    # Input Data Files
-    args.data_file = os.path.join(TEST_FILE_DIR, "smallData.txt");
-    args.signatures = [os.path.join(TEST_FILE_DIR, "sigsSmall.gmt")];
-    args.precomputed = [os.path.join(TEST_FILE_DIR, "precomputed_sigs.txt")];
-
-    args.housekeeping = "";
-    args.output = "";
-    args.nofilter = False;
-    args.nomodel = False;
-    args.pca_filter = False;
-    args.qc = False;
-    args.subsample_size = None;
-    args.min_signature_genes = 5;
-    args.projections = [];
-    args.weights = None;
-    args.threshold = None;
-    args.all_sigs = False;
-    args.debug = False;
-    args.lean = False;
-    args.sig_norm_method = "znorm_rows";
-    args.sig_score_method = "weighted_avg";
+    args = {
+        "data_file": os.path.join(TEST_FILE_DIR, "smallData.txt"),
+        "signatures": [os.path.join(TEST_FILE_DIR, "sigsSmall.gmt")],
+        "precomputed": [os.path.join(TEST_FILE_DIR, "precomputed_sigs.txt")],
+        "housekeeping": "",
+        "output": "",
+        "nofilter": False,
+        "nomodel": False,
+        "pca_filter": False,
+        "qc": False,
+        "subsample_size": None,
+        "min_signature_genes": 5,
+        "projections": [],
+        "weights": None,
+        "threshold": None,
+        "all_sigs": False,
+        "debug": False,
+        "lean": False,
+        "sig_norm_method": "znorm_rows",
+        "sig_score_method": "weighted_avg"}
 
     return args;
 
@@ -106,7 +95,7 @@ def test_simple():
 def test_hk():
     args = get_default_args();
 
-    args.housekeeping = os.path.join(TEST_FILE_DIR, "housekeeping.txt");
+    args["housekeeping"] = os.path.join(TEST_FILE_DIR, "housekeeping.txt");
 
     return args;
 
@@ -115,7 +104,7 @@ def test_hk():
 def test_text_sigs():
     args = get_default_args();
 
-    args.signatures = [os.path.join(TEST_FILE_DIR, "sigsA.txt")];
+    args["signatures"] = [os.path.join(TEST_FILE_DIR, "sigsA.txt")];
 
     return args;
 
@@ -124,7 +113,7 @@ def test_text_sigs():
 def test_text_sigsB():
     args = get_default_args();
 
-    args.signatures = [os.path.join(TEST_FILE_DIR, "sigsB.txt")];
+    args["signatures"] = [os.path.join(TEST_FILE_DIR, "sigsB.txt")];
 
     return args;
 
@@ -133,7 +122,7 @@ def test_text_sigsB():
 def test_multi_sigs():
     args = get_default_args();
 
-    args.signatures = [os.path.join(TEST_FILE_DIR, "sigsA.txt"),
+    args["signatures"] = [os.path.join(TEST_FILE_DIR, "sigsA.txt"),
                        os.path.join(TEST_FILE_DIR, "sigsSmall.gmt")];
 
     return args;
@@ -143,7 +132,7 @@ def test_multi_sigs():
 def test_no_precomputed():
     args = get_default_args();
 
-    args.precomputed = [];
+    args["precomputed"] = [];
 
     return args;
 
@@ -152,7 +141,7 @@ def test_no_precomputed():
 def test_no_sigs():
     args = get_default_args();
 
-    args.signatures = [];
+    args["signatures"] = [];
 
     return args;
 
@@ -161,7 +150,7 @@ def test_no_sigs():
 def test_qc():
     args = get_default_args();
 
-    args.qc = True
+    args["qc"] = True
 
     return args;
 
@@ -170,7 +159,7 @@ def test_qc():
 def test_nofilter():
     args = get_default_args();
 
-    args.nofilter = True;
+    args["nofilter"] = True;
 
     return args;
 
@@ -179,7 +168,7 @@ def test_nofilter():
 def test_nomodel():
     args = get_default_args();
 
-    args.nomodel = True;
+    args["nomodel"] = True;
 
     return args;
 
@@ -188,7 +177,7 @@ def test_nomodel():
 def test_pca_filter():
     args = get_default_args();
 
-    args.pca_filter = True
+    args["pca_filter"] = True
 
     return args;
 
@@ -197,7 +186,7 @@ def test_pca_filter():
 def test_weights():
     args = get_default_args();
 
-    args.weights = os.path.join(TEST_FILE_DIR, "weights.txt");
+    args["weights"] = os.path.join(TEST_FILE_DIR, "weights.txt");
 
     return args;
 
@@ -206,7 +195,7 @@ def test_weights():
 def test_projections():
     args = get_default_args();
 
-    args.projections = ["input_projection_good.txt"];
+    args["projections"] = ["input_projection_good.txt"];
 
     return args;
 
@@ -215,7 +204,7 @@ def test_projections():
 def test_many_projections():
     args = get_default_args();
 
-    args.projections = ["input_projection_good.txt",
+    args["projections"] = ["input_projection_good.txt",
         "input_projection_RFormat_ok.txt",
         "input_projection_header_ok.txt",
         "input_projection_header_ok2.txt"];
@@ -227,7 +216,7 @@ def test_many_projections():
 def test_threshold():
     args = get_default_args();
 
-    args.threshold = 10;
+    args["threshold"] = 10;
 
     return args;
 
@@ -236,7 +225,7 @@ def test_threshold():
 def test_all_sigs():
     args = get_default_args();
 
-    args.all_sigs = True;
+    args["all_sigs"] = True;
 
     return args;
 
@@ -245,7 +234,7 @@ def test_all_sigs():
 def test_debug():
     args = get_default_args();
 
-    args.debug = True;
+    args["debug"] = True;
 
     return args;
 
@@ -254,7 +243,7 @@ def test_debug():
 def test_lean():
     args = get_default_args();
 
-    args.lean = True;
+    args["lean"] = True;
 
     return args;
 
@@ -263,7 +252,7 @@ def test_lean():
 def test_sig_norm_method_none():
     args = get_default_args();
 
-    args.sig_norm_method = "none";
+    args["sig_norm_method"] = "none";
 
     return args;
 
@@ -272,7 +261,7 @@ def test_sig_norm_method_none():
 def test_sig_norm_method_znorm_columns():
     args = get_default_args();
 
-    args.sig_norm_method = "znorm_columns";
+    args["sig_norm_method"] = "znorm_columns";
 
     return args;
 
@@ -281,7 +270,7 @@ def test_sig_norm_method_znorm_columns():
 def test_sig_norm_method_znorm_rows():
     args = get_default_args();
 
-    args.sig_norm_method = "znorm_rows";
+    args["sig_norm_method"] = "znorm_rows";
 
     return args;
 
@@ -290,7 +279,7 @@ def test_sig_norm_method_znorm_rows():
 def test_sig_norm_method_znorm_rows_then_columns():
     args = get_default_args();
 
-    args.sig_norm_method = "znorm_rows_then_columns";
+    args["sig_norm_method"] = "znorm_rows_then_columns";
 
     return args;
 
@@ -299,7 +288,7 @@ def test_sig_norm_method_znorm_rows_then_columns():
 def test_sig_norm_method_rank_norm_columns():
     args = get_default_args();
 
-    args.sig_norm_method = "rank_norm_columns";
+    args["sig_norm_method"] = "rank_norm_columns";
 
     return args;
 
@@ -308,7 +297,7 @@ def test_sig_norm_method_rank_norm_columns():
 def test_sig_score_method_naive():
     args = get_default_args();
 
-    args.sig_score_method = "naive";
+    args["sig_score_method"] = "naive";
 
     return args;
 
@@ -317,7 +306,7 @@ def test_sig_score_method_naive():
 def test_sig_score_method_weighted_avg():
     args = get_default_args();
 
-    args.sig_score_method = "weighted_avg";
+    args["sig_score_method"] = "weighted_avg";
 
     return args;
 
@@ -326,7 +315,7 @@ def test_sig_score_method_weighted_avg():
 def test_sig_score_method_imputed():
     args = get_default_args();
 
-    args.sig_score_method = "imputed";
+    args["sig_score_method"] = "imputed";
 
     return args;
 
@@ -335,7 +324,7 @@ def test_sig_score_method_imputed():
 def test_sig_score_method_only_nonzero():
     args = get_default_args();
 
-    args.sig_score_method = "only_nonzero";
+    args["sig_score_method"] = "only_nonzero";
 
     return args;
 
@@ -344,7 +333,7 @@ def test_sig_score_method_only_nonzero():
 def test_output():
     args = get_default_args();
 
-    args.output = "outfolder";
+    args["output"] = "outfolder";
 
     return args;
 
