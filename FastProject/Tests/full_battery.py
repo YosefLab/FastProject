@@ -44,9 +44,9 @@ def test(func):
                 fout.write("Errors Found During Test: " + func.__name__ + "\n");
                 print("Errors Found During Test: " + func.__name__ + "\n");
                 fout.write("  ARG DUMP:\n");
-                for key in dir(args):
-                    if not key.startswith("_"):
-                        fout.write("    " + key + ": " + str(getattr(args, key)) + "\n");
+                for key in args:
+                        fout.write("    " + key + ": " + str(args[key]) + "\n");
+
                 import traceback
                 fout.write("  EXCEPTION:")
                 for line in traceback.format_exc().splitlines():
@@ -196,7 +196,7 @@ def test_weights():
 def test_projections():
     args = get_default_args();
 
-    args["projections"] = ["input_projection_good.txt"];
+    args["projections"] = [os.path.join(TEST_FILE_DIR, "input_projection_good.txt")];
 
     return args;
 
@@ -205,10 +205,12 @@ def test_projections():
 def test_many_projections():
     args = get_default_args();
 
-    args["projections"] = ["input_projection_good.txt",
+    projection_files = ["input_projection_good.txt",
         "input_projection_RFormat_ok.txt",
         "input_projection_header_ok.txt",
         "input_projection_header_ok2.txt"];
+
+    args["projections"] = [os.path.join(TEST_FILE_DIR, x) for x in projection_files];
 
     return args;
 

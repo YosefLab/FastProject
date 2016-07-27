@@ -198,7 +198,7 @@ def quality_check(params):
     
     MAD = np.median(abs_dev);
     
-    sample_passes = int_val > (int_val_med - 1.6*MAD);
+    sample_passes = int_val >= (int_val_med - 1.6*MAD);
 
     sample_score = int_val;
     

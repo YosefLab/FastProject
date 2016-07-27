@@ -121,7 +121,7 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
         if(input_weights is None):
             weights = Transforms.compute_weights(fit_func, params, edata);
         else:
-            weights = input_weights.loc[edata.row_labels, edata.col_labels];
+            weights = input_weights.loc[edata.row_labels, edata.col_labels].values;
 
         pdata = Transforms.adjust_pdata(pdata, weights);
 
@@ -145,6 +145,7 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
     else:
         sample_qc_scores = None;
         prob_params = None;
+        qc_info = pd.DataFrame(0.0, columns=["Score", "Passes"], index=edata.col_labels);
 
     # Necessary because the matrix might be modified when data failing qc is removed
     edata = Models["Expression"]["Data"];
