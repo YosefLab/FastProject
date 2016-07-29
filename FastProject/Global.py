@@ -7,7 +7,6 @@ and resource locations.
 """
 from __future__ import absolute_import, print_function, division;
 import logging;
-from collections import namedtuple;
 import sys
 import os
 import random;
@@ -17,29 +16,30 @@ import random;
 # However, by putting defaults here, it makes it easier to
 #    call FastProject from within other scripts
 # These should be kept in sync with arguments in __main__.py
-args = namedtuple("defalt_args",  ["data_file",  "housekeeping",
-                                   "signatures",  "precomputed",  "output",
-                                   "nofilter",  "nomodel",  "pca_filter",
-                                   "qc",  "subsample_size",
-                                   "min_signature_genes",  "projections",
-                                   "weights",  "threshold"]);
+# args = namedtuple("defalt_args",  ["data_file",  "housekeeping",
+#                                    "signatures",  "precomputed",  "output",
+#                                    "nofilter",  "nomodel",  "pca_filter",
+#                                    "qc",  "subsample_size",
+#                                    "min_signature_genes",  "projections",
+#                                    "weights",  "threshold"]);
+# 
+# args.data_file = "";
+# args.housekeeping = "";
+# args.signatures = [];
+# args.precomputed = [];
+# args.output = "";
+# args.nofilter = False;
+# args.nomodel = False;
+# args.pca_filter = False;
+# args.qc = False;
+# args.subsample_size = None;
+# args.min_signature_genes = 5;
+# args.projections = [];
+# args.weights = "";
+# args.threshold = None;
 
-args.data_file = "";
-args.housekeeping = "";
-args.signatures = [];
-args.precomputed = [];
-args.output = "";
-args.nofilter = False;
-args.nomodel = False;
-args.pca_filter = False;
-args.qc = False;
-args.subsample_size = None;
-args.min_signature_genes = 5;
-args.projections = [];
-args.weights = "";
-args.threshold = None;
 
-
+logger = logging.getLogger("FastProject");
 def FP_Output(*args):
     """
     Used to have finer control over outputs.
@@ -48,7 +48,7 @@ def FP_Output(*args):
     logmessage = ' '.join([str(a) for a in args]);
     if(logmessage.startswith("\n")):
         logmessage = logmessage[1:];
-    logging.info(logmessage);
+    logger.info(logmessage);
 
 # This section for finding resource files
 # Behavior is different depending on whether or not we are running frozen

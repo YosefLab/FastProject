@@ -17,108 +17,29 @@ from sklearn.manifold import SpectralEmbedding
 from sklearn.cluster import MiniBatchKMeans
 from scipy.stats import norm;
 import scipy.stats;
-import pandas as pd;
-from pandas.parser import CParserError;
-import os;
 
 from .Utils import ProgressBar;
 from .DataTypes import PCData;
-from .Global import args, FP_Output, RANDOM_SEED;
+from .Global import FP_Output, RANDOM_SEED;
 
 import numpy as np;
 
-# Input projection coordinates are read once (at start) and cached here
-# Variable stores a list of pandas.DataFrame objects
-_input_projections = dict();
-def load_input_projections(sample_names):
-    """
-    Loads input projection coordinates into module variable _input_projections
 
-    :param sample_names: List of sample names.  Used to validate input
-    :return: None
-    """
-    global _input_projections;
-
-    sample_names_norm = [x.upper() for x in sample_names];
-
-    if(args.projections):
-        for projection_file in args.projections:
-            if(not os.path.isfile(projection_file)):
-                raise ValueError("Option Error: projection file " + projection_file + " not found.");
-
-            try:
-                loaded_coords = pd.read_table(projection_file, header=None);
-            except CParserError:
-                # if Header row has 2 entries and rest has 3, get this error
-                # Try to load data anyway and rework it back into the correct initial format
-                loaded_coords = pd.read_table(projection_file);
-                loaded_coords = pd.DataFrame({0: loaded_coords.index,
-                                              1: loaded_coords.iloc[:,0].values,
-                                              2: loaded_coords.iloc[:,1].values},
-                                             index=np.arange(loaded_coords.shape[0]));
-
-
-            # Verify the file
-            # Check for 3 columns
-            if(loaded_coords.shape[1] != 3):
-                raise ValueError("Format Error: projection file " + projection_file +
-                                 " should have 3 columns (sample name, x coordinate, y coordinate).");
-
-            # Fix in case header was included with first cell empty
-            if(pd.isnull(loaded_coords.iloc[0,0])):
-                loaded_coords.iloc[0,0] = "_____"; #Dummy value, won't match gene
-
-            # Normalize names to upper-case temporarily
-            loaded_coords[0] = [x.upper() for x in loaded_coords[0]];
-
-            # Did they accidentally include a heading?
-            if(loaded_coords.iloc[0,0] not in sample_names_norm):
-                loaded_coords = loaded_coords.drop(loaded_coords.index[0], axis='index'); # drop first row
-
-            # Check for duplicate names
-            if(loaded_coords[0].duplicated().any()):
-                duplicated_names = loaded_coords.loc[loaded_coords[0].duplicated(),0].values;
-                raise ValueError("Format Error: projection file " + projection_file +
-                                 " contains duplicate sample names:\n" + "\n".join(duplicated_names));
-
-            # Set as the index
-            loaded_coords = loaded_coords.set_index(0);
-
-            # Check that all data matrix sample names are in the projection file
-            not_matched = np.array([x not in loaded_coords.index for x in sample_names_norm]);
-            if(not_matched.any()):
-                missing_samples = [sample_names[i] for i in np.nonzero(not_matched)[0]];
-                raise ValueError("Format Error: projection file " + projection_file +
-                                 " missing entries for:\n" + "\n".join(missing_samples));
-
-            # If we got here, it's safe to re-order the file
-            loaded_coords = loaded_coords.loc[sample_names_norm,:];
-            loaded_coords.index = sample_names;  # Restore original case
-            loaded_coords["X"] = loaded_coords[1];
-            loaded_coords["Y"] = loaded_coords[2];
-            loaded_coords = loaded_coords.drop(1, axis="columns").drop(2, axis="columns");
-
-            # Check for null values and throw error
-            if(loaded_coords.isnull().any().any()):
-                bad_rows = loaded_coords.index[loaded_coords.isnull().any(axis=1)];
-                raise ValueError("Format Error: projection file " + projection_file +
-                                 " contains NaNs for samples:\n" + "\n".join(bad_rows));
-
-            proj_name = os.path.splitext(projection_file)[0];
-            _input_projections.update({proj_name: loaded_coords});
-
-
-def generate_projections(data, filter_name = None):
+def generate_projections(data, filter_name=None, input_projections=None):
     """
     Projects data into 2 dimensions using a variety of linear and non-linear methods
-    
+
     Parameters
     ----------
-    data : (Num_Features x Num_Samples) numpy.ndarray 
+    data : (Num_Features x Num_Samples) numpy.ndarray
         Matrix containing data to project into 2 dimensions
     filter_name : String
         Filter to apply to the signatures.  Should match a filter in data.filters
         If not specified, no filtering is applied.
+    input_projections : dict
+        Keys are of type str, representing projection names
+        Values are of type 2xN pandas.DataFrame with column names matching
+        sample names in `expressionMatrix`
 
     Returns
     -------
@@ -130,6 +51,8 @@ def generate_projections(data, filter_name = None):
         Weighted PCA of the original data object
 
     """
+    if(input_projections is None):
+        input_projections = {}
 
     IS_PCDATA = type(data) is PCData;
     if(IS_PCDATA):
@@ -169,7 +92,7 @@ def generate_projections(data, filter_name = None):
 
     # Input projections
     # Load any projections that were supplied as an input file
-    projections.update(apply_input_projections(data.col_labels));
+    projections.update(apply_input_projections(input_projections, data.col_labels));
     
 
     #Normalize projections
@@ -378,18 +301,30 @@ def define_clusters(projections):
 
     return out_clusters;
 
-def apply_input_projections(sample_names):
+
+def apply_input_projections(input_projections, sample_names):
     """
     Returns projection coordinates supplied as file input when running FastProject
 
-    :param sample_names: Labels for samples used to subset/order the coordinates
-    :return: dict or proj_name(string) -> coordinates(numpy.ndarray size n_samples x 2)
+    Parameters
+    ----------
+    input_projections : dict
+        Keys are of type str, representing projection names
+        Values are of type 2xN pandas.DataFrame with column names matching
+        sample names in `expressionMatrix`
+    sample_names : list of str
+        Labels for samples used to subset/order the coordinates
+
+    Returns
+    -------
+    dict
+        proj_name(string) -> coordinates(numpy.ndarray size n_samples x 2)
     """
 
     output = dict()
-    for proj_name in _input_projections:
-        coordinates = _input_projections[proj_name];
-        coordinates = coordinates.loc[sample_names,:];
+    for proj_name in input_projections:
+        coordinates = input_projections[proj_name];
+        coordinates = coordinates.loc[sample_names, :];
         output.update({proj_name:
                        coordinates.values});
 
@@ -562,26 +497,33 @@ def apply_spectral_embedding(proj_data, proj_weights=None):
 # Add New Methods Here
 
 # Register methods
+# Methods to apply to normalized data
 _proj_methods = dict();
-
-_proj_methods['ICA'] = apply_ICA;
-
-if(not args.lean):  # These methods don't scale well.  Don't include when `lean` is set
-    _proj_methods['Spectral Embedding'] = apply_spectral_embedding;
-    _proj_methods['MDS'] = apply_MDS;
-
-_proj_methods['RBF Kernel PCA'] = apply_rbf_PCA;
-_proj_methods['ISOMap'] = apply_ISOMap;
-_proj_methods['tSNE30'] = apply_tSNE30;
-_proj_methods['tSNE10'] = apply_tSNE10;
 
 # Methods to apply to data that has already been filtered with PCA
 _proj_methods_pca = dict();
 
-_proj_methods_pca['ISOMap'] = apply_ISOMap;
-_proj_methods_pca['tSNE30'] = apply_tSNE30;
-_proj_methods_pca['tSNE10'] = apply_tSNE10;
 
-if(not args.lean):
-    _proj_methods_pca['Spectral Embedding'] = apply_spectral_embedding;
-    _proj_methods_pca['MDS'] = apply_MDS;
+def register_methods(lean=False):
+    global _proj_methods, _proj_methods_pca;
+
+    _proj_methods['ICA'] = apply_ICA;
+
+    if(not lean):  # These methods don't scale well.  Don't include when `lean` is set
+        _proj_methods['Spectral Embedding'] = apply_spectral_embedding;
+        _proj_methods['MDS'] = apply_MDS;
+
+    _proj_methods['RBF Kernel PCA'] = apply_rbf_PCA;
+    _proj_methods['ISOMap'] = apply_ISOMap;
+    _proj_methods['tSNE30'] = apply_tSNE30;
+    _proj_methods['tSNE10'] = apply_tSNE10;
+
+    _proj_methods_pca['ISOMap'] = apply_ISOMap;
+    _proj_methods_pca['tSNE30'] = apply_tSNE30;
+    _proj_methods_pca['tSNE10'] = apply_tSNE10;
+
+    if(not lean):
+        _proj_methods_pca['Spectral Embedding'] = apply_spectral_embedding;
+        _proj_methods_pca['MDS'] = apply_MDS;
+
+register_methods();

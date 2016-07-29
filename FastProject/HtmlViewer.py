@@ -54,7 +54,7 @@ def toJS(obj, level=0):
     else:
         return obj.to_JSON();
 
-    if(type(obj) is str):
+    if(type(obj) is str or type(obj) is unicode):
         return '"' + obj + '"';
     if(type(obj) is int or type(obj) is float or isinstance(obj, np.number)):
         return str(obj);
@@ -69,7 +69,7 @@ def toJS(obj, level=0):
         pairs = list();
         indentation = "".join(["\t"]*(level+1));
         for key in obj:
-            if(type(key) is str or type(key) is int or type(key) is float):
+            if(type(key) is str or type(key) is int or type(key) is float or type(key) is unicode):
                 pairs.append("\n"+indentation+toJS(key, level+1)+':'+toJS(obj[key], level+1));
             else:
                 raise ValueError("Non-compatible Value Encountered for Object Key:", type(key));

@@ -10,7 +10,7 @@ from . import Signatures;
 from . import Projections;
 from . import Transforms;
 from .DataTypes import ProbabilityData, ExpressionData;
-from .Global import args, FP_Output, RANDOM_SEED;
+from .Global import FP_Output, RANDOM_SEED;
 from scipy.spatial.distance import cdist;
 import numpy as np;
 
@@ -24,7 +24,7 @@ def split_samples(data, subsample_size):
 
     return holdouts, subset;
 
-def merge_samples(all_data, Models, sigs, prob_params):
+def merge_samples(all_data, Models, sigs, prob_params, args):
     #Remove genes that aren't in the Expression data set
 
     edata = Models["Expression"]["Data"];
@@ -36,7 +36,7 @@ def merge_samples(all_data, Models, sigs, prob_params):
     #First need to recompute prob info
     #TODO:  Ensure order of genes is the same as the ordering in mu, st, etc
     #M Step of EM Algorithm
-    if(not args.nomodel):
+    if(not args["nomodel"]):
         FP_Output("Extending probability model to holdouts");
         (mu_h, mu_l, st_h, Pi) = prob_params;
         zmat = edata_all.base;
@@ -52,7 +52,7 @@ def merge_samples(all_data, Models, sigs, prob_params):
 
         gamma = (Pi * p_high) / ( ((1-Pi)*p_low) + (Pi*p_high));
         pdata_all = Transforms.make_monotonic(gamma, zmat);
-        (fit_func, params) = Transforms.create_false_neg_map(edata_all, args.housekeeping);
+        (fit_func, params) = Transforms.create_false_neg_map(edata_all, args["housekeeping"]);
         (pdata_all, fn_prob) = Transforms.correct_for_fn(pdata_all, mu_h, fit_func, params);
         fn_prob[edata_all > 0] = 0;
 
@@ -68,7 +68,7 @@ def merge_samples(all_data, Models, sigs, prob_params):
         sample_passes_qc = np.array([i for i,x in enumerate(edata_all.col_labels) if x in sample_passes_labels]);
 
         #If specified, remove items that did not pass qc check
-        if(args.qc):
+        if(args["qc"]):
                 edata_all = edata_all.subset_samples(sample_passes_qc);
                 pdata_all = pdata_all.subset_samples(sample_passes_qc);
 
@@ -86,7 +86,7 @@ def merge_samples(all_data, Models, sigs, prob_params):
     holdout_data = all_data.subset_samples(holdout_indices);
     model["Holdout_Data"] = holdout_data;
 
-    if(not args.nomodel):
+    if(not args["nomodel"]):
         model = Models["Probability"];
         sub_data = model["Data"];
         all_data = pdata_all;
@@ -118,7 +118,7 @@ def merge_samples(all_data, Models, sigs, prob_params):
 
     #Then merge back in data
     FP_Output("Merging holdout data matrices back into sub-sample");
-    if(not args.nomodel):
+    if(not args["nomodel"]):
         model = Models["Probability"];
         merge_pdata = model["Data"].merge_data(model["Holdout_Data"]);
         merge_edata = merge_pdata.expression_data;
@@ -156,13 +156,13 @@ def merge_samples(all_data, Models, sigs, prob_params):
                 pbar.update();
         pbar.complete();
 
-        if(args.precomputed):
-            for precomputed_file in args.precomputed:
+        if(args["precomputed"]):
+            for precomputed_file in args["precomputed"]:
                 precomputed_sig_scores = Signatures.load_precomputed(precomputed_file, data.col_labels);
                 sig_scores_dict.update(precomputed_sig_scores);
 
         #Adds in quality score as a pre-computed signature
-        if(not args.nomodel):
+        if(not args["nomodel"]):
             sig_scores_dict["FP_Quality"] = Signatures.SignatureScores(sample_qc_scores,"FP_Quality",data.col_labels,isFactor=False, isPrecomputed=True);
 
         model["signatureScores"] = sig_scores_dict;

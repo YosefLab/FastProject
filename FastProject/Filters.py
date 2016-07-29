@@ -10,10 +10,10 @@ from __future__ import absolute_import, print_function, division;
 
 import numpy as np
 from . import Utils
-from .Global import args, FP_Output;
+from .Global import FP_Output;
 
 
-def apply_filters(data):
+def apply_filters(data, threshold, nofilter, lean):
     """Applies filters to the ExpressionData object
     May remove rows.
     Populates the data.filters field
@@ -22,6 +22,13 @@ def apply_filters(data):
     ----------
     data : DataTypes.ExpressionData
         Data object to be filtered
+    threshold : int
+        Minimum number of samples gene must be detected in to pass
+    nofilter : boolean
+        if true, Only filter rows that have all identical values
+    lean : boolean
+        if true, skip extra filter methods (HDT, Fano)
+
 
     Returns
     -------
@@ -30,7 +37,7 @@ def apply_filters(data):
 
     """
 
-    if(args.nofilter):
+    if(nofilter):
         filter_dict = {};
         data = filter_genes_novar(data);
 
@@ -41,13 +48,13 @@ def apply_filters(data):
 
     else:
         filter_dict = {};
-        data = filter_genes_threshold(data, args.threshold);
+        data = filter_genes_threshold(data, threshold);
 
         filter_dict.update({
             'Threshold': set(data.row_labels),
         });
 
-        if(not args.lean):
+        if(not lean):
             for name, method in _filter_methods.items():
                 FP_Output("Applying filter method:", name);
 
