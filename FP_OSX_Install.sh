@@ -85,7 +85,7 @@ END
 
 # Install Conda Dependencies
 if [[ $CondaDeps ]]; then
-    conda install $CondaDeps -y
+    conda install $CondaDeps -y -c defaults --override-channels
 fi
 
 # Install Package from PyPi

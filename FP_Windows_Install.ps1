@@ -60,7 +60,7 @@ python -c $site_program
 if(Test-Path variable:CondaDeps)
 {
     Write-Host "Installing Conda dependencies...`n"
-    conda install $CondaDeps -y
+    conda install $CondaDeps -y -c defaults --override-channels
 }
 
 if(Test-Path variable:PyPiPackage)
