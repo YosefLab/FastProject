@@ -330,7 +330,9 @@ def sigs_vs_projections(projections, sig_scores_dict, random_sig_scores_dict, NE
     sp_col_labels = list(projections.keys());
     sp_col_labels.sort();
 
-    N_SAMPLES = len(sig_scores_dict[sig_scores_dict.keys()[0]].sample_labels);
+    N_SAMPLES = len(sig_scores_dict[
+        list(sig_scores_dict.keys())[0]
+    ].sample_labels)
     N_SIGNATURES = len(sp_row_labels);
     N_SIGNATURES_FACTORS = len(sp_row_labels_factors);
     N_SIGNATURES_PNUM = len(sp_row_labels_pnum);
