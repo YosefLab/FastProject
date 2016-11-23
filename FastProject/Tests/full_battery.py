@@ -1,5 +1,6 @@
 from __future__ import print_function, division;
 import os;
+import logging;
 from ..Pipelines import Analysis;
 from ..CLI import loadFilesFromDisk, createOutputDirectories;
 from ..FileIO import saveResultstoDisk;
@@ -61,11 +62,11 @@ def test(func):
 
 def run_test(args):
 
+    dir_name = createOutputDirectories(args);  # Needs to be created first so logging can write here
+
     (expressionMatrix, signatures, precomputed_signatures,
      housekeeping_genes, input_projections,
      input_weights) = loadFilesFromDisk(args);
-
-    dir_name = createOutputDirectories(args);  # Needs to be created first so logging can write here
 
     models, qc_info = Analysis(expressionMatrix, signatures, precomputed_signatures,
         housekeeping_genes, input_projections, input_weights, args);
@@ -75,6 +76,13 @@ def run_test(args):
     # Cleanup
     import shutil
     import time
+
+    # Close logger
+    logger = logging.getLogger("FastProject")
+    for handler in logger.handlers:
+        handler.close()
+        logger.removeHandler(handler)
+
     for x in range(10):  # Solution to Dropbox locking files.
         try:
             shutil.rmtree(dir_name);

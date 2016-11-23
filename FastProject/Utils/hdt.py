@@ -78,10 +78,10 @@ def DipTest(xpdf):
     """
     x=np.sort(xpdf)
     N=x.shape[0]
-    mn=np.zeros(x.shape,dtype=x.dtype)
-    mj=np.zeros(x.shape,dtype=x.dtype)
-    lcm=np.zeros(x.shape,dtype=x.dtype)
-    gcm=np.zeros(x.shape)
+    mn=np.zeros(x.shape, dtype='int')
+    mj=np.zeros(x.shape, dtype='int')
+    lcm=np.zeros(x.shape, dtype='int')
+    gcm=np.zeros(x.shape, dtype='int')
     ifault=False
     
     #Check that N is positive
@@ -135,7 +135,7 @@ def DipTest(xpdf):
 
     # establish the indices over which combination is necessary 
     # for the convex minorant fit
-    mn[0]=1.
+    mn[0]=1
     for j in range(2,N+1):
         mn[j-1]=j-1
         

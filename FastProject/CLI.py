@@ -259,7 +259,7 @@ def entry():
 
         tb_type, value, tb = sys.exc_info();
 
-        if(args.debug):
+        if(args["debug"]):
             import pdb;
             pdb.post_mortem(tb);
 

@@ -8,7 +8,7 @@ $InstallDir="FastProject"
 
 # Dependencies installed by Conda
 # Commend out the next line if no Conda dependencies
-$CondaDeps="numpy","scipy","scikit-learn","pandas"
+$CondaDeps="numpy=1.11","scipy=0.18","scikit-learn=0.18","pandas=0.19"
 
 # Dependencies installed with pip instead
 # Comment out the next line if no PyPi dependencies
@@ -60,7 +60,7 @@ python -c $site_program
 if(Test-Path variable:CondaDeps)
 {
     Write-Host "Installing Conda dependencies...`n"
-    conda install $CondaDeps -y
+    conda install $CondaDeps -y -c defaults --override-channels
 }
 
 if(Test-Path variable:PyPiPackage)
