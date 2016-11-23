@@ -373,6 +373,8 @@ def permutation_wPCA(data, weights, components=50, p_threshold=0.05, verbose=Fal
     mu = bg_vals.mean(axis=0);
     sigma = bg_vals.std(axis=0);
 
+    sigma[sigma == 0] = 1.0
+
     p_vals = norm.sf((e_val - mu) / sigma);
     threshold_component_i = np.nonzero(p_vals > p_threshold)[0]
     if(threshold_component_i.size == 0):  # True if ALL PCs deemed significant

@@ -289,6 +289,8 @@ def compute_weights(fit_func, params, data):
 
     pe[np.isnan(pe)] == 1.0;  # Set to 1 if all expressed
 
+    pnd[pnd == 0] = 1.0 / data.shape[1] # For stability
+
     pne_nd = 1 - (1 - pd_e) * pe / pnd;
 
     pne_nd[pne_nd < 0] = 0.0;
