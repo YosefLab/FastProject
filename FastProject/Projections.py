@@ -7,7 +7,6 @@ projections from the higher-dimensional data objects
 """
 from __future__ import absolute_import, print_function, division;
 from sklearn.decomposition import PCA
-from sklearn.decomposition import RandomizedPCA
 from sklearn.decomposition import FastICA
 from sklearn.decomposition import KernelPCA
 from sklearn.manifold import TSNE;
@@ -193,7 +192,8 @@ def perform_weighted_PCA(data, weights, max_components=200):
 
     wcov = np.dot(weighted_data_centered, weighted_data_centered.T) / np.dot(weights,weights.T);
     wcov[np.isnan(wcov)] = 0.0;  # Need this when weight dot product is zero
-    model = RandomizedPCA(n_components=min(proj_data.shape[0], proj_data.shape[1], max_components));
+
+    model = PCA(n_components=min(proj_data.shape[0], proj_data.shape[1], max_components), svd_solver='randomized');
     model.fit(wcov);
     e_vec = model.components_;
 
