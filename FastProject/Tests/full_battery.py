@@ -1,5 +1,6 @@
 from __future__ import print_function, division;
 import os;
+import logging;
 from ..Pipelines import Analysis;
 from ..CLI import loadFilesFromDisk, createOutputDirectories;
 from ..FileIO import saveResultstoDisk;
@@ -75,6 +76,12 @@ def run_test(args):
     # Cleanup
     import shutil
     import time
+
+    # Close logger
+    logger = logging.getLogger("FastProject")
+    for handler in logger.handlers:
+        handler.close()
+
     for x in range(10):  # Solution to Dropbox locking files.
         try:
             shutil.rmtree(dir_name);
