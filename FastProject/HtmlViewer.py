@@ -4,8 +4,14 @@
 """
 import shutil;
 import os;
+import sys
 import numpy as np;
 from .Global import get_viewer_resource_dir;
+
+if sys.version_info.major == 2:
+    STR_TYPES = (str,unicode)
+else:
+    STR_TYPES = (str,)
 
 
 RESOURCE_DIR = get_viewer_resource_dir();
@@ -54,7 +60,7 @@ def toJS(obj, level=0):
     else:
         return obj.to_JSON();
 
-    if(type(obj) is str or type(obj) is unicode):
+    if(isinstance(obj, STR_TYPES)):
         return '"' + obj + '"';
     if(type(obj) is int or type(obj) is float or isinstance(obj, np.number)):
         return str(obj);
@@ -69,7 +75,7 @@ def toJS(obj, level=0):
         pairs = list();
         indentation = "".join(["\t"]*(level+1));
         for key in obj:
-            if(type(key) is str or type(key) is int or type(key) is float or type(key) is unicode):
+            if(isinstance(key, STR_TYPES) or type(key) is int or type(key) is float):
                 pairs.append("\n"+indentation+toJS(key, level+1)+':'+toJS(obj[key], level+1));
             else:
                 raise ValueError("Non-compatible Value Encountered for Object Key:", type(key));
