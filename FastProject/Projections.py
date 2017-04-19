@@ -190,8 +190,10 @@ def perform_weighted_PCA(data, weights, max_components=200):
     data_centered = proj_data - wmean;
     weighted_data_centered = data_centered * weights;
 
-    wcov = np.dot(weighted_data_centered, weighted_data_centered.T) / np.dot(weights,weights.T);
-    wcov[np.isnan(wcov)] = 0.0;  # Need this when weight dot product is zero
+    denom = np.dot(weights,weights.T)
+    denom[denom == 0] = 1.0 # Avoid 0/0 : just make it 0/1
+
+    wcov = np.dot(weighted_data_centered, weighted_data_centered.T) / denom
 
     model = PCA(n_components=min(proj_data.shape[0], proj_data.shape[1], max_components), svd_solver='randomized');
     model.fit(wcov);
@@ -385,13 +387,13 @@ def permutation_wPCA(data, weights, components=50, p_threshold=0.05, verbose=Fal
     if(verbose):
         FP_Output("Permutation test on wPCA: ", str(threshold_component), " components retained.");
 
-    if(threshold_component < 5):
+    if(threshold_component < 5 and verbose):
         FP_Output("Less than 5 components identified as significant.  Preserving top 5.");
         threshold_component = 5;
 
     wpca_data = wpca_data[0:threshold_component, :];
     e_val = e_val[0:threshold_component];
-    e_vec = e_vec[0:threshold_component, :];
+    e_vec = e_vec[:, 0:threshold_component];
 
 
     if(debug):
