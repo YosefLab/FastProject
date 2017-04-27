@@ -20,6 +20,7 @@ import scipy.stats;
 from .Utils import ProgressBar;
 from .DataTypes import PCData;
 from .Global import FP_Output, RANDOM_SEED;
+from . import _tsne_fix
 
 import numpy as np;
 
@@ -449,7 +450,7 @@ def apply_ICA(proj_data, proj_weights=None):
 # tSNE
 def apply_tSNE10(proj_data, proj_weights=None):
     model = TSNE(n_components=2, perplexity=10.0, metric="euclidean",
-                 learning_rate=100, early_exaggeration=4.0,
+                 learning_rate=200, early_exaggeration=4.0,
                  random_state=RANDOM_SEED);
     norm_data = normalize_columns(proj_data);
     result = model.fit_transform(norm_data.T);
@@ -459,7 +460,7 @@ def apply_tSNE10(proj_data, proj_weights=None):
 # tSNE
 def apply_tSNE30(proj_data, proj_weights=None):
     model = TSNE(n_components=2, perplexity=30.0, metric="euclidean",
-                 learning_rate=100, early_exaggeration=4.0,
+                 learning_rate=200, early_exaggeration=4.0,
                  random_state=RANDOM_SEED);
     norm_data = normalize_columns(proj_data);
     result = model.fit_transform(norm_data.T);

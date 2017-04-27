@@ -17,7 +17,7 @@ setup(
     entry_points={'console_scripts': ['fastproject = FastProject.CLI:entry']},
 
     install_requires=['numpy>=1.11', 'scipy>=0.18.0',
-                      'scikit-learn>=0.18.0', 'pandas>=0.19.0'],
+                      'scikit-learn>=0.18.1', 'pandas>=0.19.0'],
 
     include_package_data=True,
 

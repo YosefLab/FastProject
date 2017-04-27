@@ -8,7 +8,7 @@ $InstallDir="FastProject"
 
 # Dependencies installed by Conda
 # Commend out the next line if no Conda dependencies
-$CondaDeps="numpy=1.11","scipy=0.18","scikit-learn=0.18","pandas=0.19"
+$CondaDeps="numpy=1.11","scipy=0.18","scikit-learn=0.18.1","pandas=0.19"
 
 # Dependencies installed with pip instead
 # Comment out the next line if no PyPi dependencies
