@@ -19,7 +19,7 @@ from . import Signatures;
 from . import Pipelines;
 from . import HtmlViewer;
 from .DataTypes import ExpressionData;
-from .Global import FP_Output, get_housekeeping_dir;
+from .Global import FP_Output
 import FastProject
 
 
@@ -166,22 +166,7 @@ def loadFilesFromDisk(args):
             "Option Error: Must specify either a signature file or a pre-computed signature file.\nExiting...");
 
     # Load housekeeping genes
-
-    housekeeping_files = list();
-
-    if(args["housekeeping"] != ""):  # If file specified, use that file
-        housekeeping_files.append(args["housekeeping"]);
-    else:  # Otherwise, use all the files in housekeeping directory
-        housekeeping_dir = get_housekeeping_dir();
-        files = os.listdir(housekeeping_dir);
-        for ff in files:
-            housekeeping_files.append(os.path.join(housekeeping_dir, ff));
-
-    housekeeping_genes = list();
-    for hkf in housekeeping_files:
-        with open(hkf, 'rU') as fin:
-            for line in fin.readlines():
-                housekeeping_genes.append(line.strip().lower());
+    housekeeping_genes = FileIO.load_housekeeping_genes(args["housekeeping"])
 
     # Load projection coordinates (if provided)
     input_projections = {};

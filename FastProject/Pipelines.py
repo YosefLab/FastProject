@@ -370,9 +370,12 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
                 keep_sig.update({name: True});
 
         #Remove values in the model's signatureScores dict
+        new_signatureScores = {}
         for name, sig_score in signatureScores.items():
-            if(keep_sig[name] == False):
-                signatureScores.pop(name);
+            if(keep_sig[name] == True):
+                new_signatureScores[name] = sig_score
+
+        signatureScores = new_signatureScores
 
         #Remove values in each filters sigProjMatrix and the sigProjMatrix keys
         for projData in model['projectionData']:

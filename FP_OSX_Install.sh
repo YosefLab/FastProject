@@ -9,7 +9,7 @@ InstallDir="FastProject"
 
 # Dependencies installed by Conda
 # Comment out the next line if no Conda dependencies
-CondaDeps="numpy=1.11 nomkl scipy=0.18 scikit-learn=0.18 pandas=0.19"
+CondaDeps="numpy=1.11 nomkl scipy=0.18 scikit-learn=0.18.1 pandas=0.19"
 
 # Install the package from PyPi
 # Comment out next line if installing locally

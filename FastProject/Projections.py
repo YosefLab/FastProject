@@ -20,6 +20,7 @@ import scipy.stats;
 from .Utils import ProgressBar;
 from .DataTypes import PCData;
 from .Global import FP_Output, RANDOM_SEED;
+from . import _tsne_fix
 
 import numpy as np;
 
@@ -190,8 +191,10 @@ def perform_weighted_PCA(data, weights, max_components=200):
     data_centered = proj_data - wmean;
     weighted_data_centered = data_centered * weights;
 
-    wcov = np.dot(weighted_data_centered, weighted_data_centered.T) / np.dot(weights,weights.T);
-    wcov[np.isnan(wcov)] = 0.0;  # Need this when weight dot product is zero
+    denom = np.dot(weights,weights.T)
+    denom[denom == 0] = 1.0 # Avoid 0/0 : just make it 0/1
+
+    wcov = np.dot(weighted_data_centered, weighted_data_centered.T) / denom
 
     model = PCA(n_components=min(proj_data.shape[0], proj_data.shape[1], max_components), svd_solver='randomized');
     model.fit(wcov);
@@ -373,10 +376,11 @@ def permutation_wPCA(data, weights, components=50, p_threshold=0.05, verbose=Fal
     mu = bg_vals.mean(axis=0);
     sigma = bg_vals.std(axis=0);
 
-    sigma[sigma == 0] = 1.0
+    sigma[sigma == 0] = 1.0e-19
 
     p_vals = norm.sf((e_val - mu) / sigma);
     threshold_component_i = np.nonzero(p_vals > p_threshold)[0]
+
     if(threshold_component_i.size == 0):  # True if ALL PCs deemed significant
         threshold_component = wpca_data.shape[0];
     else:
@@ -386,20 +390,22 @@ def permutation_wPCA(data, weights, components=50, p_threshold=0.05, verbose=Fal
         FP_Output("Permutation test on wPCA: ", str(threshold_component), " components retained.");
 
     if(threshold_component < 5):
-        FP_Output("Less than 5 components identified as significant.  Preserving top 5.");
         threshold_component = 5;
 
-    wpca_data = wpca_data[0:threshold_component, :];
-    e_val = e_val[0:threshold_component];
-    e_vec = e_vec[0:threshold_component, :];
-
+        if(verbose):
+            FP_Output("Less than 5 components identified as significant.  Preserving top 5.");
 
     if(debug):
         import seaborn as sns;
         import pandas as pd;
         import matplotlib.pyplot as plt;
-        sns.violinplot(pd.DataFrame(bg_vals[:,0:20]));
+        fig = plt.figure()
+        sns.boxplot(pd.DataFrame(bg_vals[:,0:20]));
         plt.plot(e_val);
+
+    wpca_data = wpca_data[0:threshold_component, :];
+    e_val = e_val[0:threshold_component];
+    e_vec = e_vec[:, 0:threshold_component];
 
     return wpca_data, e_val, e_vec;
 
@@ -447,7 +453,7 @@ def apply_ICA(proj_data, proj_weights=None):
 # tSNE
 def apply_tSNE10(proj_data, proj_weights=None):
     model = TSNE(n_components=2, perplexity=10.0, metric="euclidean",
-                 learning_rate=100, early_exaggeration=4.0,
+                 learning_rate=200, early_exaggeration=4.0,
                  random_state=RANDOM_SEED);
     norm_data = normalize_columns(proj_data);
     result = model.fit_transform(norm_data.T);
@@ -457,7 +463,7 @@ def apply_tSNE10(proj_data, proj_weights=None):
 # tSNE
 def apply_tSNE30(proj_data, proj_weights=None):
     model = TSNE(n_components=2, perplexity=30.0, metric="euclidean",
-                 learning_rate=100, early_exaggeration=4.0,
+                 learning_rate=200, early_exaggeration=4.0,
                  random_state=RANDOM_SEED);
     norm_data = normalize_columns(proj_data);
     result = model.fit_transform(norm_data.T);

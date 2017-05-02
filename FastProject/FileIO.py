@@ -12,7 +12,7 @@ import os;
 import numpy as np;
 import shutil;
 from . import HtmlViewer;
-from .Global import FP_Output;
+from .Global import FP_Output, get_housekeeping_dir
 import pandas as pd;
 from pandas.parser import CParserError;
 
@@ -585,3 +585,32 @@ def saveResultstoDisk(models, signatures, qc_info, dir_name):
     HtmlViewer.copy_html_files(dir_name);
 
     write_qc_file(dir_name, qc_info);
+
+
+def load_housekeeping_genes(filename=""):
+    """
+    Loads housekeeping genes from `filename`
+
+    If `filename` is blank, then loads all the default list
+
+    Returns: list of str
+        Housekeeping gene identifiers
+    """
+
+    housekeeping_files = list()
+
+    if(filename != ""):  # If file specified, use that file
+        housekeeping_files.append(filename)
+    else:  # Otherwise, use all the files in housekeeping directory
+        housekeeping_dir = get_housekeeping_dir()
+        files = os.listdir(housekeeping_dir)
+        for ff in files:
+            housekeeping_files.append(os.path.join(housekeeping_dir, ff))
+
+    housekeeping_genes = list()
+    for hkf in housekeeping_files:
+        with open(hkf, 'rU') as fin:
+            for line in fin.readlines():
+                housekeeping_genes.append(line.strip().lower())
+
+    return housekeeping_genes
