@@ -376,10 +376,11 @@ def permutation_wPCA(data, weights, components=50, p_threshold=0.05, verbose=Fal
     mu = bg_vals.mean(axis=0);
     sigma = bg_vals.std(axis=0);
 
-    sigma[sigma == 0] = 1.0
+    sigma[sigma == 0] = 1.0e-19
 
     p_vals = norm.sf((e_val - mu) / sigma);
     threshold_component_i = np.nonzero(p_vals > p_threshold)[0]
+
     if(threshold_component_i.size == 0):  # True if ALL PCs deemed significant
         threshold_component = wpca_data.shape[0];
     else:
@@ -388,21 +389,23 @@ def permutation_wPCA(data, weights, components=50, p_threshold=0.05, verbose=Fal
     if(verbose):
         FP_Output("Permutation test on wPCA: ", str(threshold_component), " components retained.");
 
-    if(threshold_component < 5 and verbose):
-        FP_Output("Less than 5 components identified as significant.  Preserving top 5.");
+    if(threshold_component < 5):
         threshold_component = 5;
 
-    wpca_data = wpca_data[0:threshold_component, :];
-    e_val = e_val[0:threshold_component];
-    e_vec = e_vec[:, 0:threshold_component];
-
+        if(verbose):
+            FP_Output("Less than 5 components identified as significant.  Preserving top 5.");
 
     if(debug):
         import seaborn as sns;
         import pandas as pd;
         import matplotlib.pyplot as plt;
-        sns.violinplot(pd.DataFrame(bg_vals[:,0:20]));
+        fig = plt.figure()
+        sns.boxplot(pd.DataFrame(bg_vals[:,0:20]));
         plt.plot(e_val);
+
+    wpca_data = wpca_data[0:threshold_component, :];
+    e_val = e_val[0:threshold_component];
+    e_vec = e_vec[:, 0:threshold_component];
 
     return wpca_data, e_val, e_vec;
 
