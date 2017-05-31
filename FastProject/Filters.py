@@ -86,7 +86,7 @@ def filter_genes_threshold(data, threshold):
 def filter_genes_novar(data):
     """
     Filters out genes with 0 variance across samples
-    :param data: ExpressionData or ProbabilityData from DataTypes
+    :param data: ExpressionData from DataTypes
     :return: Subset of data 0-variance rows removed
     """
 

@@ -338,7 +338,7 @@ def write_weights(directory, data):
     Writes the matrix of weights to file.
 
     :param directory: Folder to which file is written
-    :param data: ExpressionData or ProbabilityData object
+    :param data: ExpressionData
     :return: None
     """
 

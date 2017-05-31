@@ -16,7 +16,7 @@ from . import Transforms;
 from . import Signatures;
 from . import Projections;
 from . import SubSample;
-from .DataTypes import ExpressionData, ProbabilityData;
+from .DataTypes import ExpressionData;
 from .Utils import ProgressBar;
 from .Global import FP_Output;
 from . import SigScoreMethods;
@@ -123,14 +123,7 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
         else:
             weights = input_weights.loc[edata.row_labels, edata.col_labels].values;
 
-        pdata = Transforms.adjust_pdata(pdata, weights);
-
-        pdata = ProbabilityData(pdata, edata);
-        # pmodel = dict({"Data": pdata});
-        # Models.update({"Probability": pmodel});
-
         edata.weights = weights;
-        pdata.weights = weights;
 
         sample_passes_qc, sample_qc_scores = Transforms.quality_check(params);
         qc_info = pd.DataFrame({"Score": sample_qc_scores, "Passes": sample_passes_qc}, index=edata.col_labels);
@@ -202,37 +195,29 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
         FP_Output("\nEvaluating signature scores on samples...");
 
         # Determine normalization method
-        if(type(data) is ExpressionData):
+        if(kwargs["sig_norm_method"] == "none"):
+            sig_norm_method = NormalizationMethods.no_normalization;
+        elif(kwargs["sig_norm_method"] == "znorm_columns"):
+            sig_norm_method = NormalizationMethods.col_normalization;
+        elif(kwargs["sig_norm_method"] == "znorm_rows"):
+            sig_norm_method = NormalizationMethods.row_normalization;
+        elif(kwargs["sig_norm_method"] == "znorm_rows_then_columns"):
+            sig_norm_method = NormalizationMethods.row_and_col_normalization;
+        elif(kwargs["sig_norm_method"] == "rank_norm_columns"):
+            sig_norm_method = NormalizationMethods.col_rank_normalization;
 
-            if(kwargs["sig_norm_method"] == "none"):
-                sig_norm_method = NormalizationMethods.no_normalization;
-            elif(kwargs["sig_norm_method"] == "znorm_columns"):
-                sig_norm_method = NormalizationMethods.col_normalization;
-            elif(kwargs["sig_norm_method"] == "znorm_rows"):
-                sig_norm_method = NormalizationMethods.row_normalization;
-            elif(kwargs["sig_norm_method"] == "znorm_rows_then_columns"):
-                sig_norm_method = NormalizationMethods.row_and_col_normalization;
-            elif(kwargs["sig_norm_method"] == "rank_norm_columns"):
-                sig_norm_method = NormalizationMethods.col_rank_normalization;
-
-            sig_data = data.get_normalized_copy(sig_norm_method);
-
-        elif(type(data) is ProbabilityData):
-            sig_data = data;
+        # Normalize data with it
+        sig_data = data.get_normalized_copy(sig_norm_method);
 
         # Determine signature score evaluation method
-        if(type(data) is ExpressionData):
-            if(kwargs["sig_score_method"] == "naive"):
-                sig_score_method = SigScoreMethods.naive_eval_signature;
-            elif(kwargs["sig_score_method"] == "weighted_avg"):
-                sig_score_method = SigScoreMethods.weighted_eval_signature;
-            elif(kwargs["sig_score_method"] == "imputed"):
-                sig_score_method = SigScoreMethods.imputed_eval_signature;
-            elif(kwargs["sig_score_method"] == "only_nonzero"):
-                sig_score_method = SigScoreMethods.nonzero_eval_signature;
-
-        elif(type(data) is ProbabilityData):
+        if(kwargs["sig_score_method"] == "naive"):
             sig_score_method = SigScoreMethods.naive_eval_signature;
+        elif(kwargs["sig_score_method"] == "weighted_avg"):
+            sig_score_method = SigScoreMethods.weighted_eval_signature;
+        elif(kwargs["sig_score_method"] == "imputed"):
+            sig_score_method = SigScoreMethods.imputed_eval_signature;
+        elif(kwargs["sig_score_method"] == "only_nonzero"):
+            sig_score_method = SigScoreMethods.nonzero_eval_signature;
 
 
         sig_scores_dict = dict();

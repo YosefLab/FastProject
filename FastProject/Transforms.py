@@ -1,16 +1,12 @@
 # -*- coding: utf-8 -*-
 """Functions to transform the data and calculate weights
-
-Originally 'transform' referred to going from 
-    ExpressionData -> ProbabilityData
-
 """
 from __future__ import absolute_import, print_function, division;
 
 
 from .Utils import em_exp_norm_mixture;
 from . import Filters;
-from .DataTypes import ExpressionData, ProbabilityData, PCData;
+from .DataTypes import ExpressionData, PCData;
 import numpy as np;
 import os;
 
@@ -335,7 +331,7 @@ def z_normalize(data):
     :param data: numpy.ndarray, 2 dimensions
     :return: None
     """
-    if(data is ProbabilityData or data is PCData):
+    if isinstance(data, PCData):
         raise TypeError("Should not be z-normalizing Probability or PCData, exiting");
 
     mu = data.mean(axis=1, keepdims=True);
