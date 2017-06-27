@@ -10,7 +10,6 @@ from __future__ import division, print_function;
 import numpy as np;
 import pandas as pd;
 import time;
-import random;
 from . import Filters;
 from . import Transforms;
 from . import Signatures;
@@ -19,7 +18,6 @@ from . import SubSample;
 from .DataTypes import ExpressionData;
 from .Utils import ProgressBar;
 from .Global import FP_Output;
-from . import SigScoreMethods;
 from . import NormalizationMethods;
 
 
@@ -172,16 +170,7 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
     #         sigs.append(new_sig);
 
     # Generate random signatures for background significance
-    random_sigs = [];
-    for size in [5, 10, 20, 50, 100, 200]:
-        for j in range(3000):
-            new_sig_dict = dict();
-            new_sig_genes = random.sample(edata.row_labels, size);
-            new_sig_signs = np.random.choice([1], size);
-            for gene, sign in zip(new_sig_genes, new_sig_signs):
-                new_sig_dict.update({gene: int(sign)});
-            new_sig = Signatures.Signature(new_sig_dict, True, 'x', "RANDOM_BG_" + str(size) + "_" + str(j));
-            random_sigs.append(new_sig);
+    random_sigs = Signatures.generate_random_sigs(edata.row_labels, signed=False)
 
     for name, model in Models.items():
 
@@ -207,39 +196,12 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
         # Normalize data with it
         sig_data = data.get_normalized_copy(sig_norm_method);
 
-        # Determine signature score evaluation method
-        if(kwargs["sig_score_method"] == "naive"):
-            sig_score_method = SigScoreMethods.naive_eval_signature;
-        elif(kwargs["sig_score_method"] == "weighted_avg"):
-            sig_score_method = SigScoreMethods.weighted_eval_signature;
-        elif(kwargs["sig_score_method"] == "imputed"):
-            sig_score_method = SigScoreMethods.imputed_eval_signature;
-        elif(kwargs["sig_score_method"] == "only_nonzero"):
-            sig_score_method = SigScoreMethods.nonzero_eval_signature;
+        sig_scores_dict = Signatures.calculate_sig_scores(sig_data, signatures,
+                              method=kwargs["sig_score_method"],
+                              zero_locations=zero_locations,
+                              min_signature_genes=kwargs["min_signature_genes"])
 
-
-        sig_scores_dict = dict();
-
-        pbar = ProgressBar(len(signatures));
-        for sig in signatures:
-            try:
-                sig_scores_dict[sig.name] = sig_score_method(sig_data, sig, zero_locations, kwargs["min_signature_genes"]);
-            except ValueError:  #Only thrown when the signature has no genes in the data
-                pass #Just discard the signature then
-            pbar.update();
-        pbar.complete();
-
-        FP_Output("\nEvaluating null signature scores on samples...");
-        pbar = ProgressBar(len(random_sigs));
-        random_sig_scores_dict = dict();
-        for sig in random_sigs:
-            try:
-                random_sig_scores_dict[sig.name] = sig_score_method(sig_data, sig, zero_locations, kwargs["min_signature_genes"]);
-            except ValueError:  # Only thrown when the signature has no genes in the data
-                pass  # Just discard the signature then
-            pbar.update();
-        pbar.complete();
-
+        # Add in precomputed signature scores 'meta-data'
         sig_scores_dict.update(precomputed_signatures);
 
         #Adds in quality score as a pre-computed signature
@@ -248,6 +210,13 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
 
         #Adds in zero proportion as another pre-computed signature
         sig_scores_dict["Zero_Proportion"] = Signatures.SignatureScores(zeros_qscore,"Zero_Proportion",data.col_labels,isFactor=False, isPrecomputed=True, numGenes=0);
+
+        FP_Output("\nEvaluating null signature scores on samples...");
+
+        random_sig_scores_dict = Signatures.calculate_sig_scores(sig_data, random_sigs,
+                              method=kwargs["sig_score_method"],
+                              zero_locations=zero_locations,
+                              min_signature_genes=kwargs["min_signature_genes"])
 
         model["signatureScores"] = sig_scores_dict;
         model["projectionData"] = [];

@@ -1,13 +1,9 @@
 # -*- coding: utf-8 -*-
 """Functions for loading and manipulating signatures
-
-Also, the sigs_vs_projections method is here 
-   (I couldn't decide whether to put it here or in 
-   Projections so I just picked one)
-
 """
 from __future__ import absolute_import, print_function, division;
 
+import random
 import numpy as np;
 from sklearn.metrics.pairwise import pairwise_distances;
 from scipy.spatial.distance import cdist;
@@ -15,6 +11,7 @@ from scipy.stats import norm, rankdata;
 from .Utils import ProgressBar;
 from .Global import RANDOM_SEED;
 from . import HtmlViewer;
+from . import SigScoreMethods;
 
 #This is used to cache the background distribution used when evaluating
 #Signatures vs projections.  No need to regenerate the random indices
@@ -621,6 +618,107 @@ def load_precomputed(filename, sample_labels):
             sig_scores[sig_name] = SignatureScores(sig_vals, sig_name, sample_labels, sig_isFactor, isPrecomputed=True, numGenes=0);
 
         return sig_scores;
+
+
+def calculate_sig_scores(data, signatures, method='weighted_avg',
+                         zero_locations=None, min_signature_genes=1e99):
+    """
+    Generate random signatures to be used as a background distribution
+
+    Parameters
+    ----------
+    data: ExpressionData
+        Data matrix to use to calculate signature scores
+    signatures: list of Signature
+        Signatures of which scores are computed
+    method: str
+        Which scoring method to use
+    zero_locations: boolean numpy.ndarray
+        Same size as data
+        True where 'data' was originally zero
+        Used for normalization methods that transform zeros to some other value
+    min_signature_genes:  numeric
+        Signatures that match less that `min_signature_genes` are discarded
+
+    Returns
+    -------
+    dict of str -> SignatureScores
+        key is name of Signature
+        value is SignatureScores object
+    """
+
+    sig_scores_dict = dict()
+
+    # Determine signature score evaluation method
+    if method == "naive":
+        sig_score_method = SigScoreMethods.naive_eval_signature
+    elif method == "weighted_avg":
+        sig_score_method = SigScoreMethods.weighted_eval_signature
+    elif method == "imputed":
+        sig_score_method = SigScoreMethods.imputed_eval_signature
+    elif method == "only_nonzero":
+        sig_score_method = SigScoreMethods.nonzero_eval_signature
+
+    pbar = ProgressBar(len(signatures))
+    for sig in signatures:
+
+        try:
+            sig_scores_dict[sig.name] = sig_score_method(
+                data, sig, zero_locations, min_signature_genes)
+        except ValueError:  # Thrown when the signature has too few genes in the data
+            pass  # Just discard the signature then
+
+        pbar.update()
+    pbar.complete()
+
+    return sig_scores_dict
+
+
+def generate_random_sigs(features, signed, sizes=None, num_per_size=3000):
+    """
+    Generate random signatures to be used as a background distribution
+
+    Parameters
+    ----------
+    features: list of str
+        List of features (e.g. gene symbols) to use in signatures
+    signed: bool
+        Whether or not the signature should be signed
+    sizes: list of int
+        How many features to draw for background signatures
+    num_per_size: int
+        How many signatures to create at each size in `sizes`
+
+    Returns
+    -------
+    list of Signature
+        Randomly generate background signatures
+    """
+
+    if sizes is None:
+        sizes = [5, 10, 20, 50, 100, 200]
+
+    random_sigs = []
+
+    if signed:
+        signs = [-1, 1]
+    else:
+        signs = [1]
+
+    for size in sizes:
+        for j in range(num_per_size):
+            new_sig_dict = dict()
+            new_sig_genes = random.sample(features, size)
+            new_sig_signs = np.random.choice(signs, size)
+
+            for gene, sign in zip(new_sig_genes, new_sig_signs):
+                new_sig_dict.update({gene: int(sign)})
+
+            new_sig = Signature(new_sig_dict, signed, 'x',
+                                name="RANDOM_BG_" + str(size) + "_" + str(j))
+            random_sigs.append(new_sig)
+
+    return random_sigs
 
 class Signature:
     
