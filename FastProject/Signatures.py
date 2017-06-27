@@ -251,7 +251,14 @@ def read_signatures_gmt(filename='', match_terms=[]):
                 raise Exception("This should not happen");
 
             for gene_name in row_data[2:]:
-                sig.sig_dict.update({gene_name.upper(): sig_val});
+                gene_name_split = gene_name.split(',')
+                if(len(gene_name_split) == 1):
+                    sig.sig_dict.update({gene_name.upper(): sig_val});
+                elif(len(gene_name_split) == 2):
+                    sig.sig_dict.update({gene_name_split[0].upper(): float(gene_name_split[1])});
+                else:
+                    raise Exception("Error in signature: " + name)
+
 
     return list(found_signatures.values());  #dict to list
 
