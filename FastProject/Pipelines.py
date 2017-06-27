@@ -377,10 +377,11 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
     # Cluster genes
     from scipy.cluster.hierarchy import leaves_list, linkage;
     edata = Models["Expression"]["Data"];
-    linkage_matrix = linkage(edata);
+    edata_norm = edata.get_normalized_copy(NormalizationMethods.row_normalization)
+    linkage_matrix = linkage(edata_norm);
     leaves_i = leaves_list(linkage_matrix);
-    edata = edata.subset_genes(leaves_i);
-    Models["Expression"]["Data"] = edata;
+    edata_norm = edata_norm.subset_genes(leaves_i);
+    Models["Expression"]["Data"] = edata_norm;
 
     FP_Output("\nFastProject Analysis Complete")
     elapsed_time = time.time() - start_time;
