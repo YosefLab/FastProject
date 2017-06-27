@@ -25,7 +25,7 @@ from . import _tsne_fix
 import numpy as np;
 
 
-def generate_projections(data, filter_name=None, input_projections=None):
+def generate_projections(data, filter_name=None, input_projections=None, lean=False):
     """
     Projects data into 2 dimensions using a variety of linear and non-linear methods
 
@@ -55,10 +55,8 @@ def generate_projections(data, filter_name=None, input_projections=None):
         input_projections = {}
 
     IS_PCDATA = type(data) is PCData;
-    if(IS_PCDATA):
-        method_list = _proj_methods_pca;
-    else:
-        method_list = _proj_methods;
+
+    method_list = get_projection_methods(lean, IS_PCDATA)
 
     pbar = ProgressBar(1 + len(method_list));
 
@@ -504,34 +502,40 @@ def apply_spectral_embedding(proj_data, proj_weights=None):
 
 # Add New Methods Here
 
-# Register methods
-# Methods to apply to normalized data
-_proj_methods = dict();
 
-# Methods to apply to data that has already been filtered with PCA
-_proj_methods_pca = dict();
+# Gets the current projection methods to use
+def get_projection_methods(lean, pca):
+    """
+    lean: bool
+        Set by CLI argument.  Used to remove methods that don't scale well
+        to many samples
+    pca: bool
+        Only return a subset of methods when PCA has been called first as
+        it doesn't make sense to call PCA before some methods
+    """
 
+    proj_methods = {}
 
-def register_methods(lean=False):
-    global _proj_methods, _proj_methods_pca;
+    if not pca:
+        proj_methods['ICA'] = apply_ICA
 
-    _proj_methods['ICA'] = apply_ICA;
+        if not lean:
+            proj_methods['Spectral Embedding'] = apply_spectral_embedding
+            proj_methods['MDS'] = apply_MDS
 
-    if(not lean):  # These methods don't scale well.  Don't include when `lean` is set
-        _proj_methods['Spectral Embedding'] = apply_spectral_embedding;
-        _proj_methods['MDS'] = apply_MDS;
+        proj_methods['RBF Kernel PCA'] = apply_rbf_PCA
+        proj_methods['ISOMap'] = apply_ISOMap
+        proj_methods['tSNE30'] = apply_tSNE30
+        proj_methods['tSNE10'] = apply_tSNE10
 
-    _proj_methods['RBF Kernel PCA'] = apply_rbf_PCA;
-    _proj_methods['ISOMap'] = apply_ISOMap;
-    _proj_methods['tSNE30'] = apply_tSNE30;
-    _proj_methods['tSNE10'] = apply_tSNE10;
+    if pca:
 
-    _proj_methods_pca['ISOMap'] = apply_ISOMap;
-    _proj_methods_pca['tSNE30'] = apply_tSNE30;
-    _proj_methods_pca['tSNE10'] = apply_tSNE10;
+        proj_methods['ISOMap'] = apply_ISOMap
+        proj_methods['tSNE30'] = apply_tSNE30
+        proj_methods['tSNE10'] = apply_tSNE10
 
-    if(not lean):
-        _proj_methods_pca['Spectral Embedding'] = apply_spectral_embedding;
-        _proj_methods_pca['MDS'] = apply_MDS;
+        if not lean:
+            proj_methods['Spectral Embedding'] = apply_spectral_embedding
+            proj_methods['MDS'] = apply_MDS
 
-register_methods();
+    return proj_methods

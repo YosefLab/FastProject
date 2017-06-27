@@ -95,8 +95,6 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
         # Default threshold is 20% of samples - post sub-sampling
         kwargs["threshold"] = int(0.2 * edata.shape[1]);
 
-    Projections.register_methods(kwargs["lean"]); # Removes some projection methods if 'lean' is enabled
-
     #Hold on to originals so we don't lose data after filtering in case it's needed later
     original_data = edata.copy();
 
@@ -262,7 +260,8 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
             #%% Dimensional Reduction procedures
             FP_Output("\nProjecting data into 2 dimensions");
 
-            projections, pcdata = Projections.generate_projections(data, filter_name, input_projections);
+            projections, pcdata = Projections.generate_projections(data, filter_name,
+                                                                   input_projections, kwargs["lean"]);
 
             #Evaluate Clusters
             FP_Output("Evaluating Clusters...");
@@ -294,7 +293,7 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
             #%% Dimensional Reduction procedures
             FP_Output("Projecting PC data into 2 dimensions");
 
-            projections, pcdata2 = Projections.generate_projections(pcdata, filter_name);
+            projections, pcdata2 = Projections.generate_projections(pcdata, filter_name, lean=kwargs["lean"]);
 
             #Evaluate Clusters
             FP_Output("Evaluating Clusters...");
