@@ -13,8 +13,12 @@ import numpy as np;
 import shutil;
 from . import HtmlViewer;
 from .Global import FP_Output, get_housekeeping_dir
-import pandas as pd;
-from pandas.parser import CParserError;
+import pandas as pd
+
+try:
+    from pandas.errors import ParserError
+except ImportError:
+    from pandas.parser import CParserError as ParserError
 
 
 def make_dirs(root_directory):
@@ -434,7 +438,7 @@ def load_input_projections(projection_files, sample_names):
 
         try:
             loaded_coords = pd.read_table(projection_file, header=None);
-        except CParserError:
+        except ParserError:
             # if Header row has 2 entries and rest has 3, get this error
             # Try to load data anyway and rework it back into the correct initial format
             loaded_coords = pd.read_table(projection_file);
