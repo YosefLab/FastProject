@@ -9,7 +9,7 @@ Specified by the command-line argument: --sig_score_method
 
 """
 
-from .Signatures import SignatureScores;
+from . import Signatures
 import numpy as np;
 
 
@@ -38,8 +38,10 @@ def naive_eval_signature(self, signature, zeros, min_signature_genes):
     sig_scores = pdata.sum(axis=0);
     sig_scores /= np.sum(np.abs(sig_vector) * weights, axis=0);  # Only normalize by weights in the signature
 
-    sig_obj = SignatureScores(sig_scores, signature.name, self.col_labels,
-                              isFactor=False, isPrecomputed=False, numGenes=num_matched_genes);
+    sig_obj = Signatures.SignatureScores(sig_scores, signature.name,
+                                         self.col_labels, isFactor=False,
+                                         isPrecomputed=False,
+                                         numGenes=num_matched_genes)
 
     return sig_obj;
 
@@ -70,8 +72,10 @@ def weighted_eval_signature(self, signature, zeros, min_signature_genes):
     norm_factor[norm_factor == 0] = 1.0;
     sig_scores /= norm_factor;
 
-    sig_obj = SignatureScores(sig_scores, signature.name, self.col_labels,
-                              isFactor=False, isPrecomputed=False, numGenes=num_matched_genes);
+    sig_obj = Signatures.SignatureScores(sig_scores, signature.name,
+                                         self.col_labels, isFactor=False,
+                                         isPrecomputed=False,
+                                         numGenes=num_matched_genes)
 
     return sig_obj;
 
@@ -109,8 +113,10 @@ def imputed_eval_signature(self, signature, zeros, min_signature_genes):
     sig_scores_imputed = np.sum(pe_nd * mu * sig_vector * zeros + pne_nd * data * sig_vector * zeros, axis=0);
     sig_scores = sig_scores_real + sig_scores_imputed;
 
-    sig_obj = SignatureScores(sig_scores, signature.name, self.col_labels,
-                              isFactor=False, isPrecomputed=False, numGenes=num_matched_genes);
+    sig_obj = Signatures.SignatureScores(sig_scores, signature.name,
+                                         self.col_labels, isFactor=False,
+                                         isPrecomputed=False,
+                                         numGenes=num_matched_genes)
 
     return sig_obj;
 
@@ -140,7 +146,9 @@ def nonzero_eval_signature(self, signature, zeros, min_signature_genes):
     norm_factor[norm_factor == 0] = 1.0
     sig_scores = sig_scores_real / norm_factor;
 
-    sig_obj = SignatureScores(sig_scores, signature.name, self.col_labels,
-                              isFactor=False, isPrecomputed=False, numGenes=num_matched_genes);
+    sig_obj = Signatures.SignatureScores(sig_scores, signature.name,
+                                         self.col_labels, isFactor=False,
+                                         isPrecomputed=False,
+                                         numGenes=num_matched_genes)
 
     return sig_obj;
