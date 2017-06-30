@@ -178,8 +178,6 @@ def perform_weighted_PCA(data, weights, max_components=200):
         Data transformed using PCA.  Num_Components = Num_Samples
 
     """
-    np.random.seed(RANDOM_SEED);
-
     proj_data = data;
 
     #Weighted means
@@ -199,9 +197,13 @@ def perform_weighted_PCA(data, weights, max_components=200):
     e_vec = model.components_;
 
     wpca_data = np.dot(e_vec, data_centered);
-    e_val = np.var(wpca_data, axis=1);
-    total_var = np.sum(np.var(proj_data, axis=1));
-    e_val /= total_var;
+
+    # Try a different determination of e_val
+    #e_val = np.var(wpca_data, axis=1);
+    #total_var = np.sum(np.var(proj_data, axis=1));
+    #e_val /= total_var;
+
+    e_val = model.explained_variance_ratio_
 
     return wpca_data, e_val, e_vec.T;
 
@@ -347,6 +349,8 @@ def permutation_wPCA(data, weights, components=50, p_threshold=0.05, verbose=Fal
     :param verbose: bool,
     :return: reduced data, numpy.ndarray of shape Num_Components x Num_Samples
     """
+
+    np.random.seed(RANDOM_SEED);
 
     # Make sure components isn't too big for matrix dimension
     components = min(components, data.shape[0], data.shape[1]);

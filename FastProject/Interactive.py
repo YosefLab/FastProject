@@ -88,7 +88,7 @@ def weighted_PCA(data, weights, max_components=200):
 
 
 def permutation_wPCA(data, weights, max_components=50,
-                     p_threshold=0.05, verbose=False):
+                     p_threshold=0.05, verbose=False, debug=False):
     """
     Computes weighted PCA on data.  Returns only significant components.
 
@@ -118,7 +118,7 @@ def permutation_wPCA(data, weights, max_components=50,
     """
 
     pc_data, e_val, e_vec = _permutation_wPCA(data.values, weights.values, max_components,
-                                p_threshold, verbose)
+                                p_threshold, verbose, debug=debug)
 
     pc_data = pd.DataFrame(pc_data.T, index=data.columns)
     e_val = pd.Series(e_val, index=pc_data.columns)
