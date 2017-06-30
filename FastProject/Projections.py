@@ -412,29 +412,6 @@ def permutation_wPCA(data, weights, components=50, p_threshold=0.05, verbose=Fal
     return wpca_data, e_val, e_vec;
 
 
-def normalize_columns(data):
-    """Returns a copy of data with the columns z-normalized
-
-    Subtracts the mean and divides by the standard deviation
-    If standard deviation = 0, column is normalized to a vector of zeros
-
-    Parameters
-    ----------
-    data : numpy.ndarray
-        Data matrix to normalize
-
-    Returns
-    -------
-    numpy.ndarray
-        Normalized copy of `data`
-
-    """
-    col_means = data.mean(axis=0, keepdims=True);
-    col_stds = data.std(axis=0, keepdims=True);
-    col_stds[col_stds == 0] = 1;  # Fix to avoid divide-by-zero
-
-    return (data - col_means) / col_stds;
-
 # --------------------------------------------------------------------------- #
 #                                                                             #
 #                    Define Projection Methods Here                           #
@@ -447,8 +424,7 @@ def normalize_columns(data):
 # ICA
 def apply_ICA(proj_data, proj_weights=None):
     ica = FastICA(n_components=2, random_state=RANDOM_SEED);
-    norm_data = normalize_columns(proj_data);
-    result = ica.fit_transform(norm_data.T);  # Copy needed because ICA whitens the input matrix
+    result = ica.fit_transform(proj_data.copy().T);  # Copy needed because ICA whitens the input matrix
     return result;
 
 
@@ -457,8 +433,7 @@ def apply_tSNE10(proj_data, proj_weights=None):
     model = TSNE(n_components=2, perplexity=10.0, metric="euclidean",
                  learning_rate=200, early_exaggeration=4.0,
                  random_state=RANDOM_SEED);
-    norm_data = normalize_columns(proj_data);
-    result = model.fit_transform(norm_data.T);
+    result = model.fit_transform(proj_data.T);
     return result;
 
 
@@ -467,24 +442,21 @@ def apply_tSNE30(proj_data, proj_weights=None):
     model = TSNE(n_components=2, perplexity=30.0, metric="euclidean",
                  learning_rate=200, early_exaggeration=4.0,
                  random_state=RANDOM_SEED);
-    norm_data = normalize_columns(proj_data);
-    result = model.fit_transform(norm_data.T);
+    result = model.fit_transform(proj_data.T);
     return result;
 
 
 # ISOMap
 def apply_ISOMap(proj_data, proj_weights=None):
     model = Isomap(n_neighbors=4, n_components=2);
-    norm_data = normalize_columns(proj_data);
-    result = model.fit_transform(norm_data.T);
+    result = model.fit_transform(proj_data.T);
     return result;
 
 
 # PCA with RBF Kernel
 def apply_rbf_PCA(proj_data, proj_weights=None):
     model = KernelPCA(n_components=2, kernel='rbf');
-    norm_data = normalize_columns(proj_data);
-    result = model.fit_transform(norm_data.T);
+    result = model.fit_transform(proj_data.T);
     return result;
 
 
@@ -492,16 +464,14 @@ def apply_rbf_PCA(proj_data, proj_weights=None):
 def apply_MDS(proj_data, proj_weights=None):
     model = MDS(n_components=2, dissimilarity="euclidean",
             random_state=RANDOM_SEED)
-    norm_data = normalize_columns(proj_data);
-    result = model.fit_transform(norm_data.T);
+    result = model.fit_transform(proj_data.T);
     return result;
 
 
 # Spectral Embedding
 def apply_spectral_embedding(proj_data, proj_weights=None):
     model = SpectralEmbedding(n_components=2, random_state=RANDOM_SEED)
-    norm_data = normalize_columns(proj_data);
-    result = model.fit_transform(norm_data.T);
+    result = model.fit_transform(proj_data.T);
     return result;
 
 # Add New Methods Here
