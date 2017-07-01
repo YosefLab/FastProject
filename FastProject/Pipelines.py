@@ -85,9 +85,9 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
     #     kwargs["subsample_size"] = None;
     kwargs["subsample_size"] = None;
 
-    holdouts = None;
-    if(kwargs["subsample_size"]):
-        holdouts, edata = SubSample.split_samples(edata, kwargs["subsample_size"]);
+    #holdouts = None
+    #if(kwargs["subsample_size"])
+    #    holdouts, edata = SubSample.split_samples(edata, kwargs["subsample_size"])
 
     if(kwargs["threshold"] is None):
         # Default threshold is 20% of samples - post sub-sampling
@@ -105,11 +105,6 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
 
     #%% Probability transform
     if(not kwargs["nomodel"]):
-
-        FP_Output('\nFitting expression data to exp/norm mixture model');
-        (pdata, mu_h, mu_l, st_h, Pi) = Transforms.probability_of_expression(edata);
-        prob_params = (mu_h, mu_l, st_h, Pi);
-
 
         FP_Output('\nCorrecting for false-negatives using housekeeping gene levels');
         (fit_func, params) = Transforms.create_false_neg_map(original_data, housekeeping_genes);
@@ -133,7 +128,6 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
             sample_qc_scores = sample_qc_scores[sample_passes_qc];
     else:
         sample_qc_scores = None;
-        prob_params = None;
         qc_info = pd.DataFrame(0.0, columns=["Score", "Passes"], index=edata.col_labels);
 
     # Necessary because the matrix might be modified when data failing qc is removed
@@ -339,9 +333,9 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
 
 
     #Merge all the holdouts back into the model
-    if(kwargs["subsample_size"] is not None):
-        FP_Output("Merging held-out samples back in")
-        SubSample.merge_samples(all_data, Models, signatures, prob_params, kwargs);
+    #if(kwargs["subsample_size"] is not None):
+    #    FP_Output("Merging held-out samples back in")
+    #    SubSample.merge_samples(all_data, Models, signatures, prob_params, kwargs);
 
     # Cluster genes
     from scipy.cluster.hierarchy import leaves_list, linkage;
