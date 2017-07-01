@@ -9,6 +9,8 @@ from . import Filters;
 from .DataTypes import ExpressionData, PCData;
 import numpy as np;
 import os;
+import pandas as pd
+from sklearn.mixture import GaussianMixture
 
 def probability_of_expression(data):
     cutoffs = np.mean(data,axis=1)/4;  #Empirically found to be good most of the time
@@ -35,93 +37,106 @@ def make_monotonic(gamma, data):
         gamma[i,locs_to_change] = max_g;
 
     return gamma;        
-    
 
-def create_false_neg_map(data, housekeeping_genes, debug=None):
+
+def create_false_neg_map(data, p_nd, housekeeping_genes, debug=None):
     """Uses gene names in `housekeeping_genes` to create a mapping of false negatives.
-        
+
     Creates a functional fit for each sample based on that samples HK genes
 
     debug (if supplied), should be an int representing a particular sample
         that should be examined
 
+    p_nd is a pandas.DataFrame same size as data
+    Represents probability of non-detection
+
+    Parameters
+    ----------
+    data : pandas.DataFrame
+        Genes x Samples - full gene_expression matrix
+    p_nd : pandas.DataFrame
+        Genes x Samples - probability of non-detects
+    housekeeping_genes : list of str
+        List of housekeeping gene IDs
+
     Returns
     ----------
-    fit_func : function 
+    fit_func : function
         Used to fit expression values to FN rate
     params : (Num_Params x Num_Samples) numpy.ndarray
         Sample-specific parameters to use with fit_func
 
     """
-    
-    keep_indices = list();
 
-    for hkgene in housekeeping_genes:
-        for i, gene in enumerate(data.row_labels):
-            if(gene.upper() == hkgene.upper()):
-                keep_indices.append(i);
-                continue;
+    housekeeping_genes = [x.upper() for x in housekeeping_genes]
+    matched_hk = pd.Index(housekeeping_genes) & data.index
 
-    data_hk = data.subset_genes(keep_indices);
+    data_hk = data.loc[matched_hk]
+    p_nd = p_nd.loc[matched_hk]
 
+    valid_row = data_hk.var(axis=1) > 0
+    data_hk = data_hk.loc[valid_row].values
+    p_nd = p_nd.loc[valid_row].values
 
-    data_hk = Filters.filter_genes_novar(data_hk);
-        
-    #calculate distributions for hk gene
-    # Gamma is 1 for any non-zero data point
-    # Mu_h is the row (per gene) average of non-zero points
-    gamma = (data_hk > 0).astype('float');
-    count_nonzero = (data_hk != 0).sum(axis=1);
-    mu_h = data_hk.sum(axis=1) / count_nonzero;
+    # calculate distributions for hk gene
+    #   Gamma is probability of a real detection event
+    #   Mu_h is the row (per gene) average of non-zero points
+    gamma = 1-p_nd
+    mu_h = (gamma * data_hk).sum(axis=1) / gamma.sum(axis=1)
 
-    #Fit a function mapping mu to gammas
+    # Fit a function mapping mu to gammas
 
     def func(xvals, x0, a, L=0, S=1):
-        return L + S/(1 + np.exp((xvals-x0)*a));
+        return L + S/(1 + np.exp((xvals-x0)*a))
 
-    def efun(x,y, args):
-        out = func(x, args[0], args[1]);
-        return np.sum((out-y)**2);
+    def efun(x, y, args):
+        out = func(x, args[0], args[1])
+        return np.sum((out-y)**2)
 
-    params = np.zeros((4,gamma.shape[1]));
-    x = mu_h.flatten();
-    
-
+    params = np.zeros((4, gamma.shape[1]))
+    x = mu_h.flatten()
 
     if(len(x) > 30):
-        q_indices = np.round(len(x)/30 * np.arange(30));
+        q_indices = np.round(len(x)/30 * np.arange(30))
     else:
-        q_indices = np.arange(30);
+        q_indices = np.arange(30)
 
-    q_indices = np.append(q_indices, len(x));
-    q_indices = q_indices.astype(np.int64);
+    q_indices = np.append(q_indices, len(x))
+    q_indices = q_indices.astype(np.int64)
 
-    sort_i = np.argsort(x);
-    x_sorted = x[sort_i];
+    sort_i = np.argsort(x)
+    x_sorted = x[sort_i]
 
-    y = 1-gamma;
-    y_sorted = y[sort_i,:]
+    y = 1-gamma
+    y_sorted = y[sort_i, :]
 
-    x_quant = np.zeros(len(q_indices)-1);
+    x_quant = np.zeros(len(q_indices)-1)
     y_quant = np.zeros((len(q_indices)-1, y.shape[1]))
 
     for i in range(len(q_indices)-1):
-        start_i = q_indices[i];
-        end_i = q_indices[i+1];
+        start_i = q_indices[i]
+        end_i = q_indices[i+1]
 
-        x_quant[i] = np.mean(x_sorted[start_i:end_i]);
-        y_quant[i,:] = np.mean(y_sorted[start_i:end_i,:], axis = 0);
+        x_quant[i] = np.mean(x_sorted[start_i:end_i])
+        y_quant[i, :] = np.mean(y_sorted[start_i:end_i, :], axis=0)
 
-    from scipy.optimize import minimize;
+    from scipy.optimize import minimize
 
-    #Multiple restarts for better solutions
-    initial_guesses = [[3.5, 1],
-                       [5.5, 1],
-                       [1.5, .5],
-                       [5.5, .5],
-                       [3.5, 1.7]];
+    #  Multiple restarts for better solutions
+    guess_min = data_hk.min()
+    guess_max = data_hk.max()
+    guess_range = guess_max - guess_min
+    guess_mid = guess_min + guess_range * .15
+    guess_low = guess_min + guess_range * .3
+    guess_high = guess_min + guess_range * .5
 
-    bounds = [(0, np.inf),(0, 2)];
+    initial_guesses = [[guess_mid, 1],
+                       [guess_high, 1],
+                       [guess_low, .5],
+                       [guess_high, .5],
+                       [guess_mid, 1.7]]
+
+    bounds = [(guess_min, guess_max),(0, 2)]
 
     for i in range(gamma.shape[1]):
         best_eval = 1e99;
@@ -143,7 +158,7 @@ def create_false_neg_map(data, housekeeping_genes, debug=None):
         plt.plot(x,y[:,i], 'o');
         plt.plot(x_quant, y_quant[:,i], 'o', color='red')
         plt.plot(domain, func(domain, params[0,i], params[1,i], params[2,i], params[3,i]));
-        plt.ylabel("P(gene not expressed in " + data_hk.col_labels[i] + ")");
+        #plt.ylabel("P(gene not expressed in " + data_hk.col_labels[i] + ")");
         plt.xlabel("Gene average in samples expressing gene")
         print(params[:,i])
 
@@ -248,7 +263,7 @@ def adjust_pdata(prob, weights):
     return out_prob;
 
 
-def compute_weights(fit_func, params, data):
+def compute_weights(fit_func, params, data, p_nd):
     """
     Calculates weights for the data from the FNR curves
 
@@ -262,6 +277,7 @@ def compute_weights(fit_func, params, data):
     params : (4 x Num_Samples) numpy.ndarray
         Matrix containing parameters for the false-negative fit function (fit_func)
     data : ExpressionData object from which prob derives
+    p_nd : pandas.DataFrame with probability of non-detect
 
     Returns
     -------
@@ -270,58 +286,35 @@ def compute_weights(fit_func, params, data):
         Ranges from 0 to 1.
     """
 
+    p_nd = p_nd.loc[data.row_labels]
+    p_nd = p_nd.loc[:, data.col_labels]
+    p_nd = p_nd.values  # cast to ndarray
+    p_d = 1-p_nd
+
+    mu_h = (data.base * p_d).sum(axis=1) / p_d.sum(axis=1)
+
     fn_prob = np.zeros(data.shape)
-    count_nonzero = (data.base > 0).sum(axis=1);
-    count_nonzero[count_nonzero == 0] = 1;  # Protect agains NaN
-    mu_h = data.base.sum(axis=1) / count_nonzero;
-
     for i in range(fn_prob.shape[1]):
-        fn_prob[:, i] = fit_func(mu_h, *params[:, i]).ravel();
+        fn_prob[:, i] = fit_func(mu_h, *params[:, i]).ravel()
 
-    pd_e = 1 - fn_prob;
+    pd_e = 1 - fn_prob
 
-    pnd = (data == 0).sum(axis=1, keepdims=True) / data.shape[1];
-    pe = (1 - pnd) / (pd_e).mean(axis=1, keepdims=True);
+    pnd = p_nd.mean(axis=1, keepdims=True)
+    pe = (1 - pnd) / (pd_e).mean(axis=1, keepdims=True)
 
-    pe[np.isnan(pe)] == 1.0;  # Set to 1 if all expressed
+    pe[np.isnan(pe)] == 1.0  # Set to 1 if all expressed
 
-    pnd[pnd == 0] = 1.0 / data.shape[1] # For stability
+    pnd[pnd == 0] = 1.0 / data.shape[1]  # For stability
 
-    pne_nd = 1 - (1 - pd_e) * pe / pnd;
+    pne_nd = 1 - (1 - pd_e) * pe / pnd
 
-    pne_nd[pne_nd < 0] = 0.0;
-    pne_nd[pne_nd > 1] = 1.0;
+    pne_nd[pne_nd < 0] = 0.0
+    pne_nd[pne_nd > 1] = 1.0
 
-    weights = pne_nd;
-    weights[data > 0] = 1.0;
+    weights = pne_nd * p_nd + p_d
 
-    return weights;
+    return weights
 
-#def utility_plotting_routine(i, cutoff):
-#    #cutoff = 5;
-#    #i = 1;
-#    vals = data[i,:];
-#    vals = vals[vals != 0];
-#    
-#    (gamma, mu_l, mu_h, st_l, st_h, Pi, L) = em.em_exp_norm_mixture(vals,cutoff);
-#    mu_l.shape = 1;
-#    mu_h.shape = 1;
-#    st_h.shape = 1;
-#    
-#    domain = np.linspace(0,10,10000);
-#    p_low = exp(-1*domain/mu_l)/mu_l;
-#    
-#    p_high = exp(-1 * (domain - mu_h)**2 / (2*st_h**2)) / st_h / np.sqrt(2*np.pi);
-#    
-#    
-#    f = figure();
-#    (n, bins, patches) = hist(vals, range=(0,10),bins=100, normed=True);
-#    plot(domain, p_low, color='green');
-#    plot(domain, p_high, color='green');
-#    scatter(vals, gamma, color='red');
-#    ylim(0, 1.1);
-#    
-#    display(f)
 
 def z_normalize(data):
     """
@@ -343,3 +336,41 @@ def z_normalize(data):
     #Note, operations are in place, no return needed
     data -= mu;
     data /= sigma;
+
+
+def estimate_non_detection(data):
+    """
+    Fits each column in data to a two-component gaussian mixture
+    to separate into 'detects' and 'non-detects'.
+
+    Parameters
+    ==========
+    data:  pandas.DataFrame
+        Expresssion Data Matrix (genes x samples)
+
+    Returns
+    =======
+    p_nd:  pandas.DataFrame
+        Same size as input data
+        For each measurement, estimated probability of non-detection
+    """
+
+    p_nd = np.zeros_like(data)
+
+    for i in range(data.shape[1]):
+        col = data.iloc[:, [i]].values
+        gm = GaussianMixture(n_components=2, covariance_type='spherical')
+        gm.fit(col)
+        prob = gm.predict_proba(col)
+
+        # Extract probability for the lower gaussian
+        # Need to check since order is random
+        mu = gm.means_
+        if(mu[0] < mu[1]):
+            p_nd[:, i] = prob[:, 0]
+        else:
+            p_nd[:, i] = prob[:, 1]
+
+    p_nd = pd.DataFrame(p_nd, index=data.index, columns=data.columns)
+
+    return p_nd

@@ -94,7 +94,10 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
         kwargs["threshold"] = int(0.2 * edata.shape[1]);
 
     #Hold on to originals so we don't lose data after filtering in case it's needed later
-    original_data = edata.copy();
+    original_data = pd.DataFrame(edata.base,
+                                 index=edata.row_labels,
+                                 columns=edata.col_labels)
+    original_data.index = original_data.index.str.upper()
 
     #Filtering
     edata = Filters.apply_filters(edata, kwargs["threshold"], kwargs["nofilter"], kwargs["lean"]);
@@ -106,11 +109,14 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
     #%% Probability transform
     if(not kwargs["nomodel"]):
 
+        FP_Output('\nEstimating non-detect events');
+        p_nd = Transforms.estimate_non_detection(original_data)
+
         FP_Output('\nCorrecting for false-negatives using housekeeping gene levels');
-        (fit_func, params) = Transforms.create_false_neg_map(original_data, housekeeping_genes);
+        (fit_func, params) = Transforms.create_false_neg_map(original_data, p_nd, housekeeping_genes);
 
         if(input_weights is None):
-            weights = Transforms.compute_weights(fit_func, params, edata);
+            weights = Transforms.compute_weights(fit_func, params, edata, p_nd)
         else:
             weights = input_weights.loc[edata.row_labels, edata.col_labels].values;
 
@@ -127,17 +133,20 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
 
             sample_qc_scores = sample_qc_scores[sample_passes_qc];
     else:
-        sample_qc_scores = None;
-        qc_info = pd.DataFrame(0.0, columns=["Score", "Passes"], index=edata.col_labels);
+        sample_qc_scores = None
+        qc_info = pd.DataFrame(0.0, columns=["Score", "Passes"],
+                               index=edata.col_labels)
+        p_nd = pd.DataFrame(1.0, index=original_data.index,
+                            columns=original_data.columns)
 
     # Necessary because the matrix might be modified when data failing qc is removed
     edata = Models["Expression"]["Data"];
 
-    # Make an extra quality score of just the zero proportion in each sample
-    zeros_qscore = (edata.base == 0).sum(axis=0) / edata.shape[0];
-
     # Make an extra matrix just storing the location of zeros in the original matrix
-    zero_locations = (edata.base == 0);
+    zero_locations = p_nd.loc[edata.row_labels].values
+
+    # Make an extra quality score of just the zero proportion in each sample
+    zeros_qscore = zero_locations.mean(axis=0)
 
     # Transforms.z_normalize(edata);
 
