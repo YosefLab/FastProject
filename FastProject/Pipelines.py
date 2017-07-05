@@ -133,6 +133,7 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
                 model["Data"] = dataMatrix.subset_samples(sample_passes_qc);
 
             sample_qc_scores = sample_qc_scores[sample_passes_qc];
+            p_nd = p_nd.loc[:, sample_passes_qc]
     else:
         sample_qc_scores = None
         qc_info = pd.DataFrame(0.0, columns=["Score", "Passes"],
