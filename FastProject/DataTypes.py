@@ -50,46 +50,6 @@ class ExpressionData(np.ndarray):
         self.row_labels = getattr(obj, 'row_labels', []);
         self.col_labels = getattr(obj, 'col_labels', []);
         
-# Pending removal
-#     def eval_signature(self, signature):
-#         """For a signature, calculate a score against each sample in the data
-#         
-#         Parameters
-#         ----------
-#         signature :   Signature,
-#             expression data to evaluate the signature against
-# 
-#         Returns
-#         -------
-#         out : 1D ndarray, length = Num_Samples 
-#             result of evaluating this signature on each sample in data
-#         
-#         """
-#         
-#         sig_vector = signature.sig_indices(self.row_labels);
-#         ii = np.nonzero(sig_vector)[0];
-# 
-#         num_matched_genes = ii.size;
-# 
-#         if(num_matched_genes == 0):
-#             raise ValueError("No genes match signature");
-# 
-#         if(num_matched_genes < Global.args.min_signature_genes):
-#             raise ValueError("Too few genes match signature");
-# 
-#         weights = self.weights[ii,:];
-#         data = self.base[ii,:];
-#         sig_vector = sig_vector[ii,:];
-# 
-#         pdata = data * sig_vector * weights;
-#         
-#         sig_scores = pdata.sum(axis=0);
-#         sig_scores /= np.sum(np.abs(sig_vector)*weights, axis=0); #Only normalize by weights in the signature
-# 
-#         sig_obj = SignatureScores(sig_scores, signature.name, self.col_labels, isFactor=False, isPrecomputed=False, numGenes=num_matched_genes);
-# 
-#         return sig_obj;
-        
     def subset_genes(self, indices):
         if(issubclass(type(indices), np.ndarray)):
             if(indices.dtype == np.bool):

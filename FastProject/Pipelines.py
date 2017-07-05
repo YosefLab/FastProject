@@ -13,6 +13,7 @@ import time;
 from . import Filters;
 from . import Transforms;
 from . import Signatures;
+from . import SigScoreMethods;
 from . import Projections;
 from . import SubSample;
 from .DataTypes import ExpressionData;
@@ -30,7 +31,7 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
     signatures : list of Signatures.Signature
     precomputed_signatures : dict
         Keys are precomputed signature names (str)
-        Values are signature levels/scores (Signatures.SignatureScores)
+        Values are signature levels/scores (SigScoreMethods.SignatureScores)
     housekeeping_genes : list of str
     input_projections : dict
         Keys are of type str, representing projection names
@@ -48,7 +49,7 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
         An object containing all analysis results
         modelName(str) -> modelData(dict)
             "Data" -> ExpressionData
-            "signatureScores" -> list of Signatures.SignatureScores
+            "signatureScores" -> list of SigScoreMethods.SignatureScores
             "sampleLabels" -> list of str, labels for each sample
             "projectionData" -> list of dict
                 "filter" -> str, name of filter used
@@ -209,10 +210,10 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
 
         #Adds in quality score as a pre-computed signature
         if(sample_qc_scores is not None): #Might be None if --nomodel option is selected
-            sig_scores_dict["FP_Quality"] = Signatures.SignatureScores(sample_qc_scores,"FP_Quality",data.col_labels,isFactor=False, isPrecomputed=True, numGenes=0);
+            sig_scores_dict["FP_Quality"] = SigScoreMethods.SignatureScores(sample_qc_scores,"FP_Quality",data.col_labels,isFactor=False, isPrecomputed=True, numGenes=0);
 
         #Adds in zero proportion as another pre-computed signature
-        sig_scores_dict["Zero_Proportion"] = Signatures.SignatureScores(zeros_qscore,"Zero_Proportion",data.col_labels,isFactor=False, isPrecomputed=True, numGenes=0);
+        sig_scores_dict["Zero_Proportion"] = SigScoreMethods.SignatureScores(zeros_qscore,"Zero_Proportion",data.col_labels,isFactor=False, isPrecomputed=True, numGenes=0);
 
         FP_Output("\nEvaluating null signature scores on samples...");
 

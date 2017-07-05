@@ -7,11 +7,11 @@ import random
 import numpy as np;
 from sklearn.metrics.pairwise import pairwise_distances;
 from scipy.spatial.distance import cdist;
-from scipy.stats import norm, rankdata;
+from scipy.stats import norm
 from .Utils import ProgressBar;
 from .Global import RANDOM_SEED;
-from . import HtmlViewer;
 from . import SigScoreMethods;
+from .SigScoreMethods import SignatureScores
 
 #This is used to cache the background distribution used when evaluating
 #Signatures vs projections.  No need to regenerate the random indices
@@ -764,49 +764,3 @@ class Signature:
                 out[out==-1] = neg_weight*-1;
          
         return out;
-
-class SignatureScores:
-    """
-    Represents a Signature evaluated on a set of samples
-    """
-
-    @property
-    def ranks(self):
-        if(self.isFactor):
-            raise Exception("Factor signature scores have no rank")
-
-        if(self._ranks is None):
-            self._ranks = rankdata(self.scores, method="average");
-
-        return self._ranks;
-
-    def __init__(self, scores, name, sample_labels, isFactor, isPrecomputed, numGenes):
-        self.scores = scores;
-        self.name = name;
-        self.sample_labels = sample_labels;
-        self.isFactor = isFactor;
-        self.isPrecomputed = isPrecomputed;
-        self._ranks = None;
-        self.numGenes = numGenes;
-
-    def to_JSON(self):
-        """
-        Construct a dictionary of certain parameters.
-        Parse that to JSON using HTMLViewer and return
-        :return: String with JSON representation of the SignatureScores instance
-        """
-
-        out = dict({
-            "name": self.name,
-            "scores": self.scores,
-            "isFactor": self.isFactor,
-            "isPrecomputed": self.isPrecomputed,
-        });
-
-        if(not self.isFactor):
-            out.update({"ranks": self.ranks});
-
-        return HtmlViewer.toJS(out);
-
-
-

@@ -118,7 +118,7 @@ def loadFilesFromDisk(args):
     signatures : list of Signatures.Signature
     precomputed_signatures : dict
         Keys are precomputed signature names (str)
-        Values are signature levels/scores (Signatures.SignatureScores)
+        Values are signature levels/scores (SigScoreMethods.SignatureScores)
     housekeeping_genes : list of str
     input_projections : dict
         Keys are of type str, representing projection names

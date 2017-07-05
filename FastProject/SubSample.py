@@ -7,6 +7,7 @@ before re-enabling this feature.
 from __future__ import absolute_import, print_function, division;
 from .Utils import ProgressBar;
 from . import Signatures;
+from . import SigScoreMethods;
 from . import Projections;
 from . import Transforms;
 from .DataTypes import ExpressionData;
@@ -146,7 +147,7 @@ def merge_samples(all_data, Models, sigs, prob_params, args):
 
         #Adds in quality score as a pre-computed signature
         if(not args["nomodel"]):
-            sig_scores_dict["FP_Quality"] = Signatures.SignatureScores(sample_qc_scores,"FP_Quality",data.col_labels,isFactor=False, isPrecomputed=True);
+            sig_scores_dict["FP_Quality"] = SigScoreMethods.SignatureScores(sample_qc_scores,"FP_Quality",data.col_labels,isFactor=False, isPrecomputed=True);
 
         model["signatureScores"] = sig_scores_dict;
 

@@ -7,9 +7,11 @@ from . import Transforms
 from .DataTypes import ExpressionData
 from .Projections import perform_weighted_PCA
 from .Projections import permutation_wPCA as _permutation_wPCA
-from .Signatures import (generate_random_sigs, SignatureScores,
+from .Signatures import (generate_random_sigs,
                          calculate_sig_scores as _calculate_sig_scores,
                          sigs_vs_projections as _sigs_vs_projections)
+
+from .SigScoreMethods import SignatureScores
 
 
 __all__ = ["estimate_weights", "weighted_PCA",

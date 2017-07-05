@@ -4,7 +4,8 @@ Test conversions of FastProject datatypes to/from JSON
 import numpy as np
 import unittest
 from ..DataTypes import ExpressionData
-from ..Signatures import Signature, SignatureScores
+from ..Signatures import Signature
+from ..SigScoreMethods import SignatureScores
 from .. import jsonIO
 
 SAMPLE_EXPRESSION_DATA_JSON = """
