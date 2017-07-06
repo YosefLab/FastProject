@@ -25,7 +25,7 @@ from . import _tsne_fix
 import numpy as np;
 
 
-def generate_projections(data, filter_name=None, input_projections=None):
+def generate_projections(data, filter_name=None, input_projections=None, lean=False):
     """
     Projects data into 2 dimensions using a variety of linear and non-linear methods
 
@@ -55,10 +55,8 @@ def generate_projections(data, filter_name=None, input_projections=None):
         input_projections = {}
 
     IS_PCDATA = type(data) is PCData;
-    if(IS_PCDATA):
-        method_list = _proj_methods_pca;
-    else:
-        method_list = _proj_methods;
+
+    method_list = get_projection_methods(lean, IS_PCDATA)
 
     pbar = ProgressBar(1 + len(method_list));
 
@@ -180,8 +178,6 @@ def perform_weighted_PCA(data, weights, max_components=200):
         Data transformed using PCA.  Num_Components = Num_Samples
 
     """
-    np.random.seed(RANDOM_SEED);
-
     proj_data = data;
 
     #Weighted means
@@ -201,9 +197,13 @@ def perform_weighted_PCA(data, weights, max_components=200):
     e_vec = model.components_;
 
     wpca_data = np.dot(e_vec, data_centered);
-    e_val = np.var(wpca_data, axis=1);
-    total_var = np.sum(np.var(proj_data, axis=1));
-    e_val /= total_var;
+
+    # Try a different determination of e_val
+    #e_val = np.var(wpca_data, axis=1);
+    #total_var = np.sum(np.var(proj_data, axis=1));
+    #e_val /= total_var;
+
+    e_val = model.explained_variance_ratio_
 
     return wpca_data, e_val, e_vec.T;
 
@@ -350,6 +350,8 @@ def permutation_wPCA(data, weights, components=50, p_threshold=0.05, verbose=Fal
     :return: reduced data, numpy.ndarray of shape Num_Components x Num_Samples
     """
 
+    np.random.seed(RANDOM_SEED);
+
     # Make sure components isn't too big for matrix dimension
     components = min(components, data.shape[0], data.shape[1]);
 
@@ -410,29 +412,6 @@ def permutation_wPCA(data, weights, components=50, p_threshold=0.05, verbose=Fal
     return wpca_data, e_val, e_vec;
 
 
-def normalize_columns(data):
-    """Returns a copy of data with the columns z-normalized
-
-    Subtracts the mean and divides by the standard deviation
-    If standard deviation = 0, column is normalized to a vector of zeros
-
-    Parameters
-    ----------
-    data : numpy.ndarray
-        Data matrix to normalize
-
-    Returns
-    -------
-    numpy.ndarray
-        Normalized copy of `data`
-
-    """
-    col_means = data.mean(axis=0, keepdims=True);
-    col_stds = data.std(axis=0, keepdims=True);
-    col_stds[col_stds == 0] = 1;  # Fix to avoid divide-by-zero
-
-    return (data - col_means) / col_stds;
-
 # --------------------------------------------------------------------------- #
 #                                                                             #
 #                    Define Projection Methods Here                           #
@@ -445,8 +424,7 @@ def normalize_columns(data):
 # ICA
 def apply_ICA(proj_data, proj_weights=None):
     ica = FastICA(n_components=2, random_state=RANDOM_SEED);
-    norm_data = normalize_columns(proj_data);
-    result = ica.fit_transform(norm_data.T);  # Copy needed because ICA whitens the input matrix
+    result = ica.fit_transform(proj_data.copy().T);  # Copy needed because ICA whitens the input matrix
     return result;
 
 
@@ -455,8 +433,7 @@ def apply_tSNE10(proj_data, proj_weights=None):
     model = TSNE(n_components=2, perplexity=10.0, metric="euclidean",
                  learning_rate=200, early_exaggeration=4.0,
                  random_state=RANDOM_SEED);
-    norm_data = normalize_columns(proj_data);
-    result = model.fit_transform(norm_data.T);
+    result = model.fit_transform(proj_data.T);
     return result;
 
 
@@ -465,24 +442,21 @@ def apply_tSNE30(proj_data, proj_weights=None):
     model = TSNE(n_components=2, perplexity=30.0, metric="euclidean",
                  learning_rate=200, early_exaggeration=4.0,
                  random_state=RANDOM_SEED);
-    norm_data = normalize_columns(proj_data);
-    result = model.fit_transform(norm_data.T);
+    result = model.fit_transform(proj_data.T);
     return result;
 
 
 # ISOMap
 def apply_ISOMap(proj_data, proj_weights=None):
     model = Isomap(n_neighbors=4, n_components=2);
-    norm_data = normalize_columns(proj_data);
-    result = model.fit_transform(norm_data.T);
+    result = model.fit_transform(proj_data.T);
     return result;
 
 
 # PCA with RBF Kernel
 def apply_rbf_PCA(proj_data, proj_weights=None):
     model = KernelPCA(n_components=2, kernel='rbf');
-    norm_data = normalize_columns(proj_data);
-    result = model.fit_transform(norm_data.T);
+    result = model.fit_transform(proj_data.T);
     return result;
 
 
@@ -490,48 +464,52 @@ def apply_rbf_PCA(proj_data, proj_weights=None):
 def apply_MDS(proj_data, proj_weights=None):
     model = MDS(n_components=2, dissimilarity="euclidean",
             random_state=RANDOM_SEED)
-    norm_data = normalize_columns(proj_data);
-    result = model.fit_transform(norm_data.T);
+    result = model.fit_transform(proj_data.T);
     return result;
 
 
 # Spectral Embedding
 def apply_spectral_embedding(proj_data, proj_weights=None):
     model = SpectralEmbedding(n_components=2, random_state=RANDOM_SEED)
-    norm_data = normalize_columns(proj_data);
-    result = model.fit_transform(norm_data.T);
+    result = model.fit_transform(proj_data.T);
     return result;
 
 # Add New Methods Here
 
-# Register methods
-# Methods to apply to normalized data
-_proj_methods = dict();
 
-# Methods to apply to data that has already been filtered with PCA
-_proj_methods_pca = dict();
+# Gets the current projection methods to use
+def get_projection_methods(lean, pca):
+    """
+    lean: bool
+        Set by CLI argument.  Used to remove methods that don't scale well
+        to many samples
+    pca: bool
+        Only return a subset of methods when PCA has been called first as
+        it doesn't make sense to call PCA before some methods
+    """
 
+    proj_methods = {}
 
-def register_methods(lean=False):
-    global _proj_methods, _proj_methods_pca;
+    if not pca:
+        proj_methods['ICA'] = apply_ICA
 
-    _proj_methods['ICA'] = apply_ICA;
+        if not lean:
+            proj_methods['Spectral Embedding'] = apply_spectral_embedding
+            proj_methods['MDS'] = apply_MDS
 
-    if(not lean):  # These methods don't scale well.  Don't include when `lean` is set
-        _proj_methods['Spectral Embedding'] = apply_spectral_embedding;
-        _proj_methods['MDS'] = apply_MDS;
+        proj_methods['RBF Kernel PCA'] = apply_rbf_PCA
+        proj_methods['ISOMap'] = apply_ISOMap
+        proj_methods['tSNE30'] = apply_tSNE30
+        proj_methods['tSNE10'] = apply_tSNE10
 
-    _proj_methods['RBF Kernel PCA'] = apply_rbf_PCA;
-    _proj_methods['ISOMap'] = apply_ISOMap;
-    _proj_methods['tSNE30'] = apply_tSNE30;
-    _proj_methods['tSNE10'] = apply_tSNE10;
+    if pca:
 
-    _proj_methods_pca['ISOMap'] = apply_ISOMap;
-    _proj_methods_pca['tSNE30'] = apply_tSNE30;
-    _proj_methods_pca['tSNE10'] = apply_tSNE10;
+        proj_methods['ISOMap'] = apply_ISOMap
+        proj_methods['tSNE30'] = apply_tSNE30
+        proj_methods['tSNE10'] = apply_tSNE10
 
-    if(not lean):
-        _proj_methods_pca['Spectral Embedding'] = apply_spectral_embedding;
-        _proj_methods_pca['MDS'] = apply_MDS;
+        if not lean:
+            proj_methods['Spectral Embedding'] = apply_spectral_embedding
+            proj_methods['MDS'] = apply_MDS
 
-register_methods();
+    return proj_methods

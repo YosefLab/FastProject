@@ -1,14 +1,11 @@
 # -*- coding: utf-8 -*-
 """Wrapper classes for different types of data
 
-Here are the wrapper classes for ExpressionData, 
-ProbabilityData, and PCData
+Here are the wrapper classes for ExpressionData, and PCData
 
 This was created to organize nuances in how signature
 scores, distance matrices, and anything else, is computed
 on the different types of data.
-
-ProbabilityData is no longer being used
 
 """
 
@@ -52,46 +49,6 @@ class ExpressionData(np.ndarray):
         self.weights    = getattr(obj, 'weights'   , []);
         self.row_labels = getattr(obj, 'row_labels', []);
         self.col_labels = getattr(obj, 'col_labels', []);
-        
-# Pending removal
-#     def eval_signature(self, signature):
-#         """For a signature, calculate a score against each sample in the data
-#         
-#         Parameters
-#         ----------
-#         signature :   Signature,
-#             expression data to evaluate the signature against
-# 
-#         Returns
-#         -------
-#         out : 1D ndarray, length = Num_Samples 
-#             result of evaluating this signature on each sample in data
-#         
-#         """
-#         
-#         sig_vector = signature.sig_indices(self.row_labels);
-#         ii = np.nonzero(sig_vector)[0];
-# 
-#         num_matched_genes = ii.size;
-# 
-#         if(num_matched_genes == 0):
-#             raise ValueError("No genes match signature");
-# 
-#         if(num_matched_genes < Global.args.min_signature_genes):
-#             raise ValueError("Too few genes match signature");
-# 
-#         weights = self.weights[ii,:];
-#         data = self.base[ii,:];
-#         sig_vector = sig_vector[ii,:];
-# 
-#         pdata = data * sig_vector * weights;
-#         
-#         sig_scores = pdata.sum(axis=0);
-#         sig_scores /= np.sum(np.abs(sig_vector)*weights, axis=0); #Only normalize by weights in the signature
-# 
-#         sig_obj = SignatureScores(sig_scores, signature.name, self.col_labels, isFactor=False, isPrecomputed=False, numGenes=num_matched_genes);
-# 
-#         return sig_obj;
         
     def subset_genes(self, indices):
         if(issubclass(type(indices), np.ndarray)):
@@ -211,163 +168,6 @@ class ExpressionData(np.ndarray):
         merge_data.filters = filters_merge;
         return merge_data;
 
-
-class ProbabilityData(np.ndarray):
-    
-    def __new__(subtype, data, expression_data):
-        
-        obj = np.asarray(data).view(subtype);
-        
-        obj.row_labels = expression_data.row_labels;
-        
-        obj.col_labels = expression_data.col_labels;
-        
-        obj.expression_data = expression_data;
-
-        obj.weights = expression_data.weights;
-
-        return obj;
-                
-    def __array_finalize__(self, obj):
-        if obj is None:
-            return;
-
-        self.weights    = getattr(obj, 'weights'   , []);
-        self.row_labels = getattr(obj, 'row_labels', []);
-        self.col_labels = getattr(obj, 'col_labels', []);
-        self.expression_data = getattr(obj, 'expression_data', []);
-        
-    @property
-    def filters(self):
-        return self.expression_data.filters;
-
-#     def eval_signature(self, signature):
-#         """For a signature, calculate a score against each sample in the data
-#         
-#         Parameters
-#         ----------
-#         signature :   Signature,
-#             expression data to evaluate the signature against
-# 
-#         Returns
-#         -------
-#         out : 1D ndarray, length = Num_Samples 
-#             result of evaluating this signature on each sample in data
-#         
-#         """
-#         sig_vector = signature.sig_indices(self.row_labels);
-#         ii = np.nonzero(sig_vector)[0];
-# 
-#         num_matched_genes = ii.size;
-# 
-#         if(num_matched_genes == 0):
-#             raise ValueError("No genes match signature");
-# 
-#         if(num_matched_genes < Global.args.min_signature_genes):
-#             raise ValueError("Too few genes match signature");
-# 
-#         #Probability data already incorporates false-negative probability so no weights are used.
-# 
-#         data = self.base[ii,:];
-#         sig_vector = sig_vector[ii,:];
-#         weights = np.ones(data.shape);
-# 
-#         pdata = data * sig_vector * weights;
-#         
-#         sig_scores = pdata.sum(axis=0);
-#         sig_scores /= np.sum(np.abs(sig_vector)*weights, axis=0); #Only normalize by weights in the signature
-# 
-#         sig_obj = SignatureScores(sig_scores, signature.name, self.col_labels, isFactor=False, isPrecomputed=False, numGenes=num_matched_genes);
-# 
-#         return sig_obj;
-        
-    def subset_genes(self, indices):
-        if(issubclass(type(indices), np.ndarray)):
-            if(indices.dtype == np.bool):
-                indices = np.nonzero(indices)[0];
-        
-        out = self[indices,:];
-        out.weights = out.weights[indices,:];
-        out.row_labels = [self.row_labels[i] for i in indices];
-        out.expression_data = out.expression_data.subset_genes(indices);
-        return(out);
-    
-    def subset_samples(self, indices):
-        if(issubclass(type(indices), np.ndarray)):
-            if(indices.dtype == np.bool):
-                indices = np.nonzero(indices)[0];
-        
-        out = self[:, indices];
-        out.weights = out.weights[:, indices];
-        out.col_labels = [self.col_labels[i] for i in indices];
-        out.expression_data = out.expression_data.subset_samples(indices);
-        return(out);
-
-    def filtered_genes(self, filter_name=None):
-        """
-        Returns the list of genes (in the order used by projection_data or projection_weights)
-        filtered by the listed filter
-
-        :param filter_name: Name of the filter to use
-        :return: List of gene (row) names
-        """
-
-        if(filter_name is None or filter_name == 'None'):
-            return self.row_labels;
-        else:
-            filter = self.filters[filter_name];
-            fg = [gene for gene in self.row_labels if gene in filter]
-            return fg;
-
-    def projection_data(self, filter_name=None):
-        """
-        Returns the data matrix in self filtered by filters[filter_name]
-        :return: A sliced copy of the underlying data matrix
-        """
-        if(filter_name is None or filter_name == 'None'):
-            return self.base;
-        else:
-            filter = self.filters[filter_name];
-            filter_i = [i for i,gene in enumerate(self.row_labels) if gene in filter];
-            return self.base[filter_i,:];
-
-
-    def projection_weights(self, filter_name=None):
-        """
-        Returns the weight matrix, filtered by projection_mask
-        :return: A sliced copy of the weight matrix
-        """
-
-        if(filter_name is None or filter_name == 'None'):
-            return self.weights;
-        else:
-            filter = self.filters[filter_name];
-            filter_i = [i for i,gene in enumerate(self.row_labels) if gene in filter];
-            return self.weights[filter_i,:];
-
-    def merge_data(self, other):
-        """
-        Merges columns of self and other
-        :param other: Instance of ProbabilityData with same rows as self
-        :return: New ProbabilityData Instance combining self and other
-        """
-
-        #Ensure row labels match
-        if(len(self.row_labels) != len(other.row_labels)):
-            raise ValueError("Cant merge ProbabilityData objects with different row labels");
-
-        for x,y in zip(self.row_labels, other.row_labels):
-            if(x != y):
-                raise ValueError("Cant merge ProbabilityData objects with different row labels");
-
-        expression_data_merge = self.expression_data.merge_data(other.expression_data);
-
-        data_merge = np.concatenate((self.base, other.base), axis=1);
-        weights_merge = np.concatenate((self.weights, other.weights), axis=1);
-
-        merge_data = ProbabilityData(data_merge, expression_data_merge);
-        merge_data.weights = weights_merge;
-        return merge_data;
 
 class PCData(np.ndarray):
     

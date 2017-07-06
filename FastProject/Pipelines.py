@@ -10,16 +10,15 @@ from __future__ import division, print_function;
 import numpy as np;
 import pandas as pd;
 import time;
-import random;
 from . import Filters;
 from . import Transforms;
 from . import Signatures;
+from . import SigScoreMethods;
 from . import Projections;
 from . import SubSample;
-from .DataTypes import ExpressionData, ProbabilityData;
+from .DataTypes import ExpressionData;
 from .Utils import ProgressBar;
 from .Global import FP_Output;
-from . import SigScoreMethods;
 from . import NormalizationMethods;
 
 
@@ -32,7 +31,7 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
     signatures : list of Signatures.Signature
     precomputed_signatures : dict
         Keys are precomputed signature names (str)
-        Values are signature levels/scores (Signatures.SignatureScores)
+        Values are signature levels/scores (SigScoreMethods.SignatureScores)
     housekeeping_genes : list of str
     input_projections : dict
         Keys are of type str, representing projection names
@@ -50,7 +49,7 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
         An object containing all analysis results
         modelName(str) -> modelData(dict)
             "Data" -> ExpressionData
-            "signatureScores" -> list of Signatures.SignatureScores
+            "signatureScores" -> list of SigScoreMethods.SignatureScores
             "sampleLabels" -> list of str, labels for each sample
             "projectionData" -> list of dict
                 "filter" -> str, name of filter used
@@ -87,18 +86,19 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
     #     kwargs["subsample_size"] = None;
     kwargs["subsample_size"] = None;
 
-    holdouts = None;
-    if(kwargs["subsample_size"]):
-        holdouts, edata = SubSample.split_samples(edata, kwargs["subsample_size"]);
+    #holdouts = None
+    #if(kwargs["subsample_size"])
+    #    holdouts, edata = SubSample.split_samples(edata, kwargs["subsample_size"])
 
     if(kwargs["threshold"] is None):
         # Default threshold is 20% of samples - post sub-sampling
         kwargs["threshold"] = int(0.2 * edata.shape[1]);
 
-    Projections.register_methods(kwargs["lean"]); # Removes some projection methods if 'lean' is enabled
-
     #Hold on to originals so we don't lose data after filtering in case it's needed later
-    original_data = edata.copy();
+    original_data = pd.DataFrame(edata.base,
+                                 index=edata.row_labels,
+                                 columns=edata.col_labels)
+    original_data.index = original_data.index.str.upper()
 
     #Filtering
     edata = Filters.apply_filters(edata, kwargs["threshold"], kwargs["nofilter"], kwargs["lean"]);
@@ -110,27 +110,18 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
     #%% Probability transform
     if(not kwargs["nomodel"]):
 
-        FP_Output('\nFitting expression data to exp/norm mixture model');
-        (pdata, mu_h, mu_l, st_h, Pi) = Transforms.probability_of_expression(edata);
-        prob_params = (mu_h, mu_l, st_h, Pi);
-
+        FP_Output('\nEstimating non-detect events');
+        p_nd = Transforms.estimate_non_detection(original_data)
 
         FP_Output('\nCorrecting for false-negatives using housekeeping gene levels');
-        (fit_func, params) = Transforms.create_false_neg_map(original_data, housekeeping_genes);
+        (fit_func, params) = Transforms.create_false_neg_map(original_data, p_nd, housekeeping_genes);
 
         if(input_weights is None):
-            weights = Transforms.compute_weights(fit_func, params, edata);
+            weights = Transforms.compute_weights(fit_func, params, edata, p_nd)
         else:
             weights = input_weights.loc[edata.row_labels, edata.col_labels].values;
 
-        pdata = Transforms.adjust_pdata(pdata, weights);
-
-        pdata = ProbabilityData(pdata, edata);
-        # pmodel = dict({"Data": pdata});
-        # Models.update({"Probability": pmodel});
-
         edata.weights = weights;
-        pdata.weights = weights;
 
         sample_passes_qc, sample_qc_scores = Transforms.quality_check(params);
         qc_info = pd.DataFrame({"Score": sample_qc_scores, "Passes": sample_passes_qc}, index=edata.col_labels);
@@ -142,19 +133,22 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
                 model["Data"] = dataMatrix.subset_samples(sample_passes_qc);
 
             sample_qc_scores = sample_qc_scores[sample_passes_qc];
+            p_nd = p_nd.loc[:, sample_passes_qc]
     else:
-        sample_qc_scores = None;
-        prob_params = None;
-        qc_info = pd.DataFrame(0.0, columns=["Score", "Passes"], index=edata.col_labels);
+        sample_qc_scores = None
+        qc_info = pd.DataFrame(0.0, columns=["Score", "Passes"],
+                               index=edata.col_labels)
+        p_nd = pd.DataFrame(1.0, index=original_data.index,
+                            columns=original_data.columns)
 
     # Necessary because the matrix might be modified when data failing qc is removed
     edata = Models["Expression"]["Data"];
 
-    # Make an extra quality score of just the zero proportion in each sample
-    zeros_qscore = (edata.base == 0).sum(axis=0) / edata.shape[0];
-
     # Make an extra matrix just storing the location of zeros in the original matrix
-    zero_locations = (edata.base == 0);
+    zero_locations = p_nd.loc[edata.row_labels].values
+
+    # Make an extra quality score of just the zero proportion in each sample
+    zeros_qscore = zero_locations.mean(axis=0)
 
     # Transforms.z_normalize(edata);
 
@@ -181,16 +175,7 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
     #         sigs.append(new_sig);
 
     # Generate random signatures for background significance
-    random_sigs = [];
-    for size in [5, 10, 20, 50, 100, 200]:
-        for j in range(3000):
-            new_sig_dict = dict();
-            new_sig_genes = random.sample(edata.row_labels, size);
-            new_sig_signs = np.random.choice([1], size);
-            for gene, sign in zip(new_sig_genes, new_sig_signs):
-                new_sig_dict.update({gene: int(sign)});
-            new_sig = Signatures.Signature(new_sig_dict, True, 'x', "RANDOM_BG_" + str(size) + "_" + str(j));
-            random_sigs.append(new_sig);
+    random_sigs = Signatures.generate_random_sigs(edata.row_labels, signed=False)
 
     for name, model in Models.items():
 
@@ -202,69 +187,49 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
         FP_Output("\nEvaluating signature scores on samples...");
 
         # Determine normalization method
-        if(type(data) is ExpressionData):
+        if(kwargs["sig_norm_method"] == "none"):
+            sig_norm_method = NormalizationMethods.no_normalization;
+        elif(kwargs["sig_norm_method"] == "znorm_columns"):
+            sig_norm_method = NormalizationMethods.col_normalization;
+        elif(kwargs["sig_norm_method"] == "znorm_rows"):
+            sig_norm_method = NormalizationMethods.row_normalization;
+        elif(kwargs["sig_norm_method"] == "znorm_rows_then_columns"):
+            sig_norm_method = NormalizationMethods.row_and_col_normalization;
+        elif(kwargs["sig_norm_method"] == "rank_norm_columns"):
+            sig_norm_method = NormalizationMethods.col_rank_normalization;
 
-            if(kwargs["sig_norm_method"] == "none"):
-                sig_norm_method = NormalizationMethods.no_normalization;
-            elif(kwargs["sig_norm_method"] == "znorm_columns"):
-                sig_norm_method = NormalizationMethods.col_normalization;
-            elif(kwargs["sig_norm_method"] == "znorm_rows"):
-                sig_norm_method = NormalizationMethods.row_normalization;
-            elif(kwargs["sig_norm_method"] == "znorm_rows_then_columns"):
-                sig_norm_method = NormalizationMethods.row_and_col_normalization;
-            elif(kwargs["sig_norm_method"] == "rank_norm_columns"):
-                sig_norm_method = NormalizationMethods.col_rank_normalization;
+        # Normalize data with it
+        sig_data = data.get_normalized_copy(sig_norm_method);
 
-            sig_data = data.get_normalized_copy(sig_norm_method);
+        sig_scores_dict = Signatures.calculate_sig_scores(sig_data, signatures,
+                              method=kwargs["sig_score_method"],
+                              zero_locations=zero_locations,
+                              min_signature_genes=kwargs["min_signature_genes"])
 
-        elif(type(data) is ProbabilityData):
-            sig_data = data;
+        # Add in precomputed signature scores 'meta-data'
+        # Need to filter these as the order/number of samples might have changed
+        for name, sigscores in precomputed_signatures.items():
+            ii = [sigscores.sample_labels.index(x) for x in sig_data.col_labels]
+            new_labels = [sigscores.sample_labels[i] for i in ii]
+            new_scores = [sigscores.scores[i] for i in ii]
+            sigscores.sample_labels = new_labels
+            sigscores.scores = new_scores
 
-        # Determine signature score evaluation method
-        if(type(data) is ExpressionData):
-            if(kwargs["sig_score_method"] == "naive"):
-                sig_score_method = SigScoreMethods.naive_eval_signature;
-            elif(kwargs["sig_score_method"] == "weighted_avg"):
-                sig_score_method = SigScoreMethods.weighted_eval_signature;
-            elif(kwargs["sig_score_method"] == "imputed"):
-                sig_score_method = SigScoreMethods.imputed_eval_signature;
-            elif(kwargs["sig_score_method"] == "only_nonzero"):
-                sig_score_method = SigScoreMethods.nonzero_eval_signature;
-
-        elif(type(data) is ProbabilityData):
-            sig_score_method = SigScoreMethods.naive_eval_signature;
-
-
-        sig_scores_dict = dict();
-
-        pbar = ProgressBar(len(signatures));
-        for sig in signatures:
-            try:
-                sig_scores_dict[sig.name] = sig_score_method(sig_data, sig, zero_locations, kwargs["min_signature_genes"]);
-            except ValueError:  #Only thrown when the signature has no genes in the data
-                pass #Just discard the signature then
-            pbar.update();
-        pbar.complete();
-
-        FP_Output("\nEvaluating null signature scores on samples...");
-        pbar = ProgressBar(len(random_sigs));
-        random_sig_scores_dict = dict();
-        for sig in random_sigs:
-            try:
-                random_sig_scores_dict[sig.name] = sig_score_method(sig_data, sig, zero_locations, kwargs["min_signature_genes"]);
-            except ValueError:  # Only thrown when the signature has no genes in the data
-                pass  # Just discard the signature then
-            pbar.update();
-        pbar.complete();
-
-        sig_scores_dict.update(precomputed_signatures);
+        sig_scores_dict.update(precomputed_signatures)
 
         #Adds in quality score as a pre-computed signature
         if(sample_qc_scores is not None): #Might be None if --nomodel option is selected
-            sig_scores_dict["FP_Quality"] = Signatures.SignatureScores(sample_qc_scores,"FP_Quality",data.col_labels,isFactor=False, isPrecomputed=True, numGenes=0);
+            sig_scores_dict["FP_Quality"] = SigScoreMethods.SignatureScores(sample_qc_scores,"FP_Quality",data.col_labels,isFactor=False, isPrecomputed=True, numGenes=0);
 
         #Adds in zero proportion as another pre-computed signature
-        sig_scores_dict["Zero_Proportion"] = Signatures.SignatureScores(zeros_qscore,"Zero_Proportion",data.col_labels,isFactor=False, isPrecomputed=True, numGenes=0);
+        sig_scores_dict["Zero_Proportion"] = SigScoreMethods.SignatureScores(zeros_qscore,"Zero_Proportion",data.col_labels,isFactor=False, isPrecomputed=True, numGenes=0);
+
+        FP_Output("\nEvaluating null signature scores on samples...");
+
+        random_sig_scores_dict = Signatures.calculate_sig_scores(sig_data, random_sigs,
+                              method=kwargs["sig_score_method"],
+                              zero_locations=zero_locations,
+                              min_signature_genes=kwargs["min_signature_genes"])
 
         model["signatureScores"] = sig_scores_dict;
         model["projectionData"] = [];
@@ -277,7 +242,8 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
             #%% Dimensional Reduction procedures
             FP_Output("\nProjecting data into 2 dimensions");
 
-            projections, pcdata = Projections.generate_projections(data, filter_name, input_projections);
+            projections, pcdata = Projections.generate_projections(data, filter_name,
+                                                                   input_projections, kwargs["lean"]);
 
             #Evaluate Clusters
             FP_Output("Evaluating Clusters...");
@@ -309,7 +275,7 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
             #%% Dimensional Reduction procedures
             FP_Output("Projecting PC data into 2 dimensions");
 
-            projections, pcdata2 = Projections.generate_projections(pcdata, filter_name);
+            projections, pcdata2 = Projections.generate_projections(pcdata, filter_name, lean=kwargs["lean"]);
 
             #Evaluate Clusters
             FP_Output("Evaluating Clusters...");
@@ -386,17 +352,18 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
 
 
     #Merge all the holdouts back into the model
-    if(kwargs["subsample_size"] is not None):
-        FP_Output("Merging held-out samples back in")
-        SubSample.merge_samples(all_data, Models, signatures, prob_params, kwargs);
+    #if(kwargs["subsample_size"] is not None):
+    #    FP_Output("Merging held-out samples back in")
+    #    SubSample.merge_samples(all_data, Models, signatures, prob_params, kwargs);
 
     # Cluster genes
     from scipy.cluster.hierarchy import leaves_list, linkage;
     edata = Models["Expression"]["Data"];
-    linkage_matrix = linkage(edata);
+    edata_norm = edata.get_normalized_copy(NormalizationMethods.row_normalization)
+    linkage_matrix = linkage(edata_norm);
     leaves_i = leaves_list(linkage_matrix);
-    edata = edata.subset_genes(leaves_i);
-    Models["Expression"]["Data"] = edata;
+    edata_norm = edata_norm.subset_genes(leaves_i);
+    Models["Expression"]["Data"] = edata_norm;
 
     FP_Output("\nFastProject Analysis Complete")
     elapsed_time = time.time() - start_time;

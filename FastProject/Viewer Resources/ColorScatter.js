@@ -17,6 +17,7 @@ function ColorScatter(parent, colorbar)
     this.margin = {top: 20, right: 20, bottom: 15, left: 40};
     this.width = $(parent).width() - this.margin.right - this.margin.left;
     this.height = $(parent).height() - this.margin.top - this.margin.bottom;
+    this.circle_radius = 4.0
 
     if(this.colorbar_enabled){
         this.height -= colorbar_height;
@@ -106,6 +107,18 @@ ColorScatter.prototype.setData = function(points, isFactor)
 {
     this.points = points;
     var cvals = points.map(function(e){return e[2];}); //extract 3rd column
+
+    //Adjust circle size based on number of points
+    //Max is 5, Min is 2
+    //5 at 100 points, 2 at 2000 points
+    var m = (2-5) / (Math.log10(2000) - Math.log10(100));
+    var b = 5 - m*Math.log10(100);
+    var new_radius = m*Math.log10(points.length) + b
+    new_radius = Math.max(2, new_radius)
+    new_radius = Math.min(5, new_radius)
+    this.circle_radius = new_radius
+
+        
 
     if(isFactor)
     {
@@ -257,7 +270,7 @@ ColorScatter.prototype.redraw = function(performTransition) {
     var circles = self.svg.selectAll("circle")
         .data(self.points);
 
-    circles.enter().append("circle").attr("r",4.0);
+    circles.enter().append("circle").attr("r",self.circle_radius);
     circles.style("fill", function(d){return self.colorScale(d[2]);})
         .on("click", function(d,i){self.setSelected(i);})
         .on("mouseover", function(d,i){self.tip.show(d,i); self.setHovered(i);})

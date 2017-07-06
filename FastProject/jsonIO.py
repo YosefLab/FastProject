@@ -4,7 +4,8 @@ FastProject datatypes to/from JSON
 """
 
 from .DataTypes import ExpressionData
-from .Signatures import Signature, SignatureScores
+from .Signatures import Signature
+from .SigScoreMethods import SignatureScores
 import json
 import numpy as np
 
@@ -87,7 +88,7 @@ def precomputed_signatures_to_JSON(precomputed_signatures):
     ----------
     precomputed_signature : dict 
         Key: Name of Signature
-        Value: Signatures.SignatureScores
+        Value: SigScoreMethods.SignatureScores
         The object to convert
 
     Returns
@@ -102,7 +103,7 @@ def precomputed_signatures_to_JSON(precomputed_signatures):
         precomputed_signature = precomputed_signatures[key]
 
         if(not isinstance(precomputed_signature, SignatureScores)):
-            raise ValueError("Input is not of type FastProject.Signatures.SignatureScores");
+            raise ValueError("Input is not of type FastProject.SigScoreMethods.SignatureScores");
 
         obj = {
             "scores": precomputed_signature.scores,

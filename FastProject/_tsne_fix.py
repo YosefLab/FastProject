@@ -9,8 +9,6 @@ import numpy as np
 from scipy import linalg
 import sklearn
 
-_last_run = []
-
 def _gradient_descent(objective, p0, it, n_iter, objective_error=None,
                       n_iter_check=1, n_iter_without_progress=50,
                       momentum=0.5, learning_rate=1000.0, min_gain=0.01,
@@ -69,8 +67,6 @@ def _gradient_descent(objective, p0, it, n_iter, objective_error=None,
     i : int
         Last iteration.
     """
-    global _last_run
-    _last_run = []
 
     if args is None:
         args = []
@@ -96,7 +92,6 @@ def _gradient_descent(objective, p0, it, n_iter, objective_error=None,
         grad *= gains
         update = momentum * update - learning_rate * grad
         p += update
-        _last_run.append(p.copy())
 
         if (i + 1) % n_iter_check == 0:
             if new_error is None:

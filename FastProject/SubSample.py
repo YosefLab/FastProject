@@ -7,9 +7,10 @@ before re-enabling this feature.
 from __future__ import absolute_import, print_function, division;
 from .Utils import ProgressBar;
 from . import Signatures;
+from . import SigScoreMethods;
 from . import Projections;
 from . import Transforms;
-from .DataTypes import ProbabilityData, ExpressionData;
+from .DataTypes import ExpressionData;
 from .Global import FP_Output, RANDOM_SEED;
 from scipy.spatial.distance import cdist;
 import numpy as np;
@@ -56,10 +57,7 @@ def merge_samples(all_data, Models, sigs, prob_params, args):
         (pdata_all, fn_prob) = Transforms.correct_for_fn(pdata_all, mu_h, fit_func, params);
         fn_prob[edata_all > 0] = 0;
 
-        pdata_all = ProbabilityData(pdata_all, edata_all);
-
         edata_all.weights = 1-fn_prob;
-        pdata_all.weights = 1-fn_prob;
         sample_passes_qc, sample_qc_scores = Transforms.quality_check(params);
 
         #Need to make sure we retain all the original labels
@@ -70,7 +68,6 @@ def merge_samples(all_data, Models, sigs, prob_params, args):
         #If specified, remove items that did not pass qc check
         if(args["qc"]):
                 edata_all = edata_all.subset_samples(sample_passes_qc);
-                pdata_all = pdata_all.subset_samples(sample_passes_qc);
 
     Transforms.z_normalize(edata_all);
 
@@ -85,19 +82,6 @@ def merge_samples(all_data, Models, sigs, prob_params, args):
 
     holdout_data = all_data.subset_samples(holdout_indices);
     model["Holdout_Data"] = holdout_data;
-
-    if(not args["nomodel"]):
-        model = Models["Probability"];
-        sub_data = model["Data"];
-        all_data = pdata_all;
-
-        sub_data_cols = set(sub_data.col_labels);
-        all_cols = set(all_data.col_labels);
-        holdout_cols = all_cols.difference(sub_data_cols);
-        holdout_indices = [i for i,x in enumerate(all_data.col_labels) if x in holdout_cols];
-
-        holdout_data = all_data.subset_samples(holdout_indices);
-        model["Holdout_Data"] = holdout_data;
 
     #Merge in projections
     #Re calculate clusters
@@ -163,7 +147,7 @@ def merge_samples(all_data, Models, sigs, prob_params, args):
 
         #Adds in quality score as a pre-computed signature
         if(not args["nomodel"]):
-            sig_scores_dict["FP_Quality"] = Signatures.SignatureScores(sample_qc_scores,"FP_Quality",data.col_labels,isFactor=False, isPrecomputed=True);
+            sig_scores_dict["FP_Quality"] = SigScoreMethods.SignatureScores(sample_qc_scores,"FP_Quality",data.col_labels,isFactor=False, isPrecomputed=True);
 
         model["signatureScores"] = sig_scores_dict;
 

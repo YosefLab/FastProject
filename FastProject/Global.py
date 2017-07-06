@@ -68,5 +68,5 @@ def get_housekeeping_dir():
 
 # Chosen by roll of a 2147483648-sided die
 # Guaranteed to be random
-RANDOM_SEED = 1335607827;
+RANDOM_SEED = 1335607828;
 random.seed(RANDOM_SEED);
