@@ -355,21 +355,26 @@ def estimate_non_detection(data):
         For each measurement, estimated probability of non-detection
     """
 
-    p_nd = np.zeros_like(data)
+    DO_GMM = False
 
-    for i in range(data.shape[1]):
-        col = data.iloc[:, [i]].values
-        gm = GaussianMixture(n_components=2, covariance_type='spherical')
-        gm.fit(col)
-        prob = gm.predict_proba(col)
+    if DO_GMM:
+        p_nd = np.zeros_like(data)
 
-        # Extract probability for the lower gaussian
-        # Need to check since order is random
-        mu = gm.means_
-        if(mu[0] < mu[1]):
-            p_nd[:, i] = prob[:, 0]
-        else:
-            p_nd[:, i] = prob[:, 1]
+        for i in range(data.shape[1]):
+            col = data.iloc[:, [i]].values
+            gm = GaussianMixture(n_components=2, covariance_type='spherical')
+            gm.fit(col)
+            prob = gm.predict_proba(col)
+
+            # Extract probability for the lower gaussian
+            # Need to check since order is random
+            mu = gm.means_
+            if(mu[0] < mu[1]):
+                p_nd[:, i] = prob[:, 0]
+            else:
+                p_nd[:, i] = prob[:, 1]
+    else:
+        p_nd = (data.values == 0).astype('float')
 
     p_nd = pd.DataFrame(p_nd, index=data.index, columns=data.columns)
 
