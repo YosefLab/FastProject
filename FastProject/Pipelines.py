@@ -207,7 +207,15 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
                               min_signature_genes=kwargs["min_signature_genes"])
 
         # Add in precomputed signature scores 'meta-data'
-        sig_scores_dict.update(precomputed_signatures);
+        # Need to filter these as the order/number of samples might have changed
+        for name, sigscores in precomputed_signatures.items():
+            ii = [sigscores.sample_labels.index(x) for x in sig_data.col_labels]
+            new_labels = [sigscores.sample_labels[i] for i in ii]
+            new_scores = [sigscores.scores[i] for i in ii]
+            sigscores.sample_labels = new_labels
+            sigscores.scores = new_scores
+
+        sig_scores_dict.update(precomputed_signatures)
 
         #Adds in quality score as a pre-computed signature
         if(sample_qc_scores is not None): #Might be None if --nomodel option is selected
