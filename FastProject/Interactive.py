@@ -1,6 +1,7 @@
 """
 Functions to facilitate interactive use of the library
 """
+import numpy as np
 import pandas as pd
 from . import FileIO
 from . import Transforms
@@ -9,7 +10,8 @@ from .Projections import perform_weighted_PCA
 from .Projections import permutation_wPCA as _permutation_wPCA
 from .Signatures import (generate_random_sigs,
                          calculate_sig_scores as _calculate_sig_scores,
-                         sigs_vs_projections as _sigs_vs_projections)
+                         sigs_vs_projections as _sigs_vs_projections,
+                         read_signatures_gmt)
 
 from .SigScoreMethods import SignatureScores
 
@@ -89,7 +91,7 @@ def weighted_PCA(data, weights, max_components=200):
     return pc_data, e_val, e_vec
 
 
-def permutation_wPCA(data, weights, max_components=50,
+def permutation_wPCA(data, weights=None, max_components=50,
                      p_threshold=0.05, verbose=False, debug=False):
     """
     Computes weighted PCA on data.  Returns only significant components.
@@ -118,6 +120,12 @@ def permutation_wPCA(data, weights, max_components=50,
         eigenvectors
 
     """
+    if weights is None:
+        weights = pd.DataFrame(
+            np.ones_like(data.values),
+            index=data.index,
+            columns=data.columns
+        )
 
     pc_data, e_val, e_vec = _permutation_wPCA(data.values, weights.values, max_components,
                                 p_threshold, verbose, debug=debug)
@@ -129,8 +137,8 @@ def permutation_wPCA(data, weights, max_components=50,
     return pc_data, e_val, e_vec
 
 
-def calculate_sig_scores(data, weights, signatures, method='weighted_avg',
-                         zero_locations=None, min_signature_genes=1e99):
+def calculate_sig_scores(data, signatures, weights=None, method='weighted_avg',
+                         zero_locations=None, min_signature_genes=0):
     """
     Interactive version of Signatures.calculate_sig_scores that
     uses DataFrames instead
@@ -139,10 +147,11 @@ def calculate_sig_scores(data, weights, signatures, method='weighted_avg',
     ----------
     data: pandas.DataFrame
         Data matrix to use to calculate signature scores
-    weights: pandas.DataFrame
-        Weight matrix to use for weighted sig-score evaluation
     signatures: list of Signature
         Signatures of which scores are computed
+    weights: pandas.DataFrame
+        Weight matrix to use for weighted sig-score evaluation
+        If no weights are provided, all ones are used
     method: str
         Which scoring method to use
     zero_locations: boolean numpy.ndarray
@@ -154,7 +163,11 @@ def calculate_sig_scores(data, weights, signatures, method='weighted_avg',
 
     Returns
     -------
-    pandas.DataFrame
+    num_genes: pandas.Series
+        The number of genes that matched each signature in
+        the expression matrix. Size is NUM_SIGNATURES
+    scores: pandas.DataFrame
+        Scores for each signature on each cell/sample
         Size is NUM_SAMPLES x NUM_SIGNATURES
     """
 
@@ -164,7 +177,10 @@ def calculate_sig_scores(data, weights, signatures, method='weighted_avg',
         list(data.columns)
     )
 
-    expressionMatrix.weights = weights.values
+    if weights is not None:
+        expressionMatrix.weights = weights.values
+    else:
+        expressionMatrix.weights = np.ones_like(data.values)
 
     result_dict = _calculate_sig_scores(
         expressionMatrix, signatures,
@@ -261,7 +277,7 @@ def sigs_vs_projection(projection, sig_scores, num_genes,
         factor_sig_scores = factor_sig_scores.loc[projection.index]
 
     # Convert values
-    projections = {'proj_name': projection.values}
+    projections = {'proj_name': projection.values.T}
     sig_scores_dict = {}
 
     for name, column in sig_scores.iteritems():
@@ -296,12 +312,16 @@ def sigs_vs_projection(projection, sig_scores, num_genes,
                                   random_sig_scores_dict,
                                   NEIGHBORHOOD_SIZE=NEIGHBORHOOD_SIZE)
 
-    row_labels, col_labels, sig_proj_matrix, sig_proj_matrix_p = result
+    row_labels, col_labels, sig_proj_matrix, sig_proj_matrix_p, random_sig_proj_matrix, random_sig_score_keys = result
 
     consistencies = pd.DataFrame(sig_proj_matrix, index=row_labels,
                                  columns=col_labels)
 
+    null_consistencies = pd.DataFrame(random_sig_proj_matrix,
+                                      index=random_sig_score_keys,
+                                      columns=col_labels)
+
     pvals = pd.DataFrame(sig_proj_matrix_p, index=row_labels,
                          columns=col_labels)
 
-    return consistencies, pvals
+    return consistencies, pvals, null_consistencies

@@ -250,8 +250,7 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
             clusters = Projections.define_clusters(projections);
 
             #%% Evaluating signatures against projections
-            # sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p = Signatures.sigs_vs_projections(projections, sig_scores_dict);
-            sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p = Signatures.sigs_vs_projections(projections, sig_scores_dict, random_sig_scores_dict);
+            sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p, _, _ = Signatures.sigs_vs_projections(projections, sig_scores_dict, random_sig_scores_dict);
 
             #Store in projData
             projData["filter"] = filter_name;
@@ -282,8 +281,7 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
             clusters = Projections.define_clusters(projections);
 
             #%% Evaluating signatures against projections
-            #sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p = Signatures.sigs_vs_projections(projections, sig_scores_dict);
-            sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p = Signatures.sigs_vs_projections(projections, sig_scores_dict, random_sig_scores_dict);
+            sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p, _, _ = Signatures.sigs_vs_projections(projections, sig_scores_dict, random_sig_scores_dict);
 
             projData = dict();
             projData["filter"] = filter_name;

@@ -313,6 +313,9 @@ def sigs_vs_projections(projections, sig_scores_dict, random_sig_scores_dict, NE
                         sig_proj dissimilarity score
         sig_proj_matrix_p: numpy.ndarray, NUM_SIGNATURES x NUM_PROJECTIONS
                         sig_proj dissimilarity p value
+        random_sig_proj_matrix: numpy.ndarray, NUM_RANDOM_SIGNATURES x NUM_PROJECTIONS
+                        random_sig_proj dissimilarity score
+        random_sig_score_keys: List of Strings.  Row labels for random_sig_proj_matrix
     """
     np.random.seed(RANDOM_SEED);
     sp_row_labels = [];
@@ -364,6 +367,9 @@ def sigs_vs_projections(projections, sig_scores_dict, random_sig_scores_dict, NE
 
     for j, sig in enumerate(random_sig_score_keys):
         random_sig_score_matrix[:, j] = random_sig_scores_dict[sig].ranks;
+
+    N_RANDOM = len(random_sig_score_keys)
+    random_sig_proj_matrix = np.zeros((N_RANDOM,N_PROJECTIONS))
 
     #Build one-hot matrices for each factor
     factor_dict = dict();
@@ -436,6 +442,7 @@ def sigs_vs_projections(projections, sig_scores_dict, random_sig_scores_dict, NE
         p_values = norm.cdf((med_dissimilarity - mu)/sigma);
 
         sig_proj_matrix[:,i] = 1 - med_dissimilarity / N_SAMPLES;
+        random_sig_proj_matrix[:,i] = 1 - random_med_dissimilarity / N_SAMPLES;
         sig_proj_matrix_p[:,i] = p_values;
 
 
@@ -524,7 +531,7 @@ def sigs_vs_projections(projections, sig_scores_dict, random_sig_scores_dict, NE
 
     pp.complete();
 
-    return (sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p);
+    return (sp_row_labels, sp_col_labels, sig_proj_matrix, sig_proj_matrix_p, random_sig_proj_matrix, random_sig_score_keys);
 
 def p_to_q(p_values):
     """
