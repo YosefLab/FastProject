@@ -37,10 +37,13 @@ def estimate_weights(data, housekeeping_genes=None):
     if housekeeping_genes is None:
         housekeeping_genes = FileIO.load_housekeeping_genes()
 
-    (fit_func, params) = Transforms.create_false_neg_map(
-        expressionMatrix, housekeeping_genes)
+    p_nd = Transforms.estimate_non_detection(data)
 
-    weights = Transforms.compute_weights(fit_func, params, expressionMatrix)
+    (fit_func, params) = Transforms.create_false_neg_map(
+        data, p_nd, housekeeping_genes)
+
+    weights = Transforms.compute_weights(
+        fit_func, params, expressionMatrix, p_nd)
 
     weights = pd.DataFrame(weights, index=expressionMatrix.row_labels,
                            columns=expressionMatrix.col_labels)
