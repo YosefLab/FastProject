@@ -1,5 +1,11 @@
 FastProject
 ===========
+
+**Note: This repository is no longer undergoing active maintainence.**
+
+**Instead, see [VISION](https://github.com/yoseflab/vision) for the successor to this project released in 2019.**
+  - [https://github.com/yoseflab/VISION](https://github.com/yoseflab/vision)
+
 Here we present FastProject, a software package for two-dimensional visualization of single cell data, which utilizes a plethora of projection methods and provides a way to systematically investigate the biological relevance of these low dimensional representations by incorporating domain knowledge.  
 
 FastProject analyzes a gene expression matrix and produces a dynamic output report in which two-dimensional projections of the data can be explored.  Annotated gene sets (referred to as 'signatures') are incorporated so that features in the projections can be understood in relation to the biological processes they might represent.  FastProject provides a novel method of scoring each cell against a gene signature so as to minimize the effect of missed transcripts as well as a method to rank signature-projection pairings so that meaningful associations can be quickly identified. Additionally, FastProject is written with a modular architecture and designed to serve as a platform for incorporating and comparing new projection methods and gene selection algorithms.

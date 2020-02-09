@@ -303,7 +303,7 @@ def Analysis(expressionMatrix, signatures, precomputed_signatures, housekeeping_
         signature_significance = pd.DataFrame();
         for projData in model['projectionData']:
             sp = pd.DataFrame(projData['sigProjMatrix_p'], index=projData['signatureKeys']).min(axis=1);
-            signature_significance = pd.concat((signature_significance, sp), axis=1);
+            signature_significance = pd.concat((signature_significance, sp), axis=1, sort=True);
 
         signature_significance = signature_significance.min(axis=1);
 
